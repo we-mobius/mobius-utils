@@ -11,15 +11,16 @@ module.exports = {
     Atomics: 'readonly',
     SharedArrayBuffer: 'readonly'
   },
+  parser: '@babel/eslint-parser',
   parserOptions: {
     ecmaVersion: 2018,
     sourceType: 'module'
   },
   rules: {
-    "max-len": [1, {
-      "code": 140,
-      "ignoreUrls": true,
-      "ignoreTemplateLiterals": true
+    'max-len': [1, {
+      code: 140,
+      ignoreUrls: true,
+      ignoreTemplateLiterals: true
     }]
   }
 }

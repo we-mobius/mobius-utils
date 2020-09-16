@@ -15,11 +15,10 @@ module.exports = {
   mode: 'production',
   // NOTE: entry sort matters style cascading
   entry: {
-    static: './src/static.js',
     main: './src/main.js'
   },
   output: {
-    filename: '[name].[contenthash:7].js',
+    filename: '[name].js',
     path: PATHS.output,
     publicPath: publicPath
   },

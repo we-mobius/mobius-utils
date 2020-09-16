@@ -11,7 +11,6 @@ module.exports = {
   mode: 'development',
   // NOTE: entry sort matters style cascading
   entry: {
-    static: './src/static.js',
     main: './src/main.js'
   },
   output: {
