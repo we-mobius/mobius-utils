@@ -11,5 +11,7 @@ export * from './function.js'
 
 export * from './data.js'
 export * from './functional.js'
-export * from './semantic.js'
 export * from './hybrid.js'
+
+export * from './semantic.js'
+export * from './path.js'

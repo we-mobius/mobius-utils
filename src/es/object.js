@@ -6,6 +6,9 @@ import { filter, reduce } from './array.js'
 
 export const prop = curry((key, obj) => obj[key])
 export const propEq = curry((prop, value, obj) => obj[prop] === value)
+export const entries = Object.entries
+export const keys = Object.keys
+export const values = Object.values
 
 export const hasOwnProperty = curry((key, obj) => Object.prototype.hasOwnProperty.call(obj, key))
 

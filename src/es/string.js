@@ -1,4 +1,4 @@
-import { invoker } from './functional.js'
+import { invoker, curry } from './functional.js'
 
 export const toString = invoker(1, 'toString')
 export const toLowerCase = invoker(1, 'toLowerCase')
@@ -9,6 +9,8 @@ export const trimLeft = invoker(1, 'trimLeft')
 export const indexOf = invoker(2, 'indexOf')
 export const split = invoker(2, 'split')
 export const replace = invoker(3, 'replace')
+
+export const isStartWith = curry((substr, str) => indexOf(substr, str) === 0)
 
 export const isAllSpace = str => !!trim(str)
 

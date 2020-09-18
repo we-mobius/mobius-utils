@@ -1,5 +1,8 @@
 import { invoker, curry, curry2, compose, complement, flip } from './functional.js'
 
+// TODO: enhance
+export const toArray = val => [...val]
+
 // @see: https://github.com/mqyqingfeng/Blog/issues/51
 export const shuffle = a => {
   a = [].concat(a)
@@ -22,6 +25,27 @@ export const some = invoker(2, 'some')
 
 export const slice = invoker(3, 'slice')
 export const join = invoker(2, 'join')
+
+export const push = curry((item, arr) => {
+  arr = [...arr]
+  arr.push(item)
+  return arr
+})
+export const pop = arr => {
+  arr = [...arr]
+  arr.pop()
+  return arr
+}
+export const unshift = curry((item, arr) => {
+  arr = [...arr]
+  arr.unshift(item)
+  return arr
+})
+export const shift = arr => {
+  arr = [...arr]
+  arr.shift()
+  return arr
+}
 
 export const unique = arr => [...new Set(arr)]
 
