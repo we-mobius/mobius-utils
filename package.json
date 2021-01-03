@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Mobius utils.",
   "type": "module",
-  "main": "./src/es/index.js",
+  "main": "./src/main.js",
   "exports": {
     ".": {
       "require": "./dist/cjs/index.js",
@@ -32,12 +32,12 @@
     "cz-commit": "npm run lint && npx git-cz",
     "lint": "npx eslint .",
     "lint:fix": "npx eslint . --fix",
-    "dev": "webpack-dev-server --env.mode=development",
-    "build": "webpack --env.mode=development",
-    "dist": "webpack --env.mode=production",
+    "dev": "npx webpack-dev-server --env.mode=development",
+    "build": "npx webpack --env.mode=development",
+    "dist": "npx webpack --env.mode=production",
     "serve": "npx live-server ./dist --port=0624",
-    "expose": "ngrok http 624",
-    "bundle": "webpack --env.mode=release && node ./scripts/release"
+    "expose": "npx ngrok http 624",
+    "bundle": "npx webpack --env.mode=release && node ./scripts/release"
   },
   "repository": {
     "type": "git",
@@ -120,5 +120,7 @@
     "access": "public"
   },
   "sideEffects": false,
-  "dependencies": {}
+  "dependencies": {
+    "axios": "^0.21.0"
+  }
 }

@@ -1,9 +1,12 @@
-import { isString, isArray, isObject } from './base.js'
-import { isTruthy, allPass } from './boolean.js'
-import { split, isStartWith } from './string.js'
-import { toArray, map, filter, reject, reduce, join, unshift } from './array.js'
-import { hasOwnProperty, prop, entries } from './object.js'
-import { compose } from './functional.js'
+import {
+  isString, isArray, isObject,
+  isTruthy, allPass,
+  split, isStartWith,
+  toArray, map, filter, reject, reduce, join, unshift,
+  hasOwnProperty, prop, entries
+} from '../internal.js'
+
+import { compose } from '../functional.js'
 
 // @see https://developer.mozilla.org/zh-CN/docs/Web/API/Location
 // @see https://npm.taobao.org/mirrors/node/latest/docs/api/url.html

@@ -1,4 +1,4 @@
-import { invoker, curry } from './functional.js'
+import { invoker, curry } from '../functional/helpers.js'
 
 export const toString = invoker(1, 'toString')
 export const toLowerCase = invoker(1, 'toLowerCase')

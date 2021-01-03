@@ -24,15 +24,26 @@ export const isGeneratorFunction = fn =>
 export const isAsyncGeneratorFunction = fn =>
   Object.prototype.toString.call(fn) === '[object AsyncGeneratorFunction]'
 export const isError = err => Object.prototype.toString.call(err) === '[object Error]'
+export const isEmptyStr = str => isString(str) && str.length === 0
 export const isEmptyArr = arr => isArray(arr) && arr.length === 0
 export const isEmptyObj = obj => isObject(obj) && Object.keys(obj).length === 0
 export const isOutDated = date => isDate(date) && new Date(date).getTime() < new Date().getTime()
 
-export const asIs = (v) => v
+export const isWindow = obj => Object.prototype.toString.call(obj) === '[object Window]'
+export const isEventTarget = obj => obj instanceof EventTarget
+
+export const isObservable = obj => isObject(obj) && (obj.isObservable || isFunction(obj.subscribe))
+
+// - `null` and `undefined` are considered empty values
+// - `''` is the empty value for String
+// - `[]` is the empty value for Array
+// - `{}` is the empty value for Object
+export const isEmpty = val =>
+  isNull(val) || isUndefined(val) || isEmptyStr(val) || isEmptyArr(val) || isEmptyObj(val) || (isObject(val) && val.isEmpty)
+
+export const asIs = v => v
 export const asUndefined = v => undefined
 export const asNull = v => null
-
-export const and = (...args) => args.every(arg => !!arg())
-export const or = (...args) => args.some(arg => !arg())
+export const noop = v => {}
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is

@@ -1,6 +1,6 @@
-import { curry, compose } from './functional.js'
+import { curry, compose, curryN } from '../functional/helpers.js'
 import { isArray, isObject } from './base.js'
-import { isTruthy, isLooseFalsy } from './boolean.js'
+import { isTruthy, isNil } from './boolean.js'
 import { split, replace } from './string.js'
 import { filter, reduce } from './array.js'
 
@@ -9,8 +9,13 @@ export const propEq = curry((prop, value, obj) => obj[prop] === value)
 export const entries = Object.entries
 export const keys = Object.keys
 export const values = Object.values
+export const truthyKeys = obj => entries(obj).filter(([k, v]) => !!v).map(([k, v]) => k)
+export const truthyValues = obj => entries(obj).filter(([k, v]) => !!v).map(([k, v]) => v)
 
 export const hasOwnProperty = curry((key, obj) => Object.prototype.hasOwnProperty.call(obj, key))
+export const assign = curryN(2, (source, target) => target.assign(source))
+export const assignTo = curryN(2, (target, source) => target.assign(source))
+export const defaultProps = assign
 
 // @refer to: https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore#_get
 // NOTE: rawFn.length === 2
@@ -19,7 +24,7 @@ export const get = curry((obj, path) => {
   // getPathArray :: s -> [s]
   const getPathArray = compose(filter(isTruthy), split(/[,[\].]+?/), replace(/['|"]/g, ''))
   // getRes :: [s] -> any
-  const getRes = reduce((res, path) => isLooseFalsy(res) ? res : res[path], obj)
+  const getRes = reduce((res, path) => isNil(res) ? res : res[path], obj)
 
   const result = getRes(getPathArray(path))
 
@@ -96,3 +101,7 @@ export const smartDeepMerge = (target, source) => {
 
   return target
 }
+
+// mapProps
+// omit
+// pick

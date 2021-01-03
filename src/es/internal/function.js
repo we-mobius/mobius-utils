@@ -1,5 +1,23 @@
 import { hardDeepMerge } from './object.js'
 
+// ! unnecessary
+// // NOTE: call 接受不定长参数，无法进行一般柯里化
+// export const call = (f, ...args) => f(...args)
+// // apply :: (a -> b) -> a -> b
+// ! name conflict with `apply` in functional module which has different signature
+// export const apply = curry((f, args) => f(...args))
+
+export const once = fn => {
+  let called, result
+  return (...args) => {
+    if (!called) {
+      called = true
+      result = fn(...args)
+    }
+    return result
+  }
+}
+
 export const debounce = (fn, ms) => {
   let timer
   let waiting = []

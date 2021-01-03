@@ -1,4 +1,5 @@
-import { invoker, curry, curry2, compose, complement, flip } from './functional.js'
+import { invoker, curry, curryN, compose } from '../functional/helpers.js'
+import { flip } from '../functional/combinators.js'
 
 // TODO: enhance
 export const toArray = val => [...val]
@@ -19,7 +20,7 @@ export const every = invoker(2, 'every')
 export const map = invoker(2, 'map')
 export const forEach = invoker(2, 'forEach')
 export const filter = invoker(2, 'filter')
-export const reject = curry((f, arr) => arr.filter(complement(f)))
+export const reject = curry((f, arr) => filter((v) => !f(v), arr))
 export const reduce = invoker(3, 'reduce')
 export const some = invoker(2, 'some')
 
@@ -50,8 +51,7 @@ export const shift = arr => {
 export const unique = arr => [...new Set(arr)]
 
 export const concat = invoker(2, 'concat')
-
-export const union = curry2(compose(unique, flip(concat)))
+export const union = curryN(2, compose(unique, flip(concat)))
 
 // @see ramda, it is more efficient when the array length gap is large
 const _longer = (arr1, arr2) => arr1.length > arr2.length ? arr1 : arr2

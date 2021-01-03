@@ -1,7 +1,7 @@
-import { simpleCurry } from './functional.js'
-import { isBoolean, isString, isNumber, isArray, isObject } from './base.js'
+import { isBoolean, isString, isNumber, isArray, isObject } from '../internal.js'
+import { curryS } from '../functional.js'
 
-export const struct = simpleCurry((type, validatorMaker) => {
+export const struct = curryS((type, validatorMaker) => {
   return config => val => {
     const res = validatorMaker(config)(val)
     const { isValid } = res
@@ -55,4 +55,4 @@ export const is = (data, struct) => {
 
 // console.info(is({}, object()))
 // console.info(is(312312, string()))
-console.info(is([123], array(string())))
+// console.info(is([123], array(string())))
