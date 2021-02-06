@@ -1,68 +1,19 @@
 import {
-  Mutation, Data, isAtom,
-  ReplayMediator,
-  pipeAtom, dataToData, atomToData, combineT,
-  createDataFromFunction
+  Mutation, Data, isMutation, isData, isAtom,
+  pipeAtom, dataToData, mutationToDataS, dataToMutationS, atomToMutation,
+  filterT,
+  createDataFromFunction, createDataFromEvent
 } from '../atom.js'
-import { windowLoadedRD } from './event.js'
-import { isObject, isFunction, isArray } from '../internal.js'
+import { completeStateRD } from './event.js'
+import { isObject, isFunction, hasOwnProperty } from '../internal.js'
+import { makeCustomEvent } from './dom.js'
 
-export const makeAppContainerRD = (containerId, decorator) => {
-  const initContainer = id => {
-    let container = document.getElementById(id)
-    if (!container) {
-      container = document.createElement('div')
-      container.id = id
-      document.body.appendChild(container)
-    }
-    if (isObject(decorator)) {
-      Object.entries(decorator).forEach(([key, value]) => {
-        if (isFunction(value)) {
-          value(container[key])
-        } else {
-          container[key] = value
-        }
-      })
-    } else if (isFunction(decorator)) {
-      container = decorator(container)
-    }
-    return container
+const GLOBAL_VARS = new Map()
+export const globalVar = (key, value) => {
+  if (value) {
+    GLOBAL_VARS.set(key, value)
   }
-
-  const toAppContainerM = Mutation.of(() => {
-    const container = initContainer(containerId)
-    return container
-  })
-
-  const appContainerD = Data.empty()
-  pipeAtom(windowLoadedRD, toAppContainerM, appContainerD)
-
-  const appContainerRD = ReplayMediator.of(appContainerD, { autoTrigger: true })
-
-  return appContainerRD
-}
-
-export const runApp = (render, container, template) => {
-  const renderTargetD = combineT(container, template)
-  return renderTargetD.subscribe(({ value: [root, pageTemplate] }) => {
-    render(pageTemplate, root)
-  })
-}
-
-export const makeComponent = (input, operation, output) => {
-  const outputD = output || Data.empty()
-
-  let inputD
-  if (isArray(input)) {
-    inputD = combineT(input)
-  } else if (isAtom(input)) {
-    inputD = atomToData(input)
-  } else if (isObject(input)) {
-    // TODO:
-  }
-
-  pipeAtom(inputD, Mutation.ofLiftBoth(operation), outputD)
-  return outputD
+  return GLOBAL_VARS.get(key)
 }
 
 export const makeEventHandler = (handler = v => v) => {
@@ -77,6 +28,133 @@ export const makeEventHandler = (handler = v => v) => {
 
 export const makeGeneralEventHandler = (handler = v => v) => {
   const [eventHandler, data, triggerMediator, trigger] = makeEventHandler(handler)
-  const eventHandlerRD = ReplayMediator.of(dataToData(windowLoadedRD, () => eventHandler))
+  const eventHandlerRD = dataToData(() => eventHandler, completeStateRD)
   return [eventHandlerRD, eventHandler, data, triggerMediator, trigger]
+}
+
+const _elementBasedMessageProxyMap = new Map()
+globalVar('elementBasedMessageProxyMap', _elementBasedMessageProxyMap)
+export const makeElementBasedMessageProxy = (id, type, name) => {
+  const proxy = _elementBasedMessageProxyMap.get(id + type)
+  if (proxy) {
+    return proxy
+  }
+
+  let ele = document.getElementById(id)
+  if (!ele) {
+    const tempEle = document.createElement('div')
+    tempEle.id = id
+    tempEle.style.display = 'none'
+    document.body.appendChild(tempEle)
+    ele = tempEle
+  }
+
+  const ElementBasedMessageProxy = class {
+    constructor (ele, type, name) {
+      const [data] = createDataFromEvent(ele, type)
+
+      const onymousInnerMessageD = Data.empty()
+      const onymousSendM = Mutation.ofLiftBoth((prev) => {
+        let detail, options
+        if (isObject(prev)) {
+          if (hasOwnProperty('detail', prev) && hasOwnProperty('options', prev)) {
+            detail = prev.detail
+            options = prev.options
+          } else {
+            detail = prev
+          }
+        } else {
+          detail = { data: prev }
+        }
+        detail.from = name
+        ele.dispatchEvent(makeCustomEvent(type, detail, options))
+        return { type, detail, options }
+      })
+      const anonymousSendM = Mutation.ofLiftBoth((prev) => {
+        let detail, options
+        if (isObject(prev)) {
+          if (hasOwnProperty('detail', prev) && hasOwnProperty('options', prev)) {
+            detail = prev.detail
+            options = prev.options
+          } else {
+            detail = prev
+          }
+        } else {
+          detail = { data: prev }
+        }
+        ele.dispatchEvent(makeCustomEvent(type, detail, options))
+        return { type, detail, options }
+      })
+      const sendedD = Data.empty()
+      pipeAtom(onymousInnerMessageD, onymousSendM, sendedD)
+      pipeAtom(anonymousSendM, sendedD)
+
+      this.element = ele
+      this.type = type
+      this.name = name
+
+      this.innerMessageD = onymousInnerMessageD
+      this.sender = onymousSendM
+      this.onymousSender = onymousSendM
+      this.anonymousSender = onymousSendM
+      this.sendedD = sendedD
+      const namedReceiver = filterT(prev => prev.detail.to === name, data)
+      this.receiver = namedReceiver
+      this.broadReceiver = data
+      this.namedReceiver = namedReceiver
+      this.anonymousReceiver = filterT(prev => prev.detail.from === undefined, data)
+    }
+
+    customizeReveiver (cond) {
+      if (isFunction(cond)) {
+        return filterT(cond, this.broadReceiver)
+      } else if (isObject(cond)) {
+        // TODO
+        console.warn("TODO: Object type of cond as customizeReveiver's argument, you got a broadReceiver instead.")
+        return this.broadReceiver
+      } else {
+        throw (new TypeError('"cond" is expected to be a Function or an Object'))
+      }
+    }
+
+    send (message) {
+      if (isData(message)) {
+        return this.sender.observe(message)
+      } else if (isMutation(message)) {
+        return this.sender.observe(mutationToDataS(message))
+      } else {
+        this.innerMessageD.triggerValue(message)
+      }
+    }
+
+    receive (handler) {
+      if (isMutation(handler)) {
+        return handler.observe(this.receiver)
+      } else if (isData(handler)) {
+        return dataToMutationS(handler).observe(this.receiver)
+      } else if (isFunction(handler)) {
+        return this.receiver.subscribe(({ value }) => {
+          handler(value)
+        })
+      } else {
+        throw (new TypeError('"handler" is expected to be type of Mutation | Data | Function.'))
+      }
+    }
+
+    receiveDetail (handler) {
+      if (isFunction(handler)) {
+        return this.receiver.subscribe(({ value: e }) => {
+          handler(e.detail)
+        })
+      } else if (isAtom(handler)) {
+        return atomToMutation(e => e.detail, handler).observe(this.receiver)
+      } else {
+        throw (new TypeError('"handler" is expected to be type of Mutation | Data | Function.'))
+      }
+    }
+  }
+
+  const _proxy = new ElementBasedMessageProxy(ele, type, name)
+  _elementBasedMessageProxyMap.set(id + type, _proxy)
+  return _proxy
 }

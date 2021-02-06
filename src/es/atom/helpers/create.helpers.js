@@ -1,7 +1,7 @@
 import { asIs, isEventTarget, hasOwnProperty, isObservable, isObject, isFunction, isBoolean, isNumber } from '../../internal.js'
 import { compose } from '../../functional.js'
 import { Data, Mutation } from '../atom.js'
-import { TriggerMediator, ReplayMediator } from '../mediators.js'
+import { TriggerMediator } from '../mediators.js'
 
 export const withMediator = (atom, mediator) => {
   const _mediator = mediator.of(atom)
@@ -9,16 +9,11 @@ export const withMediator = (atom, mediator) => {
 }
 
 export const withTriggerMediator = atom => withMediator(atom, TriggerMediator)
-export const withReplayMediator = atom => withMediator(atom, ReplayMediator)
 
 // createMutationWithTriggerMediator :: () => [mutation, triggerMediator]
 export const createMutationWithTriggerMediator = () => withTriggerMediator(Mutation.empty())
 // createDataWithTriggerMediator :: () => [data, triggerMediator]
 export const createDataWithTriggerMediator = () => withTriggerMediator(Data.empty())
-// createMutationWithReplayMediator :: () => [mutation, replayMediator]
-export const createMutationWithReplayMediator = () => withReplayMediator(Mutation.empty())
-// createDataWithReplayMediator :: () => [data, replayMediator]
-export const createDataWithReplayMediator = () => withReplayMediator(Data.empty())
 
 // createMutationWithTrigger :: trigger -> [mutation, triggerMediator, trigger]
 export const createMutationWithTrigger = trigger => {
@@ -33,7 +28,9 @@ export const createDataWithTrigger = trigger => {
   return [mutation, triggerMediator, trigger]
 }
 
-// EventTrigger creators
+/***************************************
+ *    EventTrigger creators
+ ***************************************/
 export const createEventTrigger = ({ target, type, handler = asIs } = {}) => {
   if (!isFunction(handler)) {
     throw (new TypeError('"handler" is expected to be a Function.'))
@@ -76,7 +73,9 @@ export const createEventTriggerF = compose(createEventTrigger, formatEventTrigge
 export const createMutationFromEvent = compose(createMutationWithTrigger, createEventTriggerF)
 export const createDataFromEvent = compose(createDataWithTrigger, createEventTriggerF)
 
-// IntervalTrigger creators
+/***************************************
+ *    IntervalTrigger creators
+ ***************************************/
 export const createIntervalTrigger = ({ handler = asIs, start = 0, step = 1000, interval = 1000 } = {}) => {
   if (!isFunction(handler)) {
     throw (new TypeError('"handler" is expected to be a Function.'))
@@ -119,7 +118,9 @@ export const createIntervalTriggerF = compose(createIntervalTrigger, formatInter
 export const createMutationFromInterval = compose(createMutationWithTrigger, createIntervalTriggerF)
 export const createDataFromInterval = compose(createDataWithTrigger, createIntervalTriggerF)
 
-// TimeoutTrigger creators
+/***************************************
+ *    TimeoutTrigger creators
+ ***************************************/
 export const createTimeoutTrigger = ({ timeout, handler = asIs, autoStart = true } = {}) => {
   if (!isFunction(handler)) {
     throw (new TypeError('"handler" is expected to be a Function.'))
@@ -190,7 +191,9 @@ export const createTimeoutTriggerF = compose(createTimeoutTrigger, formatTimeout
 export const createMutationFromTimeout = compose(createMutationWithTrigger, createTimeoutTriggerF)
 export const createDataFromTimeout = compose(createDataWithTrigger, createTimeoutTriggerF)
 
-// ObservableTrigger creators
+/***************************************
+ *    ObservableTrigger creators
+ ***************************************/
 export const createObservableTrigger = ({ observable, handler = asIs, autoStart = true }) => {
   if (!isFunction(handler)) {
     throw (new TypeError('"handler" is expected to be a Function.'))
@@ -260,7 +263,9 @@ export const createObservableTriggerF = compose(createObservableTrigger, formatO
 export const createMutationFromObservable = compose(createMutationWithTrigger, createObservableTriggerF)
 export const createDataFromObservable = compose(createDataWithTrigger, createObservableTriggerF)
 
-// normal function trigger creators
+/***************************************
+ *    normal function trigger creators
+ ***************************************/
 export const createFunctionTrigger = ({ containerFn, handler = asIs, autoStart = true }) => {
   if (!isFunction(containerFn)) {
     throw (new TypeError('"containerFn" is expected to be a Function.'))

@@ -1,13 +1,15 @@
 import { isUndefined, isFunction, isObject, isEmpty } from '../../internal.js'
 import { Mutator, Datar, isDatar, isMutator, isTerminator } from '../meta.js'
 import { isData } from './data.atom.js'
+import { BaseAtom } from './base.atom.js'
 
 export const isMutation = tar => isObject(tar) && tar.isMutation
 
-export class Mutation {
+export class Mutation extends BaseAtom {
   // mutation 其实是一个函数
   // mutation :: a -> a
   constructor (operation, options) {
+    super()
     if (isMutator(operation)) {
       this._mutator = operation
     } else if (isFunction(operation)) {
@@ -19,6 +21,10 @@ export class Mutation {
       this._options = options
     }
     this._consumers = new Set()
+  }
+
+  get type () {
+    return 'MutationAtom'
   }
 
   get isMutation () {
@@ -92,6 +98,10 @@ export class Mutation {
         consumer(_mutator)
       })
     }
+  }
+
+  triggerOperation (operation) {
+    return this.trigger(Mutator.of(operation))
   }
 
   // Mutation 流式变更 1

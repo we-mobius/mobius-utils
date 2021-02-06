@@ -8,15 +8,15 @@ import { pipeAtom, binaryTweenPipeAtom } from '../helpers.js'
  * @param target Atom
  * @return atom Data
  */
-export const skipUntilT = curryN(2, (cond, target) => {
+export const skipWhileT = curryN(2, (cond, target) => {
   if (!isAtom(cond)) {
-    throw (new TypeError('"cond" argument of skipUntilT is expected to be type of "Atom".'))
+    throw (new TypeError('"cond" argument of skipWhileT is expected to be type of "Atom".'))
   }
   if (!isAtom(target)) {
-    throw (new TypeError('"target" argument of skipUntilT is expected to be type of "Atom".'))
+    throw (new TypeError('"target" argument of skipWhileT is expected to be type of "Atom".'))
   }
 
-  const wrapCondM = Mutation.ofLiftLeft(prev => ({ type: 'cond', value: prev }))
+  const wrapCondM = Mutation.ofLiftLeft(prev => ({ type: 'cond', value: Boolean(prev) }))
   const wrappedCondD = Data.empty()
   pipeAtom(wrapCondM, wrappedCondD)
   const wrapTargetM = Mutation.ofLiftLeft(prev => ({ type: 'target', value: prev }))
@@ -41,7 +41,7 @@ export const skipUntilT = curryN(2, (cond, target) => {
       }
       // redundant conditional judgement
       if (type === 'target') {
-        return _intervalValues.target
+        return _intervalValues.cond ? TERMINATOR : _intervalValues.target
       }
     }
   })())

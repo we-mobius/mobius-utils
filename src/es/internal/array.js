@@ -23,6 +23,7 @@ export const filter = invoker(2, 'filter')
 export const reject = curry((f, arr) => filter((v) => !f(v), arr))
 export const reduce = invoker(3, 'reduce')
 export const some = invoker(2, 'some')
+export const flat = invoker(1, 'flat')
 
 export const slice = invoker(3, 'slice')
 export const join = invoker(2, 'join')

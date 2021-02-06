@@ -10,10 +10,23 @@ import { looseCurryN } from '../functional.js'
 export const isDatar = tar => isObject(tar) && tar.isDatar
 export const isMutator = tar => isObject(tar) && tar.isMutator
 
+export const isVoid = tar => isObject(tar) && tar.isVoid
 export const isTerminator = tar => isObject(tar) && tar.isTerminator
 export const isVacuo = tar => isFunction(tar) && tar.isVacuo
 
-// 终止粒子
+/**
+ *—————————————————————————————————————————————— Nothing Particle ————————————————————————————————————————————————————
+ */
+export class Void {
+  get isVoid () {
+    return true
+  }
+}
+export const VOID = new Void()
+
+/**
+ *—————————————————————————————————————————————— Terminator Particle ————————————————————————————————————————————————————
+ */
 export class Terminator {
   get isTerminator () {
     return true
@@ -21,7 +34,9 @@ export class Terminator {
 }
 export const TERMINATOR = new Terminator()
 
-// 虚空粒子
+/**
+ *—————————————————————————————————————————————— Vacuo Particle ————————————————————————————————————————————————————
+ */
 //  利用 JavaScript Function is also an Object 的特性
 //  使 Vacuo 既能够作为 Datar.of() 也能作为 Mutator.of() 的参数
 //    从而实现 Empty Datar 和 Empty Mutator
@@ -43,7 +58,9 @@ export const Vacuo = () => {
 }
 export const VACUO = Vacuo()
 
-// 数据粒子
+/**
+ *—————————————————————————————————————————————— Datar Particle ————————————————————————————————————————————————————
+ */
 export class Datar {
   constructor (value, mutator = VACUO) {
     if (!isUndefined(mutator) && !isMutator(mutator) && !isVacuo(mutator)) {
@@ -95,7 +112,9 @@ const checkOperation = operation => {
 const isValidOpTar = tar => {
   return isDatar(tar) || isVacuo(tar)
 }
-// 变更粒子
+/**
+ *—————————————————————————————————————————————— Mutator Particle ————————————————————————————————————————————————————
+ */
 export class Mutator {
   constructor (operation, datar = VACUO) {
     if (!isUndefined(datar) && !isValidOpTar(datar)) {

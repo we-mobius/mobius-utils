@@ -1,6 +1,7 @@
 import { isObject, isNumber } from '../../internal.js'
 import { isAtom } from '../atom.js'
 import { BaseMediator } from './base.mediator.js'
+import { curryN } from '../../functional.js'
 
 export const isReplayMediator = tar => isObject(tar) && tar.isReplayMediator
 
@@ -8,11 +9,16 @@ export class ReplayMediator extends BaseMediator {
   constructor (atom, replayTime = 1) {
     super(atom)
     this._history = []
+    this._consumers = []
     this.setReplayTime(replayTime)
     this._subscribeController = atom.subscribe(val => {
       this._history.push(val)
       this._setHistory()
     })
+  }
+
+  get type () {
+    return 'ReplayMediator'
   }
 
   get isReplayMediator () {
@@ -22,6 +28,9 @@ export class ReplayMediator extends BaseMediator {
   static of (atom, options) {
     if (!isAtom(atom)) {
       throw (new TypeError('ReplayMediator can apply to an Atom (Data or Mutation) only.'))
+    }
+    if (isReplayMediator(atom)) {
+      return atom
     }
 
     let _options = {}
@@ -57,16 +66,29 @@ export class ReplayMediator extends BaseMediator {
     this._history = this._history.slice(t >= 0 ? t : 0)
   }
 
-  replay (consumer) {
+  replayTo (consumer) {
     this._history.forEach(val => {
       consumer(val)
     })
   }
 
+  replay () {
+    this._consumers.forEach((consumer) => {
+      this.replayTo(consumer)
+    })
+  }
+
   subscribe (consumer) {
+    this._consumers.push(consumer)
     const subscribeController = this._atom.subscribe(consumer)
-    this.replay(consumer)
+    this.replayTo(consumer)
     return subscribeController
+  }
+
+  // NOTE: important!!!
+  // !!! important
+  beObservedBy (...args) {
+    return args[0].observe(this)
   }
 
   release () {
@@ -74,3 +96,10 @@ export class ReplayMediator extends BaseMediator {
     super.release()
   }
 }
+
+export const replayWithoutLatest = curryN(2, (replayTime, atom) => {
+  return ReplayMediator.of(atom, { replayTime, autoTrigger: false })
+})
+export const replayWithLatest = curryN(2, (replayTime, atom) => {
+  return ReplayMediator.of(atom, { replayTime, autoTrigger: true })
+})

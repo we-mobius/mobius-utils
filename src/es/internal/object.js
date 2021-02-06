@@ -17,18 +17,33 @@ export const assign = curryN(2, (source, target) => target.assign(source))
 export const assignTo = curryN(2, (target, source) => target.assign(source))
 export const defaultProps = assign
 
+/**
+ * @deprecated use getByPath instead
+ */
 // @refer to: https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore#_get
 // NOTE: rawFn.length === 2
 // export const get = curry((obj, path, defaultValue = undefined) => {
 export const get = curry((obj, path) => {
   // getPathArray :: s -> [s]
-  const getPathArray = compose(filter(isTruthy), split(/[,[\].]+?/), replace(/['|"]/g, ''))
+  const getPathArray = compose(filter(isTruthy), split(/[,[/\].]+?/), replace(/['|"]/g, ''))
   // getRes :: [s] -> any
   const getRes = reduce((res, path) => isNil(res) ? res : res[path], obj)
 
   const result = getRes(getPathArray(path))
 
   // return result === undefined || result === obj ? defaultValue : result
+  return result
+})
+
+/**
+ * @param path String | Array
+ * @param obj Object
+ * @return Any
+ */
+export const getByPath = curry((path, obj) => {
+  const getPathArray = compose(filter(isTruthy), split(/[,./[\]\\]/g), replace(/['|"]/g, ''))
+  const getRes = reduce((res, path) => isNil(res) ? res : res[path], obj)
+  const result = getRes(getPathArray(path))
   return result
 })
 

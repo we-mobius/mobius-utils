@@ -1,6 +1,7 @@
 import { TERMINATOR, isTerminator } from './meta.js'
 import { Data, Mutation } from './atom.js'
 import { pipeAtom } from './helpers.js'
+import { ReplayMediator } from './mediators.js'
 
 //   鼠标点击   -->--->--   坐标数据   -->--->--   积   -->--->--   Console
 //      |          |          |          |        |       |          |
@@ -40,7 +41,6 @@ const resD = Data.of(0)
 // consoleM.observe(prodD)
 // resD.observe(consoleM)
 // clickM.observe(resD)
-// 深度优先
 // resD.subscribe(res => {
 //   console.info(res)
 // })
@@ -54,8 +54,8 @@ const resD = Data.of(0)
 // resD.beObservedBy(clickM)
 // clickM.trigger()
 
-pipeAtom(clickM, cordD, prodM, prodD, consoleM, resD, clickM)
-clickM.trigger()
+// pipeAtom(clickM, cordD, prodM, prodD, consoleM, resD, clickM)
+// clickM.trigger()
 
 // pipeAtom(
 //   clickM,
@@ -75,3 +75,14 @@ clickM.trigger()
 // clickM.trigger()
 
 // consoleM.mutator.run({ value: 12 }, 'extra args')
+
+const clickMM = ReplayMediator.of(clickM)
+clickM.trigger()
+
+// prodD.observe(prodM)
+// prodM.observe(cordD)
+// cordD.observe(clickMM)
+
+prodM.beObservedBy(prodD)
+cordD.beObservedBy(prodM)
+clickMM.beObservedBy(cordD)

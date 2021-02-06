@@ -1,17 +1,23 @@
 import { isUndefined, isFunction, isObject, isEmpty } from '../../internal.js'
 import { Mutator, Datar, isDatar, isMutator, isTerminator } from '../meta.js'
 import { isMutation } from './mutation.atom.js'
+import { BaseAtom } from './base.atom.js'
 
 export const isData = tar => isObject(tar) && tar.isData
 
-export class Data {
+export class Data extends BaseAtom {
   constructor (value) {
+    super()
     if (isDatar(value)) {
       this._datar = value
     } else {
       this._datar = Datar.of(value)
     }
     this._consumers = new Set()
+  }
+
+  get type () {
+    return 'DataAtom'
   }
 
   get isData () {
@@ -60,6 +66,10 @@ export class Data {
         consumer(_datar)
       })
     }
+  }
+
+  triggerValue (value) {
+    return this.trigger(Datar.of(value))
   }
 
   // Data 流式变更 1

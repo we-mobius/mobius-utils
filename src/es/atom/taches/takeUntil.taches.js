@@ -8,12 +8,12 @@ import { pipeAtom, binaryTweenPipeAtom } from '../helpers.js'
  * @param target Atom
  * @return atom Data
  */
-export const skipUntilT = curryN(2, (cond, target) => {
+export const takeUntilT = curryN(2, (cond, target) => {
   if (!isAtom(cond)) {
-    throw (new TypeError('"cond" argument of skipUntilT is expected to be type of "Atom".'))
+    throw (new TypeError('"cond" argument of takeUntilT is expected to be type of "Atom".'))
   }
   if (!isAtom(target)) {
-    throw (new TypeError('"target" argument of skipUntilT is expected to be type of "Atom".'))
+    throw (new TypeError('"target" argument of takeUntilT is expected to be type of "Atom".'))
   }
 
   const wrapCondM = Mutation.ofLiftLeft(prev => ({ type: 'cond', value: prev }))
@@ -23,7 +23,7 @@ export const skipUntilT = curryN(2, (cond, target) => {
   const wrappedTargetD = Data.empty()
   pipeAtom(wrapTargetM, wrappedTargetD)
 
-  const skipM = Mutation.ofLiftLeft((() => {
+  const takeM = Mutation.ofLiftLeft((() => {
     const _internalStates = { cond: false, target: false }
     const _intervalValues = { cond: undefined, target: undefined }
     return prev => {
@@ -33,10 +33,7 @@ export const skipUntilT = curryN(2, (cond, target) => {
       }
       _internalStates[type] = true
       _intervalValues[type] = value
-      if (!_internalStates.cond || !_internalStates.target) {
-        return TERMINATOR
-      }
-      if (type === 'cond') {
+      if (_internalStates.cond) {
         return TERMINATOR
       }
       // redundant conditional judgement
@@ -45,11 +42,11 @@ export const skipUntilT = curryN(2, (cond, target) => {
       }
     }
   })())
-  pipeAtom(wrappedCondD, skipM)
-  pipeAtom(wrappedTargetD, skipM)
+  pipeAtom(wrappedCondD, takeM)
+  pipeAtom(wrappedTargetD, takeM)
 
   const outputD = Data.empty()
-  pipeAtom(skipM, outputD)
+  pipeAtom(takeM, outputD)
 
   binaryTweenPipeAtom(cond, wrapCondM)
   binaryTweenPipeAtom(target, wrapTargetM)

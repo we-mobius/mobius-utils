@@ -11,6 +11,10 @@ export class TriggerMediator extends BaseMediator {
     this._map = new WeakMap()
   }
 
+  get type () {
+    return 'TriggerMediator'
+  }
+
   get isTriggerMediator () {
     return true
   }

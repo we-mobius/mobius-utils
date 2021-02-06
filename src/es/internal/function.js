@@ -7,6 +7,8 @@ import { hardDeepMerge } from './object.js'
 // ! name conflict with `apply` in functional module which has different signature
 // export const apply = curry((f, args) => f(...args))
 
+export const iife = (fn, ...args) => fn(...args)
+
 export const once = fn => {
   let called, result
   return (...args) => {
