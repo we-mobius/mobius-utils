@@ -35,7 +35,8 @@
     "dev": "npx webpack-dev-server --env.mode=development",
     "build": "npx webpack --env.mode=development",
     "dist": "npx webpack --env.mode=production",
-    "serve": "npx live-server ./dist --port=0624",
+    "serve:build": "npx live-server ./build --port=0624",
+    "serve:dist": "npx live-server ./dist --port=0624",
     "expose": "npx ngrok http 624",
     "bundle": "npx webpack --env.mode=release && node ./scripts/release"
   },
