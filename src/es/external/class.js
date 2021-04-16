@@ -29,7 +29,7 @@ export const classStrToArr = str => {
   if (!isString(str)) {
     throw (new TypeError(`"str" is expected to be type of String, but received typeof "${str}".`))
   }
-  return neatenClassStr(str).split(' ')
+  return neatenClassStr(str).split(' ').filter(s => s.length > 0)
 }
 /**
  * @param arr array of classnames
@@ -87,7 +87,7 @@ export const classArrToStr = arr => {
   if (!isArray(arr)) {
     throw (new TypeError(`"arr" is expected to be type of Array, but received typeof "${arr}".`))
   }
-  const str = arr.flat(Infinity).filter(isString).join(' ')
+  const str = arr.flat(Infinity).filter(isString).filter(s => s.length > 0).join(' ')
   return str
 }
 /**
@@ -345,3 +345,5 @@ export const containClass = curryN(2, (contained, target) => {
 // console.log(containClass(classStr, classObj))
 // console.log(containClass(classArr, classObj))
 // console.log(containClass(classArr, { 'mobius-add': true, del: true }))
+
+// console.log(prefixClassWith('mobius-', ''))

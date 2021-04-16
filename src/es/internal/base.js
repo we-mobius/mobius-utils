@@ -1,5 +1,7 @@
 export const isDefined = variable => typeof variable !== 'undefined'
 
+export const isGeneralObject = tar => typeof tar === 'object'
+
 // @see: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#Data_types
 export const isBoolean = boo => Object.prototype.toString.call(boo) === '[object Boolean]'
 export const isString = str => Object.prototype.toString.call(str) === '[object String]'
@@ -30,7 +32,10 @@ export const isEmptyObj = obj => isObject(obj) && Object.keys(obj).length === 0
 export const isOutDated = date => isDate(date) && new Date(date).getTime() < new Date().getTime()
 
 export const isWindow = obj => Object.prototype.toString.call(obj) === '[object Window]'
+export const isDocument = obj => Object.prototype.toString.call(document) === '[object HTMLDocument]'
+// refer: https://developer.mozilla.org/zh-CN/docs/Web/API/Event
 export const isEventTarget = obj => obj instanceof EventTarget
+export const isIterable = tar => Object.prototype.toString.call(tar[Symbol.iterator]) === 'object Function'
 
 export const isObservable = obj => isObject(obj) && (obj.isObservable || isFunction(obj.subscribe))
 

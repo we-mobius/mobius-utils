@@ -18,10 +18,10 @@ export const globalVar = (key, value) => {
 
 export const makeEventHandler = (handler = v => v) => {
   let eventHandler
-  const containerFn = handler => {
+  const agent = handler => {
     eventHandler = handler
   }
-  const [data, triggerMediator, trigger] = createDataFromFunction(containerFn, e => handler(e))
+  const [data, triggerMediator, trigger] = createDataFromFunction(agent, e => handler(e))
 
   return [eventHandler, data, triggerMediator, trigger]
 }

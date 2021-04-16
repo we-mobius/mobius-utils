@@ -8,7 +8,7 @@ module.exports = {
   publicPath: PUBLIC_PATH,
   template: {
     index: {
-      title: 'Hello, Mobius Project!',
+      title: 'Hello, Mobius Utils!',
       whisper: 'The owner is looking for a job as a product manager | business manager \\n             For a quickest preview of his info, check https://www.cigaret.world',
       fonts: [
         `${PUBLIC_PATH}statics/fonts/Workbench[wdth,wght].woff2`,

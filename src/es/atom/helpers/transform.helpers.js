@@ -2,7 +2,6 @@ import { isFunction } from '../../internal.js'
 import { curryN } from '../../functional.js'
 import { Mutation, isMutation, Data, isData, isAtom } from '../atom.js'
 import { isReplayMediator, replayWithLatest } from '../mediators.js'
-import { pipeAtom } from '../helpers.js'
 
 /**
  * @param mutation Mutation
@@ -14,7 +13,7 @@ export const mutationToDataS = mutation => {
   }
 
   const _data = Data.empty()
-  pipeAtom(mutation, _data)
+  _data.observe(mutation)
 
   if (isReplayMediator(mutation)) {
     return replayWithLatest(1, _data)
@@ -40,7 +39,9 @@ export const mutationToData = curryN(2, (transform, mutation) => {
   const _mutation = Mutation.ofLiftBoth(transform)
   const _data2 = Data.empty()
 
-  pipeAtom(mutation, _data, _mutation, _data2)
+  _data2.observe(_mutation)
+  _mutation.observe(_data)
+  _data.observe(mutation)
 
   if (isReplayMediator(mutation)) {
     return replayWithLatest(1, _data2)
@@ -65,7 +66,8 @@ export const dataToData = curryN(2, (transform, data) => {
   const _mutation = Mutation.ofLiftBoth(transform)
   const _data = Data.empty()
 
-  pipeAtom(data, _mutation, _data)
+  _data.observe(_mutation)
+  _mutation.observe(data)
 
   if (isReplayMediator(data)) {
     return replayWithLatest(1, _data)
@@ -106,7 +108,8 @@ export const dataToMutationS = data => {
   }
 
   const _mutation = Mutation.ofLiftBoth(prev => prev)
-  pipeAtom(data, _mutation)
+
+  _mutation.observe(data)
 
   if (isReplayMediator(data)) {
     return replayWithLatest(1, _mutation)
@@ -129,7 +132,8 @@ export const dataToMutation = curryN(2, (transform, data) => {
   }
 
   const _mutation = Mutation.ofLiftBoth(transform)
-  pipeAtom(data, _mutation)
+
+  _mutation.observe(data)
 
   if (isReplayMediator(data)) {
     return replayWithLatest(1, _mutation)
@@ -154,7 +158,8 @@ export const mutationToMutation = curryN(2, (transform, mutation) => {
   const _data = Data.empty()
   const _mutation = Mutation.ofLiftBoth(transform)
 
-  pipeAtom(mutation, _data, _mutation)
+  _mutation.observe(_data)
+  _data.observe(mutation)
 
   if (isReplayMediator(mutation)) {
     return replayWithLatest(1, _mutation)

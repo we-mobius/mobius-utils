@@ -25,9 +25,12 @@ export class ReplayMediator extends BaseMediator {
     return true
   }
 
+  /**
+   * @param options Number | Object
+   */
   static of (atom, options) {
     if (!isAtom(atom)) {
-      throw (new TypeError('ReplayMediator can apply to an Atom (Data or Mutation) only.'))
+      throw (new TypeError('ReplayMediator can apply to an Atom only.'))
     }
     if (isReplayMediator(atom)) {
       return atom
@@ -41,9 +44,11 @@ export class ReplayMediator extends BaseMediator {
         ..._options,
         ...options
       }
+    } else {
+      throw new TypeError(`"options" argument of ReplayMediator is expected to be type of "Number" | "Object", but received ${typeof options}.`)
     }
 
-    const { replayTime, autoTrigger = false } = _options
+    const { replayTime, autoTrigger = true } = _options
 
     const _mediator = new ReplayMediator(atom, replayTime)
 

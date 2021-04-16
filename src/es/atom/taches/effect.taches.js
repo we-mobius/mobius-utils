@@ -69,7 +69,8 @@ export const dynamicEffectT = curryN(2, (effect, target) => {
           returned => {
             hasSetReturned = true
             _returned = returned
-          })
+          }
+        )
         return hasSetReturned ? _returned : (result || TERMINATOR)
       }
     }

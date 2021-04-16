@@ -49,13 +49,13 @@ export const startWithT = curryN(2, (start, target) => {
       }
     }
   })())
+  pipeAtom(wrappedTargetD, startM)
 
   const outputD = Data.empty()
-
   pipeAtom(startM, outputD)
-  pipeAtom(wrappedTargetD, startM)
-  binaryTweenPipeAtom(replayWithLatest(1, target), wrapTargetM)
+
   pipeAtom(startRD, startM)
+  binaryTweenPipeAtom(replayWithLatest(1, target), wrapTargetM)
 
   return outputD
 })

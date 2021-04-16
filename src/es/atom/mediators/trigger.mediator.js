@@ -1,5 +1,5 @@
-import { isAtom } from '../atom.js'
 import { isObject } from '../../internal.js'
+import { isAtom } from '../atom.js'
 import { BaseMediator } from './base.mediator.js'
 
 export const isTriggerMediator = tar => isObject(tar) && tar.isTriggerMediator
@@ -21,7 +21,7 @@ export class TriggerMediator extends BaseMediator {
 
   static of (atom) {
     if (!isAtom(atom)) {
-      throw (new TypeError('TriggerManager can apply to an Atom (Data or Mutation) only.'))
+      throw (new TypeError('TriggerMediator can apply to an Atom only.'))
     }
     return new TriggerMediator(atom)
   }

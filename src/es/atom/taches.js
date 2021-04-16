@@ -16,7 +16,8 @@
  *     -> how to combine
  */
 
-export * from './taches/transform.taches.js'
+export * from './taches/base.taches.js'
+
 export * from './taches/setTo.taches.js'
 export * from './taches/nilToVoid.taches.js'
 

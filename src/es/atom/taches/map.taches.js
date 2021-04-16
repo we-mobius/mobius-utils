@@ -53,6 +53,7 @@ export const dynamicMapT = curryN(2, (fn, target) => {
       if (!_internalStates.map || !_internalStates.target) {
         return TERMINATOR
       }
+
       if (type === 'map') {
         return TERMINATOR
       }
@@ -67,10 +68,10 @@ export const dynamicMapT = curryN(2, (fn, target) => {
   pipeAtom(wrappedTargetD, mapM)
 
   const outputD = Data.empty()
-  pipeAtom(wrapMapM, outputD)
+  pipeAtom(mapM, outputD)
 
-  binaryTweenPipeAtom(wrapMapM, fn)
-  binaryTweenPipeAtom(wrapTargetM, target)
+  binaryTweenPipeAtom(fn, wrapMapM)
+  binaryTweenPipeAtom(target, wrapTargetM)
 
   return outputD
 })

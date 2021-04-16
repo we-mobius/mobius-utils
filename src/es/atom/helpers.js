@@ -2,7 +2,11 @@ import { invoker, flip, curryN } from '../functional.js'
 import { isAtom, isData, isMutation, Mutation, Data } from './atom.js'
 import { isMediator } from './mediators.js'
 
-export * from './helpers/create.helpers.js'
+export * from './helpers/normal-create.helpers.js'
+export * from './helpers/batch-create.helpers.js'
+export * from './helpers/hybrid-create.helpers.js'
+export * from './helpers/derive-create.helpers.js'
+export * from './helpers/transform.helpers.js'
 
 export const observe = invoker(2, 'observe')
 export const beObservedBy = invoker(2, 'beObservedBy')
@@ -66,7 +70,7 @@ export const binaryTweenPipeAtom = (upstreamAtom, downstreamAtom) => {
     // mutation, mutation
     let tweenAtom
     if (isData(upstreamAtom)) {
-      tweenAtom = Mutation.of(v => v)
+      tweenAtom = Mutation.ofLiftLeft(v => v)
     } else if (isMutation(upstreamAtom)) {
       tweenAtom = Data.empty()
     } else {
