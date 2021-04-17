@@ -12,7 +12,7 @@ export const mergeT = (...args) => {
     atoms = args
   }
 
-  const inputDatas = atoms.map(atom => {
+  const inputAtoms = atoms.map(atom => {
     if (!isAtom(atom)) {
       throw (new TypeError('Arguments of mergeT are expected to be type of "Atom".'))
     }
@@ -24,8 +24,8 @@ export const mergeT = (...args) => {
   const outputD = Data.empty()
   pipeAtom(mergeM, outputD)
 
-  inputDatas.forEach(data => {
-    binaryTweenPipeAtom(data, mergeM)
+  inputAtoms.forEach(atom => {
+    binaryTweenPipeAtom(atom, mergeM)
   })
 
   return outputD

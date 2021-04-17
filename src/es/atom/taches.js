@@ -1,27 +1,13 @@
-/**
- * one to one:
- *   -> change value
- *   -> schedule emit
- * two to one:
- *   -> as config:
- *     -> emit what
- *     -> when to emit
- *   -> as partner:
- *     -> how to combine
- * many to one:
- *   -> as config:
- *     -> emit what
- *     -> when to emit
- *   -> as partner:
- *     -> how to combine
- */
-
+// creators
 export * from './taches/base.taches.js'
 
-export * from './taches/setTo.taches.js'
+// Single to Single
 export * from './taches/nilToVoid.taches.js'
 
-// one to one
+// Single to Multi
+export * from './taches/partition.taches.js'
+
+// Multi to Single
 export * from './taches/defaultTo.taches.js'
 export * from './taches/pluck.taches.js'
 export * from './taches/map.taches.js'
@@ -32,7 +18,6 @@ export * from './taches/throttle.taches.js'
 
 export * from './taches/withHistory.taches.js'
 
-// two to one
 export * from './taches/switch.taches.js'
 
 export * from './taches/distinctPrevious.taches.js'
@@ -44,7 +29,6 @@ export * from './taches/take.taches.js'
 export * from './taches/takeUntil.taches.js'
 export * from './taches/takeWhile.taches.js'
 
-// many to one
 export * from './taches/iif.taches.js'
 export * from './taches/case.taches.js'
 
@@ -53,8 +37,7 @@ export * from './taches/merge.taches.js'
 export * from './taches/zip.taches.js'
 export * from './taches/withLatestFrom.taches.js'
 
+export * from './taches/effect.taches.js'
+
 // utils
 export * from './taches/tap.taches.js'
-
-// business
-export * from './taches/effect.taches.js'

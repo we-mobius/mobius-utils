@@ -6,8 +6,8 @@ import { pipeAtom, binaryTweenPipeAtom } from '../helpers.js'
 /**
  * Replace nil value(i.e. undefined, null) with VOID
  *
- * @param target Atom
- * @return atom Data
+ * @param { Atom } target
+ * @return Data
  */
 export const nilToVoidT = target => {
   if (!isAtom(target)) {

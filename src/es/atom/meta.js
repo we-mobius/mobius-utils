@@ -1,4 +1,4 @@
-import { isUndefined, isObject, isFunction } from '../internal/base.js'
+import { isUndefined, isString, isObject, isFunction } from '../internal/base.js'
 import { looseCurryN } from '../functional.js'
 
 // metas
@@ -153,6 +153,10 @@ export class Mutator {
   static lift (operation, options) {
     const { type } = options
 
+    if (!isString(type)) {
+      throw (new TypeError(`"type" is expected to be type of "String", but received "${typeof type}".`))
+    }
+
     if (type === 'both') {
       return this.liftBoth(operation)
     } else if (type === 'left') {
@@ -160,7 +164,7 @@ export class Mutator {
     } else if (type === 'right') {
       return this.liftRight(operation)
     } else {
-      throw (new TypeError(`"type" of lift must be one of "both" | "left" | "right", but receives "${type}"`))
+      throw (new TypeError(`"type" of lift must be one of "both" | "left" | "right", but received "${type}".`))
     }
   }
 

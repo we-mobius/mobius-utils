@@ -27,7 +27,7 @@ export const arrayCombineLatestT = (...args) => {
     atoms = args
   }
 
-  const inputDatas = atoms.map(atom => {
+  const inputAtoms = atoms.map(atom => {
     if (!isAtom(atom)) {
       throw (new TypeError('Arguments of combineT are expected to be type of "Atom".'))
     }
@@ -64,8 +64,8 @@ export const arrayCombineLatestT = (...args) => {
   wrapMutations.forEach((wrapMutation, idx) => {
     pipeAtom(wrapMutation, wrappedDatas[idx])
   })
-  inputDatas.forEach((data, idx) => {
-    binaryTweenPipeAtom(data, wrapMutations[idx])
+  inputAtoms.forEach((atom, idx) => {
+    binaryTweenPipeAtom(atom, wrapMutations[idx])
   })
 
   return outputD
@@ -76,7 +76,7 @@ export const arrayCombineLatestT = (...args) => {
  * @return atom Data
  */
 export const objectCombineLatestT = (obj) => {
-  const inputDatas = Object.entries(obj).reduce((acc, [key, atom]) => {
+  const inputAtoms = Object.entries(obj).reduce((acc, [key, atom]) => {
     if (!isAtom(atom)) {
       throw (new TypeError('Arguments of objectCombineLatestT are expected to be type of "Atom".'))
     }
@@ -124,8 +124,8 @@ export const objectCombineLatestT = (obj) => {
   Object.entries(wrapMutations).forEach(([key, wrapMutation]) => {
     pipeAtom(wrapMutation, wrappedDatas[key])
   })
-  Object.entries(inputDatas).forEach(([key, data]) => {
-    binaryTweenPipeAtom(data, wrapMutations[key])
+  Object.entries(inputAtoms).forEach(([key, atom]) => {
+    binaryTweenPipeAtom(atom, wrapMutations[key])
   })
 
   return outputD
