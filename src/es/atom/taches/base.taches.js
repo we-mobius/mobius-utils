@@ -7,7 +7,7 @@ import { replayWithLatest } from '../mediators.js'
 
 // S -> Single, M -> Multi
 
-const DEFAULT_MUTATION_OPTIONS = { type: 'both' }
+const DEFAULT_MUTATION_OPTIONS = { liftType: 'both' }
 
 /**
  * @param { function | object }  operation
@@ -27,7 +27,7 @@ export const makeSSTache = (operation, options = { ...DEFAULT_MUTATION_OPTIONS }
     throw (new TypeError(`"operation" is expected to be type of "Function", but received ${typeof operation}.`))
   }
 
-  const { type = 'both' } = options
+  const { liftType = 'both' } = options
 
   /**
    * @param { Atom }target
@@ -38,7 +38,7 @@ export const makeSSTache = (operation, options = { ...DEFAULT_MUTATION_OPTIONS }
       throw (new TypeError('"target" is expected to be type of "Atom".'))
     }
 
-    const mutation = Mutation.ofLift(operation, { type })
+    const mutation = Mutation.ofLift(operation, { liftType })
     const outputD = Data.empty()
 
     pipeAtom(mutation, outputD)
@@ -109,8 +109,8 @@ export const makeArraySMTache = (...configArr) => {
     }
 
     const mutations = configArr.map(({ operation, options }) => {
-      const { type = 'both' } = options
-      return Mutation.ofLift(operation, { type })
+      const { liftType = 'both' } = options
+      return Mutation.ofLift(operation, { liftType })
     })
     const outputs = Array.from({ length: configArr.length }).map(() => Data.empty())
 
@@ -165,8 +165,8 @@ export const makeObjectSMTache = (configObj) => {
     }
 
     const mutations = Object.entries(configObj).reduce((acc, [name, { operation, options }]) => {
-      const { type = 'both' } = options
-      acc[name] = acc[name] || Mutation.ofLift(operation, { type })
+      const { liftType = 'both' } = options
+      acc[name] = acc[name] || Mutation.ofLift(operation, { liftType })
       return acc
     }, {})
 
@@ -185,7 +185,7 @@ export const makeObjectSMTache = (configObj) => {
 }
 
 /**
- * @param { ?{ sourcesType?: string } } config
+ * @param { ?{ sourcesType?: 'Array' | "Object" } } config
  * @return TacheMaker
  */
 export const makeMSTache = (config = {}) => {
@@ -278,7 +278,7 @@ export const makeArrayMSTache = (config = {}) => {
     const wrappedDatas = Array.from({ length }).map(() => Data.empty())
 
     const trunkM = Mutation.ofLift((() => {
-      const baseContexts = { mutation: trunkM, numberOfSources: length, TERMINATOR }
+      const baseContexts = { numberOfSources: length, TERMINATOR }
 
       if (opCustomizeType.toLowerCase() === 'fully') {
         const contexts = { ...baseContexts }
@@ -295,16 +295,16 @@ export const makeArrayMSTache = (config = {}) => {
           values: Array.from({ length: length })
         }
         // actual operation which will takes prevDatar(or its value) & datar(ot its value) as argument
-        return (prev, cur, ...args) => {
+        return (prev, cur, mutation, ...args) => {
           if (autoUpdateContexts) {
             const { id, value } = prev
             contexts.states[id] = true
             contexts.values[id] = value
           }
-          return operation(prev, cur, contexts, ...args)
+          return operation(prev, cur, mutation, contexts, ...args)
         }
       }
-    })(), { type: opLiftType })
+    })(), { liftType: opLiftType })
 
     const output = Data.empty()
 
@@ -400,7 +400,7 @@ export const makeObjectMSTache = (config = {}) => {
     }, {})
 
     const trunkM = Mutation.ofLift((() => {
-      const baseContexts = { mutation: trunkM, keysOfSources: Object.keys(sources), TERMINATOR }
+      const baseContexts = { keysOfSources: Object.keys(sources), TERMINATOR }
 
       if (opCustomizeType.toLowerCase() === 'fully') {
         const contexts = { ...baseContexts }
@@ -423,16 +423,16 @@ export const makeObjectMSTache = (config = {}) => {
           }, {})
         }
         // actual operation which will takes prevDatar(or its value) & datar(ot its value) as argument
-        return (prev, cur, ...args) => {
+        return (prev, cur, mutation, ...args) => {
           if (autoUpdateContexts) {
             const { key, value } = prev
             contexts.states[key] = true
             contexts.values[key] = value
           }
-          return operation(prev, cur, contexts, ...args)
+          return operation(prev, cur, mutation, contexts, ...args)
         }
       }
-    })(), { type: opLiftType })
+    })(), { liftType: opLiftType })
 
     const output = Data.empty()
 

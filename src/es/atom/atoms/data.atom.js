@@ -3,11 +3,22 @@ import { Mutator, Datar, isDatar, isMutator, isTerminator } from '../meta.js'
 import { isMutation } from './mutation.atom.js'
 import { BaseAtom } from './base.atom.js'
 
+/**
+ * @param { any } tar
+ * @return { boolean }
+ */
 export const isData = tar => isObject(tar) && tar.isData
 
 export class Data extends BaseAtom {
-  constructor (value) {
+  constructor (value, options = {}) {
     super()
+    if (!isObject(options)) {
+      throw (new TypeError(
+        `"options" is expected to be type of "Object", but received "${typeof options}".`
+      ))
+    }
+    this._options = options
+
     if (isDatar(value)) {
       this._datar = value
     } else {
@@ -16,38 +27,51 @@ export class Data extends BaseAtom {
     this._consumers = new Set()
   }
 
-  get type () {
-    return 'DataAtom'
+  /**
+   * @return { 'DataAtom' } 'DataAtom'
+   */
+  get type () { return 'DataAtom' }
+
+  /**
+   * @return { true } true
+   */
+  get isData () { return true }
+
+  get isEmpty () { return this._datar.isEmpty }
+
+  static of (value, options = {}) {
+    return new Data(value, options)
   }
 
-  get isData () {
-    return true
+  /**
+   * Same as Data.of(VACUO)
+   *
+   * @return { Data }
+   */
+  static empty (options = {}) {
+    return new Data(Datar.empty(), options)
   }
 
-  get isEmpty () {
-    return this._datar.isEmpty
-  }
-
-  static of (value) {
-    return new Data(value)
-  }
-
-  // Data.empty() <=> Data.of(VACUO)
-  static empty () {
-    return new Data(Datar.empty())
-  }
-
-  // Data 常规值
+  /**
+   * Static value of Data.
+   *
+   * @return { Datar } datar
+   */
   get datar () { return this._datar }
+  /**
+   * Static value of Data, same as Data.datar.value.
+   *
+   * @return { any } value
+   */
   get value () { return this._datar.value }
 
-  // Data 流式值
-  // consumer:: a -> ()
-  // subscribe :: (a -> ()) -> SubscribeController
+  /**
+   * Steram value of Data.
+   *
+   * @param { function } consumer The consumer will be invoked by trigger method when there is a adequate value.
+   * @return { { unsubscribe: function } } SubscriptionController
+   */
   subscribe (consumer) {
-    // 维护 consumer 列表
-    // 保证数据 mutate 之后 notify/trigger consumer
-    // unsubscribe 机制
     this._consumers.add(consumer)
     return {
       unsubscribe: () => {
@@ -56,14 +80,19 @@ export class Data extends BaseAtom {
     }
   }
 
+  /**
+   * @param { Datar | undefined } datar
+   * @return { void }
+   */
   trigger (datar) {
     if (!isUndefined(datar) && !isDatar(datar)) {
       throw (new TypeError('Data must be triggered with a Datar.'))
     }
     const _datar = datar || this.datar
+
     if (!isEmpty(_datar)) {
       this._consumers.forEach(consumer => {
-        consumer(_datar)
+        consumer(_datar, this)
       })
     }
   }
@@ -72,39 +101,68 @@ export class Data extends BaseAtom {
     return this.trigger(Datar.of(value))
   }
 
-  // Data 流式变更 1
+  /**
+   * Change the value of Data in a stream manner.
+   *
+   * Given "mutation" will be **upstream** of current Data, which is different from "beObservedBy" method.
+   *
+   * @param { Mutation } mutation (other data ->) mutation -> current data
+   */
   observe (mutation) {
     if (!isMutation(mutation)) {
       throw (new TypeError('Data can only observe a Mutation!'))
     }
-    return mutation.subscribe(mutator => {
-      this.mutate(mutator)
+    return mutation.subscribe((mutator, mutation) => {
+      this.mutate(mutator, mutation)
     })
   }
 
-  // Data 流式变更 2
+  /**
+   * Change the value of Data in a stream manner.
+   *
+   * Given "mutation" will be **downstream** of current Data, which is different from "observe" method.
+   *
+   * @param { Mutation } mutation current data -> mutation (-> other data)
+   */
   beObservedBy (mutation) {
     return mutation.observe(this)
   }
 
-  // Data 常规变更
-  // 接收 mutation -> mutation 执行数据变更 -> 保存 mutation 结果 -> 广播 mutation 结果
-  // mutate :: Mutation -> Data
-  // mutator :: Mutator -> Data
-  // mutate :: f -> Data
-  mutate (mutation) {
-    let _mutator = null
-    if (isMutator(mutation)) {
-      _mutator = mutation
-    } else if (isMutation(mutation)) {
-      _mutator = mutation.mutator
-    } else if (isFunction(mutation)) {
-      _mutator = Mutator.of(mutation)
+  /**
+   * Change the value of Data in a static manner.
+   *
+   * take mutator-like param(convert to mutator)
+   *   -> run mutator with current datar & contexts
+   *   -> wrap and save result of mutator.run as new datar
+   *   -> trigger consumers with new datar & contexts
+   *
+   * @param { Mutator | Mutation | function } mutator Used to produce new value with current datar.
+   * @param { Mutation } mutation Provide to mutator's operation (function) as execute contexts.
+   * @return { Data } Data(this)
+   */
+  mutate (mutator, mutation) {
+    let _mutator
+    if (isMutator(mutator)) {
+      _mutator = mutator
+    } else if (isMutation(mutator)) {
+      _mutator = mutator.mutator
+    } else if (isFunction(mutator)) {
+      _mutator = Mutator.of(mutator)
     } else {
-      throw (new TypeError('Param of "mutate" must be a Mutation or a Mutator or a normal Function.'))
+      throw (new TypeError(`"mutator" is expected to be type of "Mutator" | "Mutation" | "Function", but received "${typeof mutator}".`))
+    }
+    let _mutation
+    if (!mutation) {
+      _mutation = isMutation(mutator) ? mutator : _mutation
+    } else {
+      if (isMutation(mutation)) {
+        _mutation = mutation
+      } else {
+        throw (new TypeError(`"mutation" is expected to be type of "Mutation", but received "${typeof mutation}".`))
+      }
     }
 
-    const _tempDatar = Datar.of(_mutator.run(this._datar)).fill(_mutator)
+    const _tempDatar = Datar.of(_mutator.run(this._datar, _mutation)).fill(_mutator)
 
     // NOTE: If result of operation is TERMINATOR,
     // do not update the datar or trigger the subscribers
@@ -116,15 +174,35 @@ export class Data extends BaseAtom {
     return this
   }
 
-  // registerTrigger :: ((datar -> trigger(datar)) -> controller, options) -> controller
-  // registerTrigger :: ((value -> trigger(mutator)) -> controller, options) -> controller
-  registerTrigger (trigger, { forceWrap = false } = {}) {
+  /**
+   * @param { function } trigger Takes an internalTrigger(Function) as first parameter,
+   *                             invoke internalTrigger with any value will lead to
+   *                             Data's trigger method be triggerd with given value.
+   * @param { { forceWrap?: boolean } } options
+   * @accept ((datar -> trigger(datar)) -> controller, options)
+   * @accept ((value -> trigger(datar)) -> controller, { forceWrap: true })
+   * @return { {} } TriggerController
+   */
+  registerTrigger (trigger, options = {}) {
+    if (!trigger) {
+      throw (new TypeError(`"trigger" is required, but received "${trigger}".`))
+    }
+    if (!isFunction(trigger)) {
+      throw (new TypeError(`"trigger" is expected to be type of "Function", but received "${typeof trigger}".`))
+    }
+    if (!isObject(options)) {
+      throw (new TypeError(`"options" is expected to be type of "Object", but received "${typeof options}".`))
+    }
+
+    const { forceWrap = false } = options
+
     const _internalTriggerFunction = (...args) => {
       if (!isDatar(args[0]) || forceWrap) {
         args[0] = Datar.of(args[0])
       }
       return this.trigger(...args)
     }
+
     const controller = trigger(_internalTriggerFunction)
     return controller
   }

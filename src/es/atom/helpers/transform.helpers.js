@@ -2,19 +2,23 @@ import { isFunction } from '../../internal.js'
 import { looseCurryN } from '../../functional.js'
 import { Mutation, isMutation, Data, isData, isAtom } from '../atom.js'
 import { isReplayMediator, replayWithLatest } from '../mediators.js'
+import { isObject } from '../../internal/base.js'
 
-const DEFAULT_MUTATION_OPTIONS = { type: 'both' }
+const DEFAULT_MUTATION_OPTIONS = { liftType: 'both' }
 
 /**
  * @param mutation Mutation
  * @return atom Data
  */
-export const mutationToDataS = mutation => {
+export const mutationToDataS = looseCurryN(1, (mutation, options = {}) => {
   if (!isMutation(mutation)) {
-    throw (new TypeError('"mutation" argument of mutationToDataS is expected to be type of "Mutation" only.'))
+    throw (new TypeError(`"mutation" is expected to be type of "Mutation", but received "${typeof mutation}".`))
+  }
+  if (!isObject(options)) {
+    throw (new TypeError(`"options" is expected to be type of "Object", but received "${typeof options}".`))
   }
 
-  const _data = Data.empty()
+  const _data = Data.empty(options)
   _data.observe(mutation)
 
   if (isReplayMediator(mutation)) {
@@ -22,7 +26,7 @@ export const mutationToDataS = mutation => {
   } else {
     return _data
   }
-}
+})
 
 /**
  * @param transform Function
@@ -32,16 +36,17 @@ export const mutationToDataS = mutation => {
  */
 export const mutationToData = looseCurryN(2, (transform, mutation, options = { ...DEFAULT_MUTATION_OPTIONS }) => {
   if (!isFunction(transform)) {
-    throw (new TypeError('"transform" argument of mutationToData is expected to be type of "Function".'))
+    throw (new TypeError(`"transform" is expected to be type of "Function", but received "${typeof transform}".`))
   }
   if (!isMutation(mutation)) {
-    throw (new TypeError('"mutation" argument of mutationToData is expected to be type of "Mutation" only.'))
+    throw (new TypeError(`"mutation" is expected to be type of "Mutation", but received "${typeof mutation}".`))
+  }
+  if (!isObject(options)) {
+    throw (new TypeError(`"options" is expected to be type of "Object", but received "${typeof options}".`))
   }
 
-  const { type = 'both' } = options
-
   const _data = Data.empty()
-  const _mutation = Mutation.ofLift(transform, { type })
+  const _mutation = Mutation.ofLift(transform, options)
   const _data2 = Data.empty()
 
   _data2.observe(_mutation)
@@ -63,15 +68,16 @@ export const mutationToData = looseCurryN(2, (transform, mutation, options = { .
  */
 export const dataToData = looseCurryN(2, (transform, data, options = { ...DEFAULT_MUTATION_OPTIONS }) => {
   if (!isFunction(transform)) {
-    throw (new TypeError('"transform" argument of dataToData is expected to be type of "Function".'))
+    throw (new TypeError(`"transform" is expected to be type of "Function", but received "${typeof transform}".`))
   }
   if (!isData(data)) {
-    throw (new TypeError('"transform" argument of dataToData is expected to be type of "Data" only.'))
+    throw (new TypeError(`"data" is expected to be type of "Data", but received "${typeof data}".`))
+  }
+  if (!isObject(options)) {
+    throw (new TypeError(`"options" is expected to be type of "Object", but received "${typeof options}".`))
   }
 
-  const { type = 'both' } = options
-
-  const _mutation = Mutation.ofLift(transform, { type })
+  const _mutation = Mutation.ofLift(transform, options)
   const _data = Data.empty()
 
   _data.observe(_mutation)
@@ -92,17 +98,17 @@ export const dataToData = looseCurryN(2, (transform, data, options = { ...DEFAUL
  */
 export const atomToData = looseCurryN(2, (transform, atom, options = { ...DEFAULT_MUTATION_OPTIONS }) => {
   if (!isFunction(transform)) {
-    throw (new TypeError('"transform" argument of atomToData is expected to be type of "Function".'))
+    throw (new TypeError(`"transform" is expected to be type of "Function", but received "${typeof transform}".`))
   }
   if (!isAtom(atom)) {
-    throw (new TypeError('"atom" argument of atomToData is expected to be type of "Atom" only (i.e. "Data" | "Mutation").'))
+    throw (new TypeError(`"atom" is expected to be type of "Mutation" | "Data", but received "${typeof atom}".`))
   }
-  const { type = 'both' } = options
+
   if (isMutation(atom)) {
-    return mutationToData(transform, atom, { type })
+    return mutationToData(transform, atom, options)
   }
   if (isData(atom)) {
-    return dataToData(transform, atom, { type })
+    return dataToData(transform, atom, options)
   }
 
   throw (new TypeError('Unrecognized type of "Atom" received in atomToData, expected "Mutation" | "Data".'))
@@ -112,12 +118,15 @@ export const atomToData = looseCurryN(2, (transform, atom, options = { ...DEFAUL
  * @param data Data
  * @return atom Mutation
  */
-export const dataToMutationS = data => {
+export const dataToMutationS = looseCurryN(1, (data, options = {}) => {
   if (!isData(data)) {
-    throw (new TypeError('"data" argument of dataToMutationS is expected to be type of "Data" only.'))
+    throw (new TypeError(`"data" is expected to be type of "Data", but received "${typeof data}".`))
+  }
+  if (!isObject(options)) {
+    throw (new TypeError(`"options" is expected to be type of "Object", but received "${typeof options}".`))
   }
 
-  const _mutation = Mutation.ofLiftBoth(prev => prev)
+  const _mutation = Mutation.ofLiftBoth(prev => prev, options)
 
   _mutation.observe(data)
 
@@ -126,7 +135,7 @@ export const dataToMutationS = data => {
   } else {
     return _mutation
   }
-}
+})
 
 /**
  * @param transform Function
@@ -136,15 +145,16 @@ export const dataToMutationS = data => {
  */
 export const dataToMutation = looseCurryN(2, (transform, data, options = { ...DEFAULT_MUTATION_OPTIONS }) => {
   if (!isFunction(transform)) {
-    throw (new TypeError('"transform" argument of dataToMutation is expected to be type of "Function".'))
+    throw (new TypeError(`"transform" is expected to be type of "Function", but received "${typeof transform}".`))
   }
   if (!isData(data)) {
-    throw (new TypeError('"data" argument of dataToMutation is expected to be type of "Data" only.'))
+    throw (new TypeError(`"data" is expected to be type of "Data", but received "${typeof data}".`))
+  }
+  if (!isObject(options)) {
+    throw (new TypeError(`"options" is expected to be type of "Object", but received "${typeof options}".`))
   }
 
-  const { type = 'both' } = options
-
-  const _mutation = Mutation.ofLift(transform, { type })
+  const _mutation = Mutation.ofLift(transform, options)
 
   _mutation.observe(data)
 
@@ -163,16 +173,17 @@ export const dataToMutation = looseCurryN(2, (transform, data, options = { ...DE
  */
 export const mutationToMutation = looseCurryN(2, (transform, mutation, options = { ...DEFAULT_MUTATION_OPTIONS }) => {
   if (!isFunction(transform)) {
-    throw (new TypeError('"transform" argument of mutationToMutation is expected to be type of "Function".'))
+    throw (new TypeError(`"transform" is expected to be type of "Function", but received "${typeof transform}".`))
   }
   if (!isMutation(mutation)) {
-    throw (new TypeError('"mutation" argument of mutationToMutation is expected to be type of "Mutation" only.'))
+    throw (new TypeError(`"mutation" is expected to be type of "Mutation", but received "${typeof mutation}".`))
+  }
+  if (!isObject(options)) {
+    throw (new TypeError(`"options" is expected to be type of "Object", but received "${typeof options}".`))
   }
 
-  const { type = 'both' } = options
-
   const _data = Data.empty()
-  const _mutation = Mutation.ofLift(transform, { type })
+  const _mutation = Mutation.ofLift(transform, options)
 
   _mutation.observe(_data)
   _data.observe(mutation)
@@ -192,19 +203,17 @@ export const mutationToMutation = looseCurryN(2, (transform, mutation, options =
  */
 export const atomToMutation = looseCurryN(2, (transform, atom, options = { ...DEFAULT_MUTATION_OPTIONS }) => {
   if (!isFunction(transform)) {
-    throw (new TypeError('"transform" argument of atomToMutation is expected to be type of "Function".'))
+    throw (new TypeError(`"transform" is expected to be type of "Function", but received "${typeof transform}".`))
   }
   if (!isAtom(atom)) {
-    throw (new TypeError('"atom" argument of atomToMutation is expected to be type of "Atom" only (i.e. "Data" | "Mutation").'))
+    throw (new TypeError(`"atom" is expected to be type of "Mutation" | "Data", but received "${typeof atom}".`))
   }
-
-  const { type = 'both' } = options
 
   if (isMutation(atom)) {
-    return mutationToMutation(transform, atom, { type })
+    return mutationToMutation(transform, atom, options)
   }
   if (isData(atom)) {
-    return dataToMutation(transform, atom, { type })
+    return dataToMutation(transform, atom, options)
   }
 
   throw (new TypeError('Unrecognized type of "Atom" received in atomToMutation, expected "Mutation" | "Data".'))
