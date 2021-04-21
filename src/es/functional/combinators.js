@@ -88,3 +88,5 @@ export const composeB = curryN(3, (f, g, x) => f(g(x)))
 // Z
 // Y Combinator's variation in JavaScript
 export const Z = g => (f => g((...args) => f(f)(...args)))(f => g((...args) => f(f)(...args)))
+// const f = g => n => n === 0 ? 1 : n * g(n - 1)
+// console.log(Z(f)(5))

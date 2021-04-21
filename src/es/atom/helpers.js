@@ -94,3 +94,18 @@ export const binaryTweenPipeAtom = (upstreamAtom, downstreamAtom) => {
  * @return downstreamAtom
  */
 export const binaryTweenComposeAtom = flip(binaryTweenPipeAtom)
+
+export const nAryTweenPipeAtom = (...args) => {}
+export const nAryTweenComposeAtom = (...args) => {}
+
+export const binaryLiftPipeAtom = () => {}
+export const binaryLiftComposeAtom = () => {}
+
+export const nAryLiftPipeAtom = (...args) => {}
+export const nAryLiftComposeAtom = (...args) => {}
+
+export const binaryHyperPipeAtom = () => {}
+export const binaryHyperComposeAtom = () => {}
+
+export const nAryHyperPipeAtom = (...args) => {}
+export const nAryHyperComposeAtom = (...args) => {}

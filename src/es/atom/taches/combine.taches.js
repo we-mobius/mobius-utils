@@ -7,13 +7,13 @@ import { pipeAtom, binaryTweenPipeAtom } from '../helpers.js'
  * @param argument Atom | [Atom] | { Atom }
  * @return atom Data
  */
-export const combineLatestT = (...args) => {
+export const combineT = (...args) => {
   if (isAtom(args[0]) || isArray(args[0])) {
-    return arrayCombineLatestT(...args)
+    return arrayCombineT(...args)
   } else if (isObject(args[0])) {
-    return objectCombineLatestT(...args)
+    return objectCombineT(...args)
   } else {
-    throw (new TypeError('Arguments of combineLatestT are expected to be type of Atom | [Atom] | { Atom }.'))
+    throw (new TypeError('Arguments of combineT are expected to be type of Atom | [Atom] | { Atom }.'))
   }
 }
 
@@ -21,7 +21,7 @@ export const combineLatestT = (...args) => {
  * @param argument Atom | [Atom]
  * @return atom Data
  */
-export const arrayCombineLatestT = (...args) => {
+export const arrayCombineT = (...args) => {
   let atoms = args[0]
   if (!isArray(atoms)) {
     atoms = args
@@ -53,15 +53,11 @@ export const arrayCombineLatestT = (...args) => {
       _internalStates[id] = true
       _intervalValues[id] = value
 
-      if (_internalStates.every(val => val)) {
-        return [..._intervalValues]
-      } else {
-        return TERMINATOR
-      }
+      return [..._intervalValues]
     }
   })())
 
-  const outputD = Data.empty()
+  const outputD = Data.of(Array.from({ length }))
 
   pipeAtom(combineM, outputD)
   wrappedDatas.forEach(data => {
@@ -81,10 +77,10 @@ export const arrayCombineLatestT = (...args) => {
  * @param obj Object, { Atom }
  * @return atom Data
  */
-export const objectCombineLatestT = (obj) => {
+export const objectCombineT = (obj) => {
   const inputAtoms = Object.entries(obj).reduce((acc, [key, atom]) => {
     if (!isAtom(atom)) {
-      throw (new TypeError('Arguments of objectCombineLatestT are expected to be type of "Atom".'))
+      throw (new TypeError('Arguments of objectCombineT are expected to be type of "Atom".'))
     }
     acc[key] = atom
     return acc
@@ -117,15 +113,14 @@ export const objectCombineLatestT = (obj) => {
       _internalStates[key] = true
       _intervalValues[key] = value
 
-      if (Object.values(_internalStates).every(val => val)) {
-        return { ..._intervalValues }
-      } else {
-        return TERMINATOR
-      }
+      return { ..._intervalValues }
     }
   })())
 
-  const outputD = Data.empty()
+  const outputD = Data.of(Object.keys(obj).reduce((acc, key) => {
+    acc[key] = undefined
+    return acc
+  }, {}))
 
   pipeAtom(combineM, outputD)
   Object.values(wrappedDatas).forEach(data => {

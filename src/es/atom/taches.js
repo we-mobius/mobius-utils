@@ -32,6 +32,7 @@ export * from './taches/takeWhile.taches.js'
 export * from './taches/iif.taches.js'
 export * from './taches/case.taches.js'
 
+export * from './taches/combine.taches.js'
 export * from './taches/combineLatest.taches.js'
 export * from './taches/merge.taches.js'
 export * from './taches/zip.taches.js'
