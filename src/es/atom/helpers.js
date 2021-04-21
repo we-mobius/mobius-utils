@@ -11,12 +11,16 @@ export * from './helpers/transform.helpers.js'
 export const observe = invoker(2, 'observe')
 export const beObservedBy = invoker(2, 'beObservedBy')
 
+export const getAtomType = tar => {
+  return isMediator(tar) ? getAtomType(tar.atom) : tar.type
+}
+
 export const isSameTypeOfAtom = curryN(2, (tarA, tarB) => {
   if (!isAtom(tarA) || !isAtom(tarB)) {
     return false
   } else {
-    const atomTypeA = isMediator(tarA) ? tarA.atom.type : tarA.type
-    const atomTypeB = isMediator(tarB) ? tarB.atom.type : tarB.type
+    const atomTypeA = getAtomType(tarA)
+    const atomTypeB = getAtomType(tarB)
     return atomTypeA === atomTypeB
   }
 })
