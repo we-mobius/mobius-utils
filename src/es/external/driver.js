@@ -3,10 +3,10 @@ import { isObject } from '../internal/base.js'
 
 /**
  * @param { {
- *   prepareOptions?: ((_) => _),
- *   prepareDriverLevelContexts?: ((options: object) => {}),
- *   prepareSingletonLevelContexts?: ((options: object) => {}),
- *   main: (options, driverLevelContexts: object, singletonLevelContexts: object) => { inputs: object, outputs: object }
+ *   prepareOptions?: ((options: object) => object),
+ *   prepareDriverLevelContexts?: ((options: object) => object),
+ *   prepareSingletonLevelContexts?: ((options: object) => object),
+ *   main: (options: object, driverLevelContexts: object, singletonLevelContexts: object) => { inputs: object, outputs: object }
  * } }
  * @return { (options?: {}) => { inputs: object, outputs: object } } Driver
  */
