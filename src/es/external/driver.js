@@ -30,7 +30,8 @@ export const makeGeneralDriver = ({
   }
 
   /**
-   * @param { object } options In order to clarify the role of each configuration item, the configuration is best to be in object format.
+   * @param { object? } options In order to clarify the role of each configuration item,
+   *                            the configuration is best to be in object format.
    * @return { { inputs: object, outputs: object } } DriverInterfaces
    */
   const driver = (options = {}) => {
