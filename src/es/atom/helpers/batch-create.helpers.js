@@ -1,5 +1,6 @@
 import { isArray, isObject, isFunction } from '../../internal.js'
 import { looseCurryN } from '../../functional.js'
+import { isMutator } from '../meta.js'
 import { Data, Mutation, isData, isMutation, isAtom } from '../atom.js'
 import { mutationToDataS, dataToMutationS } from './transform.helpers.js'
 
@@ -39,8 +40,8 @@ export const createDataInObject = looseCurryN(1, (obj, options = { }) => {
   const result = {}
 
   const wrapFn = forceWrap ? forceWrapToData : wrapToData
-  Object.keys(obj).map(key => {
-    result[key] = wrapFn(obj[key])
+  Object.entries(obj).map(([key, value]) => {
+    result[key] = wrapFn(value)
   })
 
   return result
@@ -49,13 +50,7 @@ export const createDataInObject = looseCurryN(1, (obj, options = { }) => {
 /**
  * Datas will be transform to Mutation, Mutations will not be handled, other values will be wrapped in Mutation.
  */
-const forceWrapToMutation = (item) => {
-  if (isFunction(item)) {
-    return Mutation.of(item)
-  } else {
-    return Mutation.of(() => item)
-  }
-}
+const forceWrapToMutation = (item) => Mutation.of(() => item)
 /**
  * items will be wrapped in Mutation.
  */
@@ -64,8 +59,10 @@ const wrapToMutation = (item) => {
     return dataToMutationS(item)
   } else if (isMutation(item)) {
     return item
-  } else if (isFunction(item)) {
+  } else if (isMutator(item)) {
     return Mutation.of(item)
+  } else if (isFunction(item)) {
+    return Mutation.ofLiftBoth(item)
   } else {
     return Mutation.of(() => item)
   }
@@ -97,8 +94,8 @@ export const createMutationInObject = looseCurryN(1, (obj, options = {}) => {
 
   const result = {}
   const wrapFn = forceWrap ? forceWrapToMutation : wrapToMutation
-  Object.keys(obj).map(key => {
-    result[key] = wrapFn(obj[key])
+  Object.entries(obj).map(([key, value]) => {
+    result[key] = wrapFn(value)
   })
 
   return result
@@ -107,13 +104,7 @@ export const createMutationInObject = looseCurryN(1, (obj, options = {}) => {
 /**
  * functions will be wrapped in Mutation, other values will be wrapped in Data.
  */
-const forceWrapToAtom = (item) => {
-  if (isFunction(item)) {
-    return Mutation.of(item)
-  } else {
-    return Data.of(item)
-  }
-}
+const forceWrapToAtom = (item) => Data.of(item)
 
 /**
  * Atoms will not be handled, functions will be wrapped in Mutation, other values will be wrapped in Data.
@@ -121,8 +112,10 @@ const forceWrapToAtom = (item) => {
 const wrapToAtom = (item) => {
   if (isAtom(item)) {
     return item
-  } else if (isFunction(item)) {
+  } else if (isMutator(item)) {
     return Mutation.of(item)
+  } else if (isFunction(item)) {
+    return Mutation.ofLiftBoth(item)
   } else {
     return Data.of(item)
   }
@@ -155,8 +148,8 @@ export const createAtomInObject = looseCurryN(1, (obj, options = {}) => {
 
   const result = {}
   const wrapFn = forceWrap ? forceWrapToAtom : wrapToAtom
-  Object.keys(obj).map(key => {
-    result[key] = wrapFn(obj[key])
+  Object.entries(obj).map(([key, value]) => {
+    result[key] = wrapFn(value)
   })
 
   return result

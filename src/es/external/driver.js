@@ -12,8 +12,8 @@ import { isObject } from '../internal/base.js'
  */
 export const makeGeneralDriver = ({
   prepareOptions = _ => _,
-  prepareDriverLevelContexts = _ => {},
-  prepareSingletonLevelContexts = _ => {},
+  prepareDriverLevelContexts = _ => ({}),
+  prepareSingletonLevelContexts = _ => ({}),
   main
 } = {}) => {
   if (!isFunction(prepareOptions)) {
@@ -28,6 +28,8 @@ export const makeGeneralDriver = ({
   if (!isFunction(main)) {
     throw (new TypeError(`"main" is expected to be type of "Function", but received "${typeof main}".`))
   }
+
+  const driverLevelContexts = prepareDriverLevelContexts()
 
   /**
    * @param { object? } options In order to clarify the role of each configuration item,
@@ -44,7 +46,6 @@ export const makeGeneralDriver = ({
       throw (new TypeError(`The returned value of "prepareOptions" is expected to be type of "Object", but received "${typeof options}".`))
     }
 
-    const driverLevelContexts = prepareDriverLevelContexts(options)
     const singletonLevelContexts = prepareSingletonLevelContexts(options, driverLevelContexts)
 
     const driverInterfaces = main(options, driverLevelContexts, singletonLevelContexts)
