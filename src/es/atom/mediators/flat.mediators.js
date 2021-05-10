@@ -3,7 +3,7 @@ import { looseCurryN } from '../../functional.js'
 import {
   Data, Mutation, isAtom
 } from '../../atom.js'
-import { BaseMediator } from './base.mediator.js'
+import { BaseMediator } from './base.mediators.js'
 
 export const isFlatMediator = tar => isObject(tar) && tar.isFlatMediator
 

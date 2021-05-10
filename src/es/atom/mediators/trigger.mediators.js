@@ -1,6 +1,6 @@
 import { isObject } from '../../internal.js'
 import { isAtom } from '../atom.js'
-import { BaseMediator } from './base.mediator.js'
+import { BaseMediator } from './base.mediators.js'
 
 export const isTriggerMediator = tar => isObject(tar) && tar.isTriggerMediator
 

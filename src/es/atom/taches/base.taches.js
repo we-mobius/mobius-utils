@@ -4,10 +4,59 @@ import { TERMINATOR } from '../meta.js'
 import { Data, Mutation, isAtom } from '../atom.js'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers.js'
 import { replayWithLatest } from '../mediators.js'
+import { pipe } from '../../functional/helpers.js'
 
 // S -> Single, M -> Multi
 
 const DEFAULT_MUTATION_OPTIONS = { liftType: 'both' }
+
+export const createGeneralTache = looseCurryN(2, (createOptions = {}, tacheOptions = { ...DEFAULT_MUTATION_OPTIONS }) => {
+  if (!isObject(createOptions)) {
+    throw (new TypeError(`"createOptions" is expected to be type of "Object", but received "${typeof createOptions}".`))
+  }
+
+  const {
+    prepareTacheLevelContexts = () => ({}),
+    prepareOptions = options => options,
+    prepareInput = source => source,
+    prepareMidpiece = () => Mutation.ofLiftBoth(any => any),
+    prepareOutput = () => Data.empty(),
+    connect = (options, [inputs, midpieces, outputs]) => {
+      pipe(midpieces, outputs)
+      binaryTweenPipeAtom(inputs, midpieces)
+    }
+  } = createOptions
+
+  const tacheLevelContexts = prepareTacheLevelContexts()
+  if (!isObject(tacheLevelContexts)) {
+    throw (new TypeError(`"tacheLevelContexts" is expected to be type of "Object", but received "${typeof tacheLevelContexts}".`))
+  }
+
+  if (!isObject(tacheOptions)) {
+    throw (new TypeError(`"tacheOptions" is expected to be type of "Object", but received "${typeof tacheOptions}".`))
+  }
+  tacheOptions = prepareOptions(tacheOptions)
+
+  if (!isObject(tacheOptions)) {
+    throw (new TypeError(`The returned value of "prepareOptions" is expected to be type of "Object", but received "${typeof tacheOptions}".`))
+  }
+
+  return (...sources) => {
+    const inputs = prepareInput(tacheOptions, tacheLevelContexts, sources.length > 1 ? sources : sources[0])
+    const midpieces = prepareMidpiece(tacheOptions, tacheLevelContexts, inputs)
+    const outputs = prepareOutput(tacheOptions, tacheLevelContexts, midpieces)
+    connect(tacheOptions, tacheLevelContexts, [inputs, midpieces, outputs])
+    return outputs
+  }
+})
+/**
+ * @param { function } tacheMaker partial applied createGeneralTache
+ */
+export const useGeneralTache = looseCurryN(3, (tacheMaker, tacheOptions, ...sources) => {
+  const tache = tacheMaker(tacheOptions)
+  const outputs = sources.length > 1 ? tache(...sources) : tache(sources[0])
+  return outputs
+})
 
 /**
  * @param { function | object }  operation
@@ -16,7 +65,7 @@ const DEFAULT_MUTATION_OPTIONS = { liftType: 'both' }
  * @accept (operation, options?)
  * @return TacheMaker
  */
-export const makeSSTache = (operation, options = { ...DEFAULT_MUTATION_OPTIONS }) => {
+export const createSSTache = (operation, options = { ...DEFAULT_MUTATION_OPTIONS }) => {
   // @accept ({ operation, options? })
   if (isObject(operation) && operation.operation) {
     options = operation.options ? { ...DEFAULT_MUTATION_OPTIONS, ...operation.options } : { ...DEFAULT_MUTATION_OPTIONS }
@@ -54,15 +103,15 @@ export const makeSSTache = (operation, options = { ...DEFAULT_MUTATION_OPTIONS }
  * @accept (...) -> ({ operation, options? } | operation, ...)
  * @return TacheMaker
  */
-export const makeSMTache = (...args) => {
+export const createSMTache = (...args) => {
   if (args.length === 1 && isObject(args[0])) {
-    return makeObjectSMTache(args[0])
+    return createObjectSMTache(args[0])
   }
   if (args.length === 1 && isArray(args[0])) {
-    return makeArraySMTache(...args[0])
+    return createArraySMTache(...args[0])
   }
   if (args.length > 1) {
-    return makeArraySMTache(...args)
+    return createArraySMTache(...args)
   }
 }
 
@@ -71,7 +120,7 @@ export const makeSMTache = (...args) => {
  * @accept ([{ operation, options? } | operation ...])
  * @return TacheMaker
  */
-export const makeArraySMTache = (...configArr) => {
+export const createArraySMTache = (...configArr) => {
   // @accept ([{ operation, options? } | operation ...])
   if (configArr.length === 1 && isArray(configArr[0])) {
     configArr = configArr[0]
@@ -128,7 +177,7 @@ export const makeArraySMTache = (...configArr) => {
  * @accept ({ name: { operation, options? } | operation, ...})
  * @return TacheMaker
  */
-export const makeObjectSMTache = (configObj) => {
+export const createObjectSMTache = (configObj) => {
   if (!isObject(configObj)) {
     throw (new TypeError(`"configObj" is expected to be type of "Object", but received ${typeof configObj}.`))
   }
@@ -188,15 +237,15 @@ export const makeObjectSMTache = (configObj) => {
  * @param { ?{ sourcesType?: 'Array' | "Object" } } config
  * @return TacheMaker
  */
-export const makeMSTache = (config = {}) => {
+export const createMSTache = (config = {}) => {
   if (!isObject(config)) throw (new TypeError(`"config" is expected to be type of "Object", but received ${typeof config}.`))
 
   const { sourcesType } = config
   if (sourcesType.toLowerCase() === 'array') {
-    return makeArrayMSTache(config)
+    return createArrayMSTache(config)
   }
   if (sourcesType.toLowerCase() === 'object') {
-    return makeObjectMSTache(config)
+    return createObjectMSTache(config)
   }
 
   /**
@@ -207,13 +256,13 @@ export const makeMSTache = (config = {}) => {
    */
   return (...sources) => {
     if (sources.length === 1 && isObject(sources[0])) {
-      return makeObjectMSTache(config)(sources[0])
+      return createObjectMSTache(config)(sources[0])
     }
     if (sources.length === 1 && isArray(sources[0])) {
-      return makeArrayMSTache(config)(...sources[0])
+      return createArrayMSTache(config)(...sources[0])
     }
     if (sources.length > 1) {
-      return makeArraySMTache(config)(...sources)
+      return createArraySMTache(config)(...sources)
     }
   }
 }
@@ -229,7 +278,7 @@ export const makeMSTache = (config = {}) => {
  * } } config
  * @return TacheMaker
  */
-export const makeArrayMSTache = (config = {}) => {
+export const createArrayMSTache = (config = {}) => {
   if (!isObject(config)) {
     throw (new TypeError(`"config" is expected to be type of "Object", but received ${typeof config}.`))
   }
@@ -344,7 +393,7 @@ export const makeArrayMSTache = (config = {}) => {
  * } }config
  * @return TacheMaker
  */
-export const makeObjectMSTache = (config = {}) => {
+export const createObjectMSTache = (config = {}) => {
   if (!isObject(config)) {
     throw (new TypeError(`"config" is expected to be type of "Object", but received "${typeof config}".`))
   }
@@ -454,6 +503,6 @@ export const makeObjectMSTache = (config = {}) => {
 }
 
 // TODO: waiting for suitable usage scenarios
-export const makeMMTache = () => {
+export const createMMTache = () => {
   throw (new Error('makeMMTache to be developed.'))
 }

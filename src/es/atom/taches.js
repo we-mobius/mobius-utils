@@ -13,6 +13,7 @@ export * from './taches/pluck.taches.js'
 export * from './taches/map.taches.js'
 export * from './taches/filter.taches.js'
 export * from './taches/startWith.taches.js'
+export * from './taches/emptyStartWith.taches.js'
 export * from './taches/debounce.taches.js'
 export * from './taches/throttle.taches.js'
 

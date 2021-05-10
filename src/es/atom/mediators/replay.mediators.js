@@ -1,6 +1,6 @@
 import { isObject, isNumber } from '../../internal.js'
 import { isAtom } from '../atom.js'
-import { BaseMediator } from './base.mediator.js'
+import { BaseMediator } from './base.mediators.js'
 import { curryN } from '../../functional.js'
 
 export const isReplayMediator = tar => isObject(tar) && tar.isReplayMediator

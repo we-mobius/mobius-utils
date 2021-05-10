@@ -12,5 +12,4 @@ export * from './event.js'
 export * from './dom.js'
 
 export * from './app.js'
-export * from './driver.js'
 export * from './scope.js'

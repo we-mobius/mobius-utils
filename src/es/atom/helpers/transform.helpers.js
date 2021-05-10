@@ -1,8 +1,7 @@
-import { isFunction } from '../../internal.js'
+import { isFunction, isObject } from '../../internal.js'
 import { looseCurryN } from '../../functional.js'
 import { Mutation, isMutation, Data, isData, isAtom } from '../atom.js'
 import { isReplayMediator, replayWithLatest } from '../mediators.js'
-import { isObject } from '../../internal/base.js'
 
 const DEFAULT_MUTATION_OPTIONS = { liftType: 'both' }
 

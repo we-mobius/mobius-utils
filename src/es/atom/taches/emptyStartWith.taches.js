@@ -1,14 +1,14 @@
 import { curryN } from '../../functional.js'
 import { TERMINATOR } from '../meta.js'
-import { Data, Mutation, isAtom } from '../atom.js'
+import { Data, Mutation, isAtom } from '../../atom.js'
 import { replayWithLatest } from '../mediators.js'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers.js'
 
-export const startWithT = curryN(2, (start, target) => {
+export const emptyStartWithT = curryN(2, (start, target) => {
   if (isAtom(start)) {
-    return dynamicStartWithT(start, target)
+    return dynamicEmptyStartWithT(start, target)
   } else {
-    return staticStartWithT(start, target)
+    return staticEmptyStartWithT(start, target)
   }
 })
 
@@ -17,15 +17,16 @@ export const startWithT = curryN(2, (start, target) => {
  * @param target Atom
  * @return atom Data
  */
-export const dynamicStartWithT = curryN(2, (start, target) => {
+export const dynamicEmptyStartWithT = curryN(2, (start, target) => {
   if (!isAtom(start)) {
-    throw (new TypeError('"start" argument of dynamicStartWithT is expected to be type of "Atom".'))
+    throw (new TypeError('"start" argument of dynamicEmptyStartWithT is expected to be type of "Atom".'))
   }
   if (!isAtom(target)) {
-    throw (new TypeError('"target" argument of dynamicStartWithT is expected to be type of "Atom".'))
+    throw (new TypeError('"target" argument of dynamicEmptyStartWithT is expected to be type of "Atom".'))
   }
 
   start = replayWithLatest(1, start)
+  target = replayWithLatest(1, target)
 
   const wrapStartM = Mutation.ofLiftLeft(prev => ({ type: 'start', value: prev }))
   const wrappedStartD = Data.empty()
@@ -36,22 +37,16 @@ export const dynamicStartWithT = curryN(2, (start, target) => {
 
   const startM = Mutation.ofLiftLeft((() => {
     const _internalStates = { start: false, target: false, startExpired: false }
-    const _internalValues = { start: undefined, target: undefined, targetQueue: [] }
-    return (prev, _, mutation) => {
+    const _internalValues = { start: undefined, target: undefined }
+    return prev => {
       const { type, value } = prev
       if (type !== 'start' && type !== 'target') {
         throw (new TypeError(`Unexpected type of wrapped Data received in startM, expected to be "start" | "target", but received "${type}".`))
       }
       _internalStates[type] = true
       _internalValues[type] = value
-
       if (type === 'target') {
-        if (_internalStates.startExpired) {
-          return _internalValues.target
-        } else {
-          _internalValues.targetQueue.push(value)
-          return TERMINATOR
-        }
+        return _internalValues.target
       }
       // redundant conditional judgement
       if (type === 'start' && _internalStates.startExpired) {
@@ -59,12 +54,7 @@ export const dynamicStartWithT = curryN(2, (start, target) => {
       }
       if (type === 'start' && !_internalStates.startExpired) {
         _internalStates.startExpired = true
-        _internalValues.targetQueue.unshift(value)
-        _internalValues.targetQueue.forEach(target => {
-          mutation.triggerOperation(() => target)
-        })
-        _internalValues.targetQueue.length = 0
-        return TERMINATOR
+        return _internalStates.target ? TERMINATOR : _internalValues.start
       }
     }
   })())
@@ -85,6 +75,6 @@ export const dynamicStartWithT = curryN(2, (start, target) => {
  * @param target Atom
  * @return atom Data
  */
-export const staticStartWithT = curryN(2, (start, target) => {
-  return dynamicStartWithT(replayWithLatest(1, Data.of(start)), target)
+export const staticEmptyStartWithT = curryN(2, (start, target) => {
+  return dynamicEmptyStartWithT(replayWithLatest(1, Data.of(start)), target)
 })
