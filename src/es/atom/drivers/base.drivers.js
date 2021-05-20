@@ -133,6 +133,12 @@ export const connectInterfaces = (up, down) => {
     ))
   }
 }
+/**
+ * @param { function } driver
+ * @param { { } } driverOptions
+ * @param { { inputs?: object, outputs?: object } } interfaces
+ * @return { { inputs: object, outputs: object, ... } }
+ */
 export const useGeneralDriver = looseCurryN(3, (driver, driverOptions, interfaces) => {
   const driverInterfaces = driver(driverOptions)
 
