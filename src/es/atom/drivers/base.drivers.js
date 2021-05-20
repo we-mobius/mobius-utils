@@ -10,15 +10,24 @@ import { binaryTweenPipeAtom } from '../helpers.js'
  *   prepareDriverLevelContexts?: (() => object),
  *   prepareSingletonLevelContexts?: ((options: object, driverLevelContexts: object) => object),
  *   prepareInstance: (options: object, driverLevelContexts: object, singletonLevelContexts: object) => { inputs: object, outputs: object }
- * } }
+ * } | function } createOptions
  * @return { (options?: {}) => { inputs: object, outputs: object } } Driver
  */
-export const createGeneralDriver = ({
-  prepareOptions = options => options,
-  prepareDriverLevelContexts = () => ({}),
-  prepareSingletonLevelContexts = _ => ({}),
-  prepareInstance
-} = {}) => {
+export const createGeneralDriver = (createOptions = {}) => {
+  if (!isObject(createOptions) && !isFunction(createOptions)) {
+    throw (new TypeError(`"createOptions" is expected to be type of "Object" | "Function", but received "${typeof createOptions}".`))
+  }
+  if (isFunction(createOptions)) {
+    createOptions = { prepareSingletonLevelContexts: createOptions }
+  }
+
+  const {
+    prepareOptions = options => options,
+    prepareDriverLevelContexts = () => ({}),
+    prepareSingletonLevelContexts = _ => ({}),
+    prepareInstance = (_0, _1, singletonLevelContexts) => ({ ...singletonLevelContexts })
+  } = createOptions
+
   if (!isFunction(prepareOptions)) {
     throw (new TypeError(`"prepareOptions" is expected to be type of "Function", but received "${typeof prepareOptions}".`))
   }
@@ -127,11 +136,11 @@ export const connectInterfaces = (up, down) => {
 export const useGeneralDriver = looseCurryN(3, (driver, driverOptions, interfaces) => {
   const driverInterfaces = driver(driverOptions)
 
-  const { inputs: { ...innerInputs }, outputs: { ...innerOutputs } } = { ...driverInterfaces }
+  const { inputs: { ...innerInputs }, outputs: { ...innerOutputs }, ...others } = { ...driverInterfaces }
   const { inputs: { ...outerInputs }, outputs: { ...outerOutputs } } = { ...formatInterfaces(interfaces) }
 
   connectInterfaces(outerInputs, innerInputs)
   connectInterfaces(innerOutputs, outerOutputs)
 
-  return { inputs: innerInputs, outputs: innerOutputs }
+  return { inputs: innerInputs, outputs: innerOutputs, ...others }
 })

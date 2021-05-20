@@ -20,7 +20,7 @@ export const looseCurryS = (fn, ...args) => {
   if (args.length >= fn.length) {
     return fn(...args)
   } else {
-    return (...args2) => curryS(fn, ...args, ...args2)
+    return (...args2) => looseCurryS(fn, ...args, ...args2)
   }
 }
 export const curryS = (fn, ...args) => {
@@ -92,6 +92,9 @@ export const internalLooseCurryN = (n, fn, filled, ...args) => {
     return (...extraArgs) => internalLooseCurryN(n, fn, innerArgs, ...extraArgs)
   }
 }
+/**
+ * @return { function | any }
+ */
 export const looseCurryN = (n, fn, ...args) => internalLooseCurryN(n, fn, [], ...args)
 
 // NOTE: 另外一种 compose 实现
@@ -102,8 +105,8 @@ export const looseCurryN = (n, fn, ...args) => internalLooseCurryN(n, fn, [], ..
 // 下面这种更符合函数式思维，实现上更接近数学定义
 export const composeL = (...fns) => fns.reduce((g, f) => (...args) => f(g(...args)), fns.shift() || asIs)
 export const composeR = (...fns) => composeL(...fns.reverse())
-export const pipeL = composeL
-export const pipeR = composeR
+export const pipeL = composeR
+export const pipeR = composeL
 export const compose = composeR
 export const pipe = composeL
 

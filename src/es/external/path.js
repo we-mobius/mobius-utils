@@ -28,7 +28,13 @@ export const removeRepetitionExcept = exceptList => reject((item, index, arr) =>
 export const removeRepetitionOfEmpty = removeRepetitionOf([''])
 export const removeRepetitionOfSlash = removeRepetitionOf(['/'])
 
+/**
+ * - remove repetition of slash & empty char
+ * - add '' or '/' as prefix of pathname
+ */
 export const neatenPathname = pathname => {
+  // ['path', 'to', 'page'] -> join('/') -> 'path/to/page'
+  //   -> expected to be: '/path/to/page', unshift('') solve the problem
   if (isArray(pathname)) {
     return compose(removeRepetitionOfEmpty, unshift(''))(pathname)
   }
@@ -36,6 +42,7 @@ export const neatenPathname = pathname => {
     return compose(join('/'), removeRepetitionOfEmpty, unshift(''), split('/'), join(''), removeRepetitionOfSlash, toArray)(pathname)
   }
 }
+
 export const pathnameToArray = pathname => {
   const neatedPathname = neatenPathname(pathname)
   if (isArray(neatedPathname)) {
@@ -45,6 +52,7 @@ export const pathnameToArray = pathname => {
     return split('/', neatedPathname)
   }
 }
+
 export const pathnameToString = pathname => {
   const neatedPathname = neatenPathname(pathname)
   if (isString(neatedPathname)) {
@@ -67,6 +75,7 @@ export const isPathnameLooseEqual = (pathname1, pathname2) => {
   return preCook(pathname1) === preCook(pathname2)
 }
 export const isPathnameEqual = (mode, pathnames) => {
+  // @accept { mode, pathnames }
   if (allPass([isObject, hasOwnProperty('pathnames'), compose(isArray, prop('pathnames'))], mode)) {
     pathnames = mode.pathnames
     mode = mode.mode || 'strict'
@@ -98,11 +107,11 @@ export const isPathnameEqual = (mode, pathnames) => {
 // console.log(pathnameToArray('//app//page1/'))
 // console.log(pathnameToArray('//app//page1//'))
 // console.log('\n[path.js] isPathnameStrictEqual:')
-// console.log(isPathnameStrictEqual('//app//page1//', ['app', 'page1']))
-// console.log(isPathnameStrictEqual('//app//page1//', ['app', 'page1', '']))
+// console.log(isPathnameStrictEqual('//app//page1//', ['', 'app', 'page1']))
+// console.log(isPathnameStrictEqual('//app//page1//', ['', 'app', 'page1', '']))
 // console.log('\n[path.js] isPathnameLooseEqual:')
-// console.log(isPathnameLooseEqual('//app//page1//', ['app', 'page1']))
-// console.log(isPathnameLooseEqual('//app//page1//', ['app', 'page1', '']))
+// console.log(isPathnameLooseEqual('//app//page1//', ['', 'app', 'page1']))
+// console.log(isPathnameLooseEqual('//app//page1//', ['', 'app', 'page1', '']))
 
 export const neatenSearch = str => isStartWith('?', str) ? str : `?${str}`
 export const neatenQueryStr = str => isStartWith('?', str) ? str.substring(1) : str

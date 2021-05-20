@@ -4,25 +4,31 @@ import { TERMINATOR } from '../meta.js'
 import { Data, Mutation, isAtom } from '../atom.js'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers.js'
 import { replayWithLatest } from '../mediators.js'
-import { pipe } from '../../functional/helpers.js'
 
 // S -> Single, M -> Multi
 
 const DEFAULT_MUTATION_OPTIONS = { liftType: 'both' }
 
+/**
+ * @param { {} | function } createOptions
+ * @return { function }
+ */
 export const createGeneralTache = looseCurryN(2, (createOptions = {}, tacheOptions = { ...DEFAULT_MUTATION_OPTIONS }) => {
-  if (!isObject(createOptions)) {
-    throw (new TypeError(`"createOptions" is expected to be type of "Object", but received "${typeof createOptions}".`))
+  if (!isObject(createOptions) && !isFunction(createOptions)) {
+    throw (new TypeError(`"createOptions" is expected to be type of "Object" | "Function", but received "${typeof createOptions}".`))
+  }
+  if (isFunction(createOptions)) {
+    createOptions = { prepareMidpiece: createOptions }
   }
 
   const {
     prepareTacheLevelContexts = () => ({}),
     prepareOptions = options => options,
-    prepareInput = source => source,
+    prepareInput = (_0, _1, source) => source,
     prepareMidpiece = () => Mutation.ofLiftBoth(any => any),
     prepareOutput = () => Data.empty(),
     connect = (options, [inputs, midpieces, outputs]) => {
-      pipe(midpieces, outputs)
+      pipeAtom(midpieces, outputs)
       binaryTweenPipeAtom(inputs, midpieces)
     }
   } = createOptions
@@ -238,7 +244,9 @@ export const createObjectSMTache = (configObj) => {
  * @return TacheMaker
  */
 export const createMSTache = (config = {}) => {
-  if (!isObject(config)) throw (new TypeError(`"config" is expected to be type of "Object", but received ${typeof config}.`))
+  if (!isObject(config)) {
+    throw (new TypeError(`"config" is expected to be type of "Object", but received "${typeof config}".`))
+  }
 
   const { sourcesType } = config
   if (sourcesType.toLowerCase() === 'array') {
@@ -291,7 +299,7 @@ export const createArrayMSTache = (config = {}) => {
   if (!isString(opCustomizeType)) {
     throw (new TypeError(`"opCustomizeType" is expected to be type of "String", but received "${typeof opCustomizeType}".`))
   }
-  if (opCustomizeType.toLowerCase() !== 'partly' || opCustomizeType.toLowerCase() !== 'fully') {
+  if (opCustomizeType.toLowerCase() !== 'partly' && opCustomizeType.toLowerCase() !== 'fully') {
     throw (new TypeError(`"opCustomizeType" is expected to be "fully" | "partly", but received "${opCustomizeType}".`))
   }
   if (operation === undefined) {
@@ -406,7 +414,7 @@ export const createObjectMSTache = (config = {}) => {
   if (!isString(opCustomizeType)) {
     throw (new TypeError(`"opCustomizeType" is expected to be type of "String", but received "${typeof opCustomizeType}".`))
   }
-  if (opCustomizeType.toLowerCase() !== 'partly' || opCustomizeType.toLowerCase() !== 'fully') {
+  if (opCustomizeType.toLowerCase() !== 'partly' && opCustomizeType.toLowerCase() !== 'fully') {
     throw (new TypeError(`"opCustomizeType" is expected to be "fully" | "partly", but received "${opCustomizeType}".`))
   }
   if (operation === undefined) {
