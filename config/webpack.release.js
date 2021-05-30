@@ -14,7 +14,8 @@ const PATHS = {
 export const getReleaseConfig = () => ({
   mode: 'production',
   entry: {
-    'mobius-utils': './src/main.js'
+    'mobius-utils': './src/main.js',
+    'mobius-utils-worker': './src/worker.release.entry.js'
   },
   output: {
     filename: '[name].js',
