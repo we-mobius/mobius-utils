@@ -1,55 +1,34 @@
-const path = require('path')
-const { production: productionPlugins } = require('./plugins.config')
-const { production: productionLoaders } = require('./loaders.config')
-const MiniCssExtractPlugin = require('mini-css-extract-plugin')
-const TerserPlugin = require('terser-webpack-plugin')
-const CopyPlugin = require('copy-webpack-plugin')
-const { publicPath } = require('./mobius.config.js')
+import { rootResolvePath } from '../scripts/utils.js'
+import { getMobiusConfig } from './mobius.config.js'
+import { getProductionLoaders } from './loaders.config.js'
+import { getProductionPlugins } from './plugins.config.js'
+
+import TerserPlugin from 'terser-webpack-plugin'
+import CopyPlugin from 'copy-webpack-plugin'
+
+import path from 'path'
 
 const PATHS = {
-  src: path.resolve(process.cwd(), 'src'),
-  output: path.resolve(process.cwd(), 'dist')
+  src: rootResolvePath('src'),
+  output: rootResolvePath('dist')
 }
 
-module.exports = {
+const reusedConfigs = {
   mode: 'production',
-  // NOTE: entry sort matters style cascading
-  entry: {
-    main: './src/main.js'
-  },
   output: {
     filename: '[name].js',
     path: PATHS.output,
-    publicPath: publicPath
+    publicPath: getMobiusConfig().publicPath
   },
   module: {
     rules: [
       {
-        test: /\.css$/i,
-        use: [
-          {
-            loader: MiniCssExtractPlugin.loader,
-            options: {
-              // 添加在 CSS 文件中引用的其它资源路径的前面，可用于配置 CDN，不如 file-loader 设置的 publicPath 优先
-              // publicPath: 'https://cdn.cigaret.world/'
-            }
-          },
-          'css-loader',
-          'postcss-loader'
-        ],
-        sideEffects: true
-      },
-      {
-        oneOf: [...productionLoaders]
+        oneOf: [...getProductionLoaders()]
       }
     ]
   },
   plugins: [
-    ...productionPlugins,
-    new MiniCssExtractPlugin({
-      filename: 'styles/[name].[contenthash:10].css',
-      chunkFilename: 'styles/[id].[contenthash:10].css'
-    }),
+    ...getProductionPlugins(),
     // CopyPlugin configurations: https://github.com/webpack-contrib/copy-webpack-plugin
     new CopyPlugin([
       {
@@ -61,19 +40,32 @@ module.exports = {
         toType: 'dir'
       },
       {
-        from: './src/statics/styles/fonts/',
-        to: path.resolve(PATHS.output, './statics/styles/fonts/'),
+        from: './src/statics/fonts/',
+        to: path.resolve(PATHS.output, './statics/fonts/'),
+        toType: 'dir'
+      },
+      {
+        from: './src/statics/images/',
+        to: path.resolve(PATHS.output, './statics/images/'),
+        toType: 'dir'
+      },
+      {
+        from: './src/statics/styles/',
+        to: path.resolve(PATHS.output, './statics/styles/'),
         toType: 'dir'
       }
     ])
   ],
   optimization: {
     minimize: true,
+    providedExports: true,
+    usedExports: true,
+    sideEffects: true,
     minimizer: [
       new TerserPlugin({
         parallel: true,
-        sourceMap: true,
         terserOptions: {
+          sourceMap: true,
           compress: {
             drop_debugger: true,
             drop_console: true
@@ -88,3 +80,18 @@ module.exports = {
   devtool: 'source-map'
   // devtool: 'hidden-nosources-source-map'
 }
+
+const webConfig = { ...reusedConfigs }
+
+export const getProductionConfig = () => ([{
+  target: 'web',
+  // node: {
+  //   global: true
+  // },
+  entry: {
+    // NOTE: entry sort matters style cascading
+    static: './src/static.js',
+    index: './src/index.js'
+  },
+  ...webConfig
+}])

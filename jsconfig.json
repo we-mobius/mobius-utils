@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "es6",
+    "baseUrl": ".",
+    "paths": {
+      "ES": [
+        "./src/es/index.js"
+      ],
+      "ES/*": [
+        "./src/es/*"
+      ],
+      "CJS": [
+        "./src/cjs/index.js"
+      ],
+      "CJS/*": [
+        "./src/cjs/*"
+      ],
+      "Statics/*": [
+        "./src/statics/*"
+      ],
+      "Images/*": [
+        "./src/statics/images/*"
+      ],
+      "Styles/*": [
+        "./src/statics/styles/*"
+      ]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "dev",
+    "release",
+    "scripts"
+  ]
+}
