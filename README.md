@@ -16,7 +16,7 @@
   <a href="./docs/readme_zh.md" style="color: hsla(264, 100%, 50%, 100%);">📜 中文文档</a>
 </p>
 
-<h1 align="center">Project Name</h1>
+<h1 align="center">Mobius Utils</h1>
 
 🎨 One sentence introduction to the project.
 
@@ -66,8 +66,6 @@ All the relative documentations of detail, pls check `./docs`，which contains:
 
 ## Built With
 
-- [cyclejs](https://github.com/cyclejs/cyclejs) - Great Jobs for handle DOMs functionally and reactively 🤞
-- [rxjs](https://github.com/ReactiveX/rxjs) - Reactive programming library for JavaScript
 - somthing else...
 
 ## Author
