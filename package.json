@@ -1,6 +1,6 @@
 {
   "name": "@we-mobius/mobius-utils",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Mobius utils.",
   "type": "module",
   "main": "./src/main.js",
@@ -40,7 +40,7 @@
     "serve:dist": "npx live-server ./dist --port=0624",
     "expose": "npx ngrok http 624",
     "bundle": "node ./scripts/bundle",
-    "publish": "npm run build && npm run dist && npm run bundle && npm publish --access public"
+    "beforepublish": "npm run build && npm run dist && npm run bundle"
   },
   "repository": {
     "type": "git",
