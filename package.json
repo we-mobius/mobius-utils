@@ -1,6 +1,6 @@
 {
   "name": "@we-mobius/mobius-utils",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Mobius utils.",
   "type": "module",
   "main": "./src/main.js",
@@ -39,7 +39,8 @@
     "serve:build": "npx live-server ./build --port=0624",
     "serve:dist": "npx live-server ./dist --port=0624",
     "expose": "npx ngrok http 624",
-    "bundle": "node ./scripts/bundle"
+    "bundle": "node ./scripts/bundle",
+    "publish": "npm run build && npm run dist && npm run bundle && npm publish --access public"
   },
   "repository": {
     "type": "git",
@@ -99,10 +100,12 @@
   "jsdelivr": "./release/mobius-utils.js",
   "files": [
     "/release/*",
-    "/public/*",
     "/dist/*",
     "/build/*",
-    "/docs/*"
+    "/src/*",
+    "/public/*",
+    "/docs/*",
+    "/bin/*"
   ],
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
