@@ -111,9 +111,22 @@ export const connectInterfaces = (up, down) => {
   //   -> one of the up | down value is required to be type of Atom at least.
   //   -> cause there is no way to get the auto-generated down Atom.
   if (isAtom(up) && !isAtom(down)) {
-    // do nothing
-  } else if (isAtom(down)) {
-    binaryTweenPipeAtom(normalize(up), normalize(down))
+    if (isArray(down)) {
+      down.forEach(i => {
+        if (isAtom(i)) {
+          binaryTweenPipeAtom(normalize(up), i)
+        } else {
+          // do nothing
+        }
+      })
+    } else {
+      // do nothing
+    }
+  } else if (isAtom(up) && isAtom(down)) {
+    // downstream atom do not need to be replayable
+    binaryTweenPipeAtom(normalize(up), down)
+  } else if (!isAtom(up) && isAtom(down)) {
+    binaryTweenPipeAtom(normalize(up), down)
   } else if (isObject(up) && isObject(down)) {
     Object.entries(up).forEach(([key, value]) => {
       if (down[key]) {
@@ -142,8 +155,8 @@ export const connectInterfaces = (up, down) => {
 export const useGeneralDriver = looseCurryN(3, (driver, driverOptions, interfaces) => {
   const driverInterfaces = driver(driverOptions)
 
-  const { inputs: { ...innerInputs }, outputs: { ...innerOutputs }, ...others } = { ...driverInterfaces }
-  const { inputs: { ...outerInputs }, outputs: { ...outerOutputs } } = { ...formatInterfaces(interfaces) }
+  const { inputs: { ...innerInputs } = {}, outputs: { ...innerOutputs } = {}, ...others } = { ...driverInterfaces }
+  const { inputs: { ...outerInputs } = {}, outputs: { ...outerOutputs } = {} } = { ...formatInterfaces(interfaces) }
 
   connectInterfaces(outerInputs, innerInputs)
   connectInterfaces(innerOutputs, outerOutputs)
