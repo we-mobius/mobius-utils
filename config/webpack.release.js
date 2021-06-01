@@ -11,24 +11,8 @@ const PATHS = {
   output: rootResolvePath('release')
 }
 
-export const getReleaseConfig = () => ({
+const reusedConfigs = {
   mode: 'production',
-  entry: {
-    'mobius-utils': './src/main.js',
-    'mobius-utils-worker': './src/worker.release.entry.js'
-  },
-  output: {
-    filename: '[name].js',
-    path: PATHS.output,
-    // @refer: https://webpack.js.org/configuration/output/#outputlibrarytarget
-    // @refer: https://webpack.js.org/configuration/output/#outputlibrarytype
-    // libraryTarget: 'umd',
-    library: {
-      name: 'MobiusUtils',
-      type: 'umd'
-    },
-    umdNamedDefine: true
-  },
   module: {
     rules: [
       {
@@ -67,4 +51,28 @@ export const getReleaseConfig = () => ({
   ],
   devtool: 'hidden-nosources-source-map'
 }
-)
+
+export const getReleaseConfig = () => ([
+  {
+    target: 'web',
+    entry: {
+      'mobius-utils': './src/main.js',
+      'mobius-utils-worker': './src/worker.release.entry.js'
+    },
+    output: {
+      filename: '[name].umd.js',
+      path: PATHS.output,
+      // @refer: https://webpack.js.org/configuration/output/#outputlibrarytarget
+      // @refer: https://webpack.js.org/configuration/output/#outputlibrarytype
+      // libraryTarget: 'umd',
+      library: {
+        name: 'MobiusUtils',
+        type: 'umd'
+      },
+      // @refer: https://webpack.js.org/configuration/output/#outputglobalobject
+      globalObject: 'this',
+      umdNamedDefine: true
+    },
+    ...reusedConfigs
+  }
+])

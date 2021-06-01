@@ -1,29 +1,34 @@
 {
   "name": "@we-mobius/mobius-utils",
-  "version": "0.3.2",
-  "description": "Mobius utils.",
+  "version": "0.3.3",
+  "description": "Utils lib that basically follows FP flavor.",
   "type": "module",
   "main": "./src/main.js",
   "exports": {
     ".": {
       "require": "./dist/cjs/index.js",
       "import": "./src/main.js",
+      "node": "./src/main.js",
       "default": "./src/main.js"
     },
     "./module": "./src/main.js",
     "./es": "./src/main.js",
     "./cjs": "./dist/cjs/index.js",
-    "./module/": "./src/es/",
-    "./es/": "./src/es/",
-    "./cjs/": "./src/cjs/",
-    "./src/": "./src/",
-    "./dist/": "./dist/"
+    "./module/*": "./src/es/*.js",
+    "./es/*": "./src/es/*.js",
+    "./cjs/*": "./src/cjs/*.js",
+    "./src/*": "./src/*.js",
+    "./dist/*": "./dist/*.js",
+    "./release/*": "./release/*.js",
+    "./package.json": "./package.json"
   },
   "module": "./src/main.js",
   "keywords": [
     "mobius",
     "utils",
-    "functional"
+    "functional",
+    "stream",
+    "atom"
   ],
   "directories": {
     "doc": "./docs",
@@ -97,7 +102,7 @@
       "config": ".cz-config.js"
     }
   },
-  "jsdelivr": "./release/mobius-utils.js",
+  "jsdelivr": "./release/mobius-utils.umd.js",
   "files": [
     "/release/*",
     "/dist/*",
