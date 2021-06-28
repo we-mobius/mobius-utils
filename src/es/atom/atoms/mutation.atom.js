@@ -101,6 +101,25 @@ export class Mutation extends BaseAtom {
     }
   }
 
+  subscribeOperation (consumer) {
+    /*
+      通过 Mutation.of(operation, options) 创建的 Mutation，其 operation 不一定是 curried function
+      所以这里不能是: consumer(mutator.operation(mutator.datar))
+    */
+    const proxyConsumer = (mutator, mutation) => {
+      consumer((...args) => {
+        return mutator.operation(mutator.datar, ...args)
+      })
+    }
+    this._consumers.add(proxyConsumer)
+    return {
+      proxyConsumer: proxyConsumer,
+      unsubscribe: () => {
+        return this._consumers.delete(proxyConsumer)
+      }
+    }
+  }
+
   /**
    * @param { Mutator | undefined } mutator
    * @return { void }

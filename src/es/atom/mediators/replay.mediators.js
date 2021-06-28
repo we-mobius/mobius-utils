@@ -98,6 +98,14 @@ export class ReplayMediator extends BaseMediator {
     return subscribeController
   }
 
+  subscribeOperation (consumer) {
+    const subscribeController = this._atom.subscribeOperation(consumer)
+    const proxyConsumer = subscribeController.proxyConsumer
+    this._consumers.push(proxyConsumer)
+    this.replayTo(proxyConsumer)
+    return subscribeController
+  }
+
   // !!! important
   beObservedBy (...args) {
     return args[0].observe(this)
