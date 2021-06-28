@@ -79,6 +79,10 @@ export class BaseMediator {
     return this._atom.subscribe(...args)
   }
 
+  subscribeValue (...args) {
+    return this._atom.subscribeValue(...args)
+  }
+
   trigger (...args) {
     return this._atom.trigger(...args)
   }

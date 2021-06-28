@@ -80,6 +80,17 @@ export class Data extends BaseAtom {
     }
   }
 
+  subscribeValue (consumer) {
+    const proxyConsumer = ({ value }) => { consumer(value) }
+    this._consumers.add(proxyConsumer)
+    return {
+      proxyConsumer: proxyConsumer,
+      unsubscribe: () => {
+        return this._consumers.delete(proxyConsumer)
+      }
+    }
+  }
+
   /**
    * @param { Datar | undefined } datar
    * @return { void }
