@@ -84,18 +84,19 @@ const createScopeManager = (creator, options) => {
       } else if (isString(scope)) {
         // accept (scope, { instance?, params? })
         _scope = scope
+        if (options && !isObject(options)) {
+          throw (new TypeError(`"options" is expected to be type of "Object" when "scope" is of type "String", but received "${typeof options}".`))
+        }
         if (isObject(options)) {
           _instance = options.instance
           _params = options.params
-        } else {
-          _params = options
         }
       } else {
         throw (new TypeError(`first argument of registerScope is expected to be type of "String" | "Object", but received "${typeof scope}".`))
       }
 
       if (!isString(_scope)) throw (new TypeError(`"scope" is required and is expected to be type of "String", but received "${typeof _scope}".`))
-      if (!creator && !_instance) throw (new TypeError('"creator" is not given, "instance" is required!'))
+      if (!creator && !_instance) throw (new TypeError('One of "creator" and "instance" is required at least.'))
       if (isObject(_params)) {
         _params = { ..._params, '@scopeName': _scope }
       }
@@ -107,10 +108,7 @@ const createScopeManager = (creator, options) => {
       if (!instance) {
         instance = _instance ||
          (isFunction(creator)
-           ? (_params
-             ? (isArray(_params) ? creator(..._params) : creator(_params))
-             : creator({ '@scopeName': _scope })
-           )
+           ? (_params ? creator(_params) : creator({ '@scopeName': _scope }))
            : creator
          )
         scopeMap.set(_scope, instance)
@@ -140,7 +138,9 @@ const createScopeManager = (creator, options) => {
     getInstance: (scope, options = {}) => {
       // accept ({ scope, options | ...options })
       const _scope = isObject(scope) ? scope.scope : scope
-      if (!isString(_scope)) throw new TypeError(`"scope" is required and is expected to be type of "String", but received "${typeof _scope}".`)
+      if (!isString(_scope)) {
+        throw (new TypeError(`"scope" is required and is expected to be type of "String", but received "${typeof _scope}".`))
+      }
 
       if (isObject(scope)) {
         if (!scope.options) {
@@ -173,8 +173,8 @@ const createScopeManager = (creator, options) => {
     /**
      * registerScope -> getInstance
      */
-    scope: function (scope) {
-      this.registerScope(scope)
+    scope: function (scope, params) {
+      this.registerScope(scope, { params })
       return this.getInstance(scope)
     }
   }
