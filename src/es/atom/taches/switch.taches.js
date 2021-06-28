@@ -58,8 +58,8 @@ export const switchT = curryN(2, (to, from) => {
  * @param from Atom
  * @return atom Data
  */
-export const dynamicSwitchT = switchTacheFactory(() =>
-  Mutation.ofLiftLeft((() => {
+export const dynamicSwitchT = switchTacheFactory(() => {
+  return Mutation.ofLiftLeft((() => {
     const _internalStates = { from: false, to: false }
     const _internalValues = { from: undefined, to: undefined }
     return prev => {
@@ -80,7 +80,8 @@ export const dynamicSwitchT = switchTacheFactory(() =>
         return _internalValues.to
       }
     }
-  })()))
+  })())
+})
 
 /**
  * @param to Any
@@ -102,10 +103,10 @@ export const staticSwitchT = curryN(2, (to, from) => {
  * @return atom Data
  */
 export const promiseSwitchT = switchTacheFactory(() => {
-  const switchM = Mutation.ofLiftLeft((() => {
+  return Mutation.ofLiftLeft((() => {
     const _internalStates = { from: false, to: false, promise: false }
     const _internalValues = { from: undefined, to: undefined }
-    return prev => {
+    return (prev, _, mutation) => {
       const { type, value } = prev
       if (type !== 'from' && type !== 'to') {
         throw (new TypeError(`Unexpected type of wrapped Data received in switchM, expected to be "from" | "to", but received "${type}"`))
@@ -114,7 +115,7 @@ export const promiseSwitchT = switchTacheFactory(() => {
       _internalValues[type] = value
       if (type === 'to') {
         if (_internalStates.promise) {
-          switchM.triggerOperation(() => _internalValues.to)
+          mutation.triggerOperation(() => _internalValues.to)
           _internalStates.promise = false
         }
         return TERMINATOR
@@ -130,5 +131,4 @@ export const promiseSwitchT = switchTacheFactory(() => {
       }
     }
   })())
-  return switchM
 })
