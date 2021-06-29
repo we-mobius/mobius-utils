@@ -1,6 +1,7 @@
 import { isArray, isFunction } from '../internal.js'
 import { invoker, curryN } from '../functional.js'
 import { isAtom, isData, isMutation, Mutation, Data } from './atom.js'
+import { isMutator } from './meta.js'
 import { isMediator } from './mediators.js'
 
 export * from './helpers/normal-create.helpers.js'
@@ -78,6 +79,19 @@ export const tweenAtom = (upstreamAtom, downstreamAtom) => {
     return [upstreamAtom, tweenAtom, downstreamAtom]
   }
 }
+export const tweenAtoms = (...args) => {
+  if (args.length === 1 && isArray(args[0])) {
+    args = args[0]
+  }
+  const tweenedAtoms = args.reduce((acc, cur, idx, arr) => {
+    const next = arr[idx + 1]
+    if (next) {
+      acc.push(...tweenAtom(cur, next).slice(1))
+    }
+    return acc
+  }, [args[0]])
+  return tweenedAtoms
+}
 /**
  * Automatically pipe two atom
  *
@@ -134,13 +148,7 @@ export const nAryTweenPipeAtom = (...args) => {
   if (args.length === 1 && isArray(args[0])) {
     args = args[0]
   }
-  const tweenedAtoms = args.reduce((acc, cur, idx, arr) => {
-    const next = arr[idx + 1]
-    if (next) {
-      acc.push(...tweenAtom(cur, next).slice(1))
-    }
-    return acc
-  }, [args[0]])
+  const tweenedAtoms = tweenAtoms(...args)
   pipeAtom(...tweenedAtoms)
   return tweenedAtoms
 }
@@ -152,14 +160,18 @@ export const nAryTweenComposeAtom = (...args) => {
   if (args.length === 1 && isArray(args[0])) {
     args = args[0]
   }
-  return nAryTweenPipeAtom(...args.reverse())
+  const tweenedAtoms = tweenAtoms(...args)
+  composeAtom(tweenAtoms)
+  return tweenedAtoms
 }
 export const tweenComposeAtom = nAryTweenComposeAtom
 
 export const liftAtom = target => {
   if (isAtom(target)) {
     return target
-  } else if (isFunction(target)) {
+  } else if (isMutator(target)) {
+    return Mutation.of(target)
+  } if (isFunction(target)) {
     return Mutation.ofLiftBoth(target)
   } else {
     return Data.of(target)
@@ -172,9 +184,9 @@ export const binaryLiftPipeAtom = (...args) => {
   }
   // 只取前两项
   args = args.slice(0, 2)
-  const atoms = args.map(liftAtom)
-  pipeAtom(atoms)
-  return atoms
+  const liftedAtoms = args.map(liftAtom)
+  pipeAtom(liftedAtoms)
+  return liftedAtoms
 }
 export const binaryLiftComposeAtom = (...args) => {
   if (args.length === 1 && isArray(args[0])) {
@@ -182,34 +194,70 @@ export const binaryLiftComposeAtom = (...args) => {
   }
   // 只取最后两项
   args = args.slice(-2)
-  const atoms = args.map(liftAtom)
-  composeAtom(atoms)
-  return atoms
+  const liftedAtoms = args.map(liftAtom)
+  composeAtom(liftedAtoms)
+  return liftedAtoms
 }
 
 export const nAryLiftPipeAtom = (...args) => {
   if (args.length === 1 && isArray(args[0])) {
     args = args[0]
   }
-  const atoms = args.map(liftAtom)
-  pipeAtom(atoms)
-  return atoms
+  const liftedAtoms = args.map(liftAtom)
+  pipeAtom(liftedAtoms)
+  return liftedAtoms
 }
 export const liftPipeAtom = nAryLiftPipeAtom
 export const nAryLiftComposeAtom = (...args) => {
   if (args.length === 1 && isArray(args[0])) {
     args = args[0]
   }
-  const atoms = args.map(liftAtom)
-  composeAtom(atoms)
-  return atoms
+  const liftedAtoms = args.map(liftAtom)
+  composeAtom(liftedAtoms)
+  return liftedAtoms
 }
 export const liftComposeAtom = nAryLiftComposeAtom
 
-export const binaryHyperPipeAtom = () => {}
-export const binaryHyperComposeAtom = () => {}
+export const binaryHyperPipeAtom = (...args) => {
+  if (args.length === 1 && isArray(args[0])) {
+    args = args[0]
+  }
+  // 只取前两项
+  args = args.slice(0, 2)
+  let atoms = args.map(liftAtom)
+  atoms = tweenAtoms(atoms)
+  pipeAtom(atoms)
+  return atoms
+}
+export const binaryHyperComposeAtom = (...args) => {
+  if (args.length === 1 && isArray(args[0])) {
+    args = args[0]
+  }
+  // 只取最后两项
+  args = args.slice(-2)
+  let atoms = args.map(liftAtom)
+  atoms = tweenAtoms(atoms)
+  composeAtom(atoms)
+  return atoms
+}
 
-export const nAryHyperPipeAtom = (...args) => {}
+export const nAryHyperPipeAtom = (...args) => {
+  if (args.length === 1 && isArray(args[0])) {
+    args = args[0]
+  }
+  let atoms = args.map(liftAtom)
+  atoms = tweenAtoms(atoms)
+  pipeAtom(atoms)
+  return atoms
+}
 export const hyperPipeAtom = nAryHyperPipeAtom
-export const nAryHyperComposeAtom = (...args) => {}
+export const nAryHyperComposeAtom = (...args) => {
+  if (args.length === 1 && isArray(args[0])) {
+    args = args[0]
+  }
+  let atoms = args.map(liftAtom)
+  atoms = tweenAtoms(atoms)
+  composeAtom(atoms)
+  return atoms
+}
 export const hyperComposeAtom = nAryHyperComposeAtom
