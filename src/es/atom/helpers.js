@@ -1,3 +1,4 @@
+import { isArray } from '../internal.js'
 import { invoker, flip, curryN } from '../functional.js'
 import { isAtom, isData, isMutation, Mutation, Data } from './atom.js'
 import { isMediator } from './mediators.js'
@@ -27,15 +28,22 @@ export const isSameTypeOfAtom = curryN(2, (tarA, tarB) => {
 export const isSameTypeOfMediator = curryN(2, (tarA, tarB) => isMediator(tarA) && isMediator(tarB) && tarA.type === tarB.type)
 
 export const pipeAtom = (...args) => {
+  if (args.length === 1 && isArray(args[0])) {
+    args = args[0]
+  }
   args.reverse().forEach((cur, idx, all) => {
     if (idx >= 1) {
       cur.beObservedBy(all[idx - 1])
     }
   })
+
   return args[args.length - 1]
 }
 
 export const composeAtom = (...args) => {
+  if (args.length === 1 && isArray(args[0])) {
+    args = args[0]
+  }
   args.forEach((cur, idx, all) => {
     if (idx >= 1) {
       cur.beObservedBy(all[idx - 1])
@@ -44,6 +52,32 @@ export const composeAtom = (...args) => {
   return args[0]
 }
 
+export const tweenAtom = (upstreamAtom, downstreamAtom) => {
+  if (!isAtom(upstreamAtom)) {
+    throw (new TypeError('"upstreamAtom" argument of tweenAtom are expected to be type of "Atom".'))
+  }
+  if (!isAtom(downstreamAtom)) {
+    throw (new TypeError('"downstreamAtom" argument of tweenAtom are expected to be type of "Atom".'))
+  }
+
+  if (!isSameTypeOfAtom(upstreamAtom, downstreamAtom)) {
+    // data, mutation
+    // mutation, data
+    return [upstreamAtom, downstreamAtom]
+  } else {
+    // data, data
+    // mutation, mutation
+    let tweenAtom
+    if (isData(upstreamAtom)) {
+      tweenAtom = Mutation.ofLiftLeft(v => v)
+    } else if (isMutation(upstreamAtom)) {
+      tweenAtom = Data.empty()
+    } else {
+      throw (new TypeError('Unexpected type of Atom detected!'))
+    }
+    return [upstreamAtom, tweenAtom, downstreamAtom]
+  }
+}
 /**
  * Automatically pipe two atom
  *
@@ -57,31 +91,12 @@ export const composeAtom = (...args) => {
  * @param downstreamAtom Atom, i.e. Data | Mutation
  * @return downstreamAtom
  */
-export const binaryTweenPipeAtom = (upstreamAtom, downstreamAtom) => {
-  if (!isAtom(upstreamAtom)) {
-    throw (new TypeError('"upstreamAtom" argument of binaryTweenPipeAtom are expected to be type of "Mutation" or "Data".'))
+export const binaryTweenPipeAtom = (...args) => {
+  if (args.length === 1 && isArray(args[0])) {
+    args = args[0]
   }
-  if (!isAtom(downstreamAtom)) {
-    throw (new TypeError('"downstreamAtom" argument of binaryTweenPipeAtom are expected to be type of "Mutation" or "Data".'))
-  }
-
-  if (!isSameTypeOfAtom(upstreamAtom, downstreamAtom)) {
-    // data, mutation
-    // mutation, data
-    return pipeAtom(upstreamAtom, downstreamAtom)
-  } else {
-    // data, data
-    // mutation, mutation
-    let tweenAtom
-    if (isData(upstreamAtom)) {
-      tweenAtom = Mutation.ofLiftLeft(v => v)
-    } else if (isMutation(upstreamAtom)) {
-      tweenAtom = Data.empty()
-    } else {
-      throw (new TypeError('Unexpected type of Atom detected!'))
-    }
-    return pipeAtom(upstreamAtom, tweenAtom, downstreamAtom)
-  }
+  const [upstreamAtom, downstreamAtom] = args
+  return pipeAtom(...tweenAtom(upstreamAtom, downstreamAtom))
 }
 
 /**
@@ -97,19 +112,53 @@ export const binaryTweenPipeAtom = (upstreamAtom, downstreamAtom) => {
  * @param upstreamAtom Atom, i.e. Data | Mutation
  * @return downstreamAtom
  */
-export const binaryTweenComposeAtom = flip(binaryTweenPipeAtom)
-
-export const nAryTweenPipeAtom = (...args) => {}
-export const nAryTweenComposeAtom = (...args) => {}
+export const binaryTweenComposeAtom = (...args) => {
+  if (args.length === 1 && isArray(args[0])) {
+    args = args[0]
+  }
+  const [downstreamAtom, upstreamAtom] = args
+  return composeAtom(...tweenAtom(downstreamAtom, upstreamAtom))
+}
+/**
+ * 将 n 个 Atom 顺序进行补间连接
+ */
+export const nAryTweenPipeAtom = (...args) => {
+  if (args.length === 1 && isArray(args[0])) {
+    args = args[0]
+  }
+  const tweenedAtoms = args.reduce((acc, cur, idx, arr) => {
+    const next = arr[idx + 1]
+    if (next) {
+      acc.push(...tweenAtom(cur, next).slice(1))
+    }
+    return acc
+  }, [args[0]])
+  return pipeAtom(...tweenedAtoms)
+}
+export const tweenPipeAtom = nAryTweenPipeAtom
+/**
+ * 将 n 个 Atom 逆序进行补间连接
+ */
+export const nAryTweenComposeAtom = (...args) => {
+  if (args.length === 1 && isArray(args[0])) {
+    args = args[0]
+  }
+  return nAryTweenPipeAtom(...args.reverse())
+}
+export const tweenComposeAtom = nAryTweenComposeAtom
 
 export const binaryLiftPipeAtom = () => {}
 export const binaryLiftComposeAtom = () => {}
 
 export const nAryLiftPipeAtom = (...args) => {}
+export const liftPipeAtom = nAryLiftPipeAtom
 export const nAryLiftComposeAtom = (...args) => {}
+export const liftComposeAtom = nAryLiftComposeAtom
 
 export const binaryHyperPipeAtom = () => {}
 export const binaryHyperComposeAtom = () => {}
 
 export const nAryHyperPipeAtom = (...args) => {}
+export const hyperPipeAtom = nAryHyperPipeAtom
 export const nAryHyperComposeAtom = (...args) => {}
+export const hyperComposeAtom = nAryHyperComposeAtom
