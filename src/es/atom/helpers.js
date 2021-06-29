@@ -37,7 +37,7 @@ export const pipeAtom = (...args) => {
     }
   })
 
-  return args[args.length - 1]
+  return args
 }
 
 export const composeAtom = (...args) => {
@@ -49,7 +49,7 @@ export const composeAtom = (...args) => {
       cur.beObservedBy(all[idx - 1])
     }
   })
-  return args[0]
+  return args
 }
 
 export const tweenAtom = (upstreamAtom, downstreamAtom) => {
@@ -95,8 +95,12 @@ export const binaryTweenPipeAtom = (...args) => {
   if (args.length === 1 && isArray(args[0])) {
     args = args[0]
   }
+  // 只取前两项
+  args = args.slice(0, 2)
   const [upstreamAtom, downstreamAtom] = args
-  return pipeAtom(...tweenAtom(upstreamAtom, downstreamAtom))
+  const tweenedAtoms = tweenAtom(upstreamAtom, downstreamAtom)
+  pipeAtom(...tweenedAtoms)
+  return tweenedAtoms
 }
 
 /**
@@ -116,8 +120,12 @@ export const binaryTweenComposeAtom = (...args) => {
   if (args.length === 1 && isArray(args[0])) {
     args = args[0]
   }
+  // 只取最后两项
+  args = args.slice(-2)
   const [downstreamAtom, upstreamAtom] = args
-  return composeAtom(...tweenAtom(downstreamAtom, upstreamAtom))
+  const tweenedAtoms = tweenAtom(downstreamAtom, upstreamAtom)
+  composeAtom(...tweenedAtoms)
+  return tweenedAtoms
 }
 /**
  * 将 n 个 Atom 顺序进行补间连接
@@ -133,7 +141,8 @@ export const nAryTweenPipeAtom = (...args) => {
     }
     return acc
   }, [args[0]])
-  return pipeAtom(...tweenedAtoms)
+  pipeAtom(...tweenedAtoms)
+  return tweenedAtoms
 }
 export const tweenPipeAtom = nAryTweenPipeAtom
 /**
