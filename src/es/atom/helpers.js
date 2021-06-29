@@ -1,5 +1,5 @@
-import { isArray } from '../internal.js'
-import { invoker, flip, curryN } from '../functional.js'
+import { isArray, isFunction } from '../internal.js'
+import { invoker, curryN } from '../functional.js'
 import { isAtom, isData, isMutation, Mutation, Data } from './atom.js'
 import { isMediator } from './mediators.js'
 
@@ -147,12 +147,54 @@ export const nAryTweenComposeAtom = (...args) => {
 }
 export const tweenComposeAtom = nAryTweenComposeAtom
 
-export const binaryLiftPipeAtom = () => {}
-export const binaryLiftComposeAtom = () => {}
+export const liftAtom = target => {
+  if (isAtom(target)) {
+    return target
+  } else if (isFunction(target)) {
+    return Mutation.ofLiftBoth(target)
+  } else {
+    return Data.of(target)
+  }
+}
 
-export const nAryLiftPipeAtom = (...args) => {}
+export const binaryLiftPipeAtom = (...args) => {
+  if (args.length === 1 && isArray(args[0])) {
+    args = args[0]
+  }
+  // 只取前两项
+  args = args.slice(0, 2)
+  const atoms = args.map(liftAtom)
+  pipeAtom(atoms)
+  return atoms
+}
+export const binaryLiftComposeAtom = (...args) => {
+  if (args.length === 1 && isArray(args[0])) {
+    args = args[0]
+  }
+  // 只取最后两项
+  args = args.slice(-2)
+  const atoms = args.map(liftAtom)
+  composeAtom(atoms)
+  return atoms
+}
+
+export const nAryLiftPipeAtom = (...args) => {
+  if (args.length === 1 && isArray(args[0])) {
+    args = args[0]
+  }
+  const atoms = args.map(liftAtom)
+  pipeAtom(atoms)
+  return atoms
+}
 export const liftPipeAtom = nAryLiftPipeAtom
-export const nAryLiftComposeAtom = (...args) => {}
+export const nAryLiftComposeAtom = (...args) => {
+  if (args.length === 1 && isArray(args[0])) {
+    args = args[0]
+  }
+  const atoms = args.map(liftAtom)
+  composeAtom(atoms)
+  return atoms
+}
 export const liftComposeAtom = nAryLiftComposeAtom
 
 export const binaryHyperPipeAtom = () => {}
