@@ -1,4 +1,4 @@
-import { isObject, isArray, isFunction } from '../../internal.js'
+import { isObject, isArray, isFunction, isEmptyObj } from '../../internal.js'
 import { looseCurryN } from '../../functional.js'
 import { isAtom, Data } from '../atom.js'
 import { replayWithLatest } from '../mediators.js'
@@ -156,10 +156,14 @@ export const useGeneralDriver = looseCurryN(3, (driver, driverOptions, interface
   const driverInterfaces = driver(driverOptions)
 
   const { inputs: { ...innerInputs } = {}, outputs: { ...innerOutputs } = {}, ...others } = { ...driverInterfaces }
-  const { inputs: { ...outerInputs } = {}, outputs: { ...outerOutputs } = {} } = { ...formatInterfaces(interfaces) }
 
-  connectInterfaces(outerInputs, innerInputs)
-  connectInterfaces(innerOutputs, outerOutputs)
+  // 只有当 interfaces 是对象且不为空的时候，才执行 connect 逻辑
+  if (isEmptyObj(interfaces)) {
+    const { inputs: { ...outerInputs } = {}, outputs: { ...outerOutputs } = {} } = { ...formatInterfaces(interfaces) }
+
+    connectInterfaces(outerInputs, innerInputs)
+    connectInterfaces(innerOutputs, outerOutputs)
+  }
 
   return { inputs: innerInputs, outputs: innerOutputs, ...others }
 })
