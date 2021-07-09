@@ -1,4 +1,4 @@
-import { isString, isArray, getByPath } from '../../internal.js'
+import { isString, isArray, isNumber, getByPath } from '../../internal.js'
 import { curryN } from '../../functional.js'
 import { TERMINATOR } from '../meta.js'
 import { Data, Mutation, isAtom } from '../atom.js'
@@ -6,17 +6,17 @@ import { replayWithLatest } from '../mediators.js'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers.js'
 
 /**
- * @param selector String | Array | Atom
+ * @param selector String | Array | Number | Atom
  * @param target Atom
  * @return atom Data
  */
 export const pluckT = curryN(2, (selector, target) => {
-  if (isString(selector) || isArray(selector)) {
+  if (isString(selector) || isArray(selector) || isNumber(selector)) {
     return staticPluckT(selector, target)
   } else if (isAtom(selector)) {
     return dynamicPluckT(selector, target)
   } else {
-    throw (new TypeError('"selector" argument of pluckT is expected to be type of "String" | "Array" | "Atom".'))
+    throw (new TypeError('"selector" argument of pluckT is expected to be type of "String" | "Array" | "Number" | "Atom".'))
   }
 })
 
@@ -81,8 +81,8 @@ export const dynamicPluckT = curryN(2, (selector, target) => {
  * @return atom Data
  */
 export const staticPluckT = curryN(2, (selector, target) => {
-  if (!isString(selector) && !isArray(selector)) {
-    throw (new TypeError('"selector" argument of staticPluckT is expected to be type of "String" | "Array".'))
+  if (!isString(selector) && !isArray(selector) && !isNumber(selector)) {
+    throw (new TypeError('"selector" argument of staticPluckT is expected to be type of "String" | "Array" | "Number".'))
   }
   return dynamicPluckT(replayWithLatest(1, Data.of(selector)), target)
 })
