@@ -1,5 +1,5 @@
 import { curry, compose, curryN } from '../functional/helpers.js'
-import { isArray, isObject } from './base.js'
+import { isNumber, isArray, isObject, isString } from './base.js'
 import { isTruthy, isNil } from './boolean.js'
 import { split, replace } from './string.js'
 import { filter, reduce } from './array.js'
@@ -36,14 +36,23 @@ export const get = curry((obj, path) => {
 })
 
 /**
- * @param path String | Array
+ * @param path String | Array | Number
  * @param obj Object
  * @return Any
  */
 export const getByPath = curry((path, obj) => {
+  if (!isArray(path) && !isString(path) && !isNumber(path)) {
+    throw (new TypeError(`"path" is expected to be type of "Array" | "String" | "Number", but received "${typeof path}".`))
+  }
+  let _path = path
+  if (isNumber(_path)) {
+    _path = parseInt(path) + ''
+  }
+
   const getPathArray = compose(filter(isTruthy), split(/[,./[\]\\]/g), replace(/['|"]/g, ''))
   const getRes = reduce((res, path) => isNil(res) ? res : res[path], obj)
-  const result = getRes(getPathArray(path))
+  const result = getRes(isArray(_path) ? _path : getPathArray(_path))
+
   return result
 })
 
