@@ -36,7 +36,7 @@ export * from './taches/case.taches.js'
 export * from './taches/combine.taches.js'
 export * from './taches/combineLatest.taches.js'
 export * from './taches/merge.taches.js'
-export * from './taches/zip.taches.js'
+export * from './taches/zipLatest.taches.js'
 export * from './taches/withLatestFrom.taches.js'
 
 export * from './taches/effect.taches.js'
