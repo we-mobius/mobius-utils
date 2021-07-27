@@ -1,3 +1,10 @@
+import * as uuid from 'uuid'
+
+export { uuid }
+
+export const uuidv1 = () => uuid.v1()
+export const uuidv4 = () => uuid.v4()
+
 const _fingerPrint = 'mobius'.split('')
 
 /**
