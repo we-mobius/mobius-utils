@@ -1,4 +1,5 @@
 export * from './unique.js'
+export * from './stateMachine.js'
 export * from './class.js'
 
 export * from './path.js'
