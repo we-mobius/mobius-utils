@@ -158,7 +158,7 @@ export const useGeneralDriver = looseCurryN(3, (driver, driverOptions, interface
   const { inputs: { ...innerInputs } = {}, outputs: { ...innerOutputs } = {}, ...others } = { ...driverInterfaces }
 
   // 只有当 interfaces 是对象且不为空的时候，才执行 connect 逻辑
-  if (isEmptyObj(interfaces)) {
+  if (isObject(interfaces) && !isEmptyObj(interfaces)) {
     const { inputs: { ...outerInputs } = {}, outputs: { ...outerOutputs } = {} } = { ...formatInterfaces(interfaces) }
 
     connectInterfaces(outerInputs, innerInputs)
