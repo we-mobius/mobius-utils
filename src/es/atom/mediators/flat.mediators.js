@@ -11,7 +11,7 @@ export class FlatMediator extends BaseMediator {
   constructor (atom, options) {
     const flattedD = Data.empty()
     super(flattedD)
-    this._atom = flattedD
+    // this._atom = flattedD
     this._origin_atom = atom
     this._connection = null
     this._subscribeController = null
@@ -45,6 +45,7 @@ export class FlatMediator extends BaseMediator {
       // Data -> extract value(Data) -> asIsM -> newData
       const asIsM = Mutation.ofLiftLeft(prevD => prevD)
       this._subscribeController = this._origin_atom.subscribe(({ value }) => {
+        this.disconnect()
         const subscribeController1 = this._atom.observe(asIsM)
         const subscribeController2 = asIsM.observe(value)
         // value is a normal Data which means it will not replay the latest value automatically
@@ -56,11 +57,12 @@ export class FlatMediator extends BaseMediator {
           }
         }
       })
-    } else if (this.isMutation) {
+    } else if (this._origin_atom.isMutation) {
       // Mutation -> tempData -> extract value(Data) -> asIsM -> newData
       const tempData = Data.empty()
       const asIsM = Mutation.ofLiftLeft(prevD => prevD)
       this._subscribeController = tempData.subscribe(({ value }) => {
+        this.disconnect()
         const subscribeController1 = this._atom.observe(asIsM)
         const subscribeController2 = asIsM.observe(value)
         // value is a normal Data which means it will not replay the latest value automatically
