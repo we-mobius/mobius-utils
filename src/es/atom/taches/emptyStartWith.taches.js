@@ -64,8 +64,10 @@ export const dynamicEmptyStartWithT = curryN(2, (start, target) => {
   const outputD = Data.empty()
   pipeAtom(startM, outputD)
 
-  binaryTweenPipeAtom(start, wrapStartM)
+  // subscribe order matters
+  // correct order: target first, start second
   binaryTweenPipeAtom(target, wrapTargetM)
+  binaryTweenPipeAtom(start, wrapStartM)
 
   return outputD
 })
