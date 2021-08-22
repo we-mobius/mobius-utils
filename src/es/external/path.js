@@ -27,7 +27,9 @@ export const removeRepetitionExcept = exceptList => reject((item, index, arr) =>
 // removeRepetitionOfEmpty :: [a] -> ([a] -> [a])
 export const removeRepetitionOfEmpty = removeRepetitionOf([''])
 export const removeRepetitionOfSlash = removeRepetitionOf(['/'])
+const removeInnerEmpty = arr => arr.filter((item, index, arr) => (index === 0 || index === arr.length - 1) ? true : item !== '')
 
+const _keepMinimumPathArr = arr => arr.length === 1 && arr[0] === '' ? ['', ''] : arr
 /**
  * - remove repetition of slash & empty char
  * - add '' or '/' as prefix of pathname
@@ -36,13 +38,35 @@ export const neatenPathname = pathname => {
   // ['path', 'to', 'page'] -> join('/') -> 'path/to/page'
   //   -> expected to be: '/path/to/page', unshift('') solve the problem
   if (isArray(pathname)) {
-    return compose(removeRepetitionOfEmpty, unshift(''))(pathname)
+    return compose(removeInnerEmpty, _keepMinimumPathArr, removeRepetitionOfEmpty, unshift(''))(pathname)
   }
   if (isString(pathname)) {
-    return compose(join('/'), removeRepetitionOfEmpty, unshift(''), split('/'), join(''), removeRepetitionOfSlash, toArray)(pathname)
+    return compose(
+      join('/'), _keepMinimumPathArr, removeRepetitionOfEmpty, split('/'), join(''), removeRepetitionOfSlash, unshift('/'), toArray
+    )(pathname)
   }
 }
 
+/**
+ * @example
+ * ```
+ * pathnameToArray(['']) // ['', '']
+ * pathnameToArray(['', '']) // ['', '']
+ * pathnameToArray(['app', 'page']) // [ '', 'app', 'page' ]
+ * pathnameToArray(['', 'app', 'page']) // [ '', 'app', 'page']
+ * pathnameToArray(['', 'app', '', 'page']) // [ '', 'app', 'page']
+ * pathnameToArray(['', 'app', '', 'page', '']) // [ '', 'app', 'page', '']
+ * pathnameToArray(['', '', 'app', '', 'page', '']) // [ '', 'app', 'page', '']
+ * pathnameToArray(['', '', 'app', '', '', 'page', '']) // [ '', 'app', 'page', '']
+ * pathnameToArray(['', '', 'app', '', '', 'page', '', '']) // [ '', 'app', 'page', '']
+ * pathnameToArray('app/page') // [ '', 'app', 'page' ]
+ * pathnameToArray('/app/page') // [ '', 'app', 'page' ]
+ * pathnameToArray('/app/page/') // [ '', 'app', 'page', '' ]
+ * pathnameToArray('//app/page/') // [ '', 'app', 'page', '' ]
+ * pathnameToArray('//app//page/') // [ '', 'app', 'page', '' ]
+ * pathnameToArray('//app//page//') // [ '', 'app', 'page', '' ]
+ * ```
+ */
 export const pathnameToArray = pathname => {
   const neatedPathname = neatenPathname(pathname)
   if (isArray(neatedPathname)) {
@@ -53,6 +77,27 @@ export const pathnameToArray = pathname => {
   }
 }
 
+/**
+ * @example
+ * ```
+ * pathnameToString(['']) // '/'
+ * pathnameToString(['', '']) // '/'
+ * pathnameToString(['app', 'page']) // '/app/page'
+ * pathnameToString(['', 'app', 'page']) // '/app/page'
+ * pathnameToString(['app', '', 'page']) // '/app/page'
+ * pathnameToString(['app', 'page', '']) // '/app/page/'
+ * pathnameToString(['', 'app', '', 'page', '']) // '/app/page/'
+ * pathnameToString(['', '', 'app', '', '', 'page', '', '']) // '/app/page/'
+ * pathnameToString('') // '/'
+ * pathnameToString('/') // '/'
+ * pathnameToString('//') // '/'
+ * pathnameToString('/app/page') // '/app/page'
+ * pathnameToString('//app/page') // '/app/page'
+ * pathnameToString('//app//page') // '/app/page'
+ * pathnameToString('//app//page/') // '/app/page/'
+ * pathnameToString('//app//page//') // '/app/page/'
+ * ```
+ */
 export const pathnameToString = pathname => {
   const neatedPathname = neatenPathname(pathname)
   if (isString(neatedPathname)) {
@@ -87,58 +132,78 @@ export const isPathnameEqual = (mode, pathnames) => {
 }
 
 // console.log('\n[path.js] pathnameToString:')
-// console.log(pathnameToString(['app', 'page1']))
-// console.log(pathnameToString(['', 'app', 'page1', '']))
-// console.log(pathnameToString(['', 'app', 'page1', '', '']))
-// console.log(pathnameToString(['', '', 'app', 'page1', '', '']))
-// console.log(pathnameToString('/app/page1'))
-// console.log(pathnameToString('//app/page1'))
-// console.log(pathnameToString('//app//page1'))
-// console.log(pathnameToString('//app//page1/'))
-// console.log(pathnameToString('//app//page1//'))
+// console.log(pathnameToString(['']))
+// console.log(pathnameToString(['', '']))
+// console.log(pathnameToString(['app', 'page']))
+// console.log(pathnameToString(['', 'app', 'page']))
+// console.log(pathnameToString(['app', '', 'page']))
+// console.log(pathnameToString(['app', 'page', '']))
+// console.log(pathnameToString(['', 'app', '', 'page', '']))
+// console.log(pathnameToString(['', '', 'app', '', '', 'page', '', '']))
+// console.log(pathnameToString(''))
+// console.log(pathnameToString('/'))
+// console.log(pathnameToString('//'))
+// console.log(pathnameToString('/app/page'))
+// console.log(pathnameToString('//app/page'))
+// console.log(pathnameToString('//app//page'))
+// console.log(pathnameToString('//app//page/'))
+// console.log(pathnameToString('//app//page//'))
 // console.log('\n[path.js] pathnameToArray:')
-// console.log(pathnameToArray(['app', 'page1']))
-// console.log(pathnameToArray(['', 'app', 'page1', '']))
-// console.log(pathnameToArray(['', 'app', 'page1', '', '']))
-// console.log(pathnameToArray(['', '', 'app', 'page1', '', '']))
-// console.log(pathnameToArray('/app/page1'))
-// console.log(pathnameToArray('//app/page1'))
-// console.log(pathnameToArray('//app//page1'))
-// console.log(pathnameToArray('//app//page1/'))
-// console.log(pathnameToArray('//app//page1//'))
+// console.log(pathnameToArray([''])) // ['', '']
+// console.log(pathnameToArray(['', ''])) // ['', '']
+// console.log(pathnameToArray(['app', 'page'])) // [ '', 'app', 'page']
+// console.log(pathnameToArray(['', 'app', 'page'])) // [ '', 'app', 'page']
+// console.log(pathnameToArray(['', 'app', '', 'page'])) // [ '', 'app', 'page']
+// console.log(pathnameToArray(['', 'app', '', 'page', ''])) // [ '', 'app', 'page', '']
+// console.log(pathnameToArray(['', '', 'app', '', 'page', ''])) // [ '', 'app', 'page', '']
+// console.log(pathnameToArray(['', '', 'app', '', '', 'page', ''])) // [ '', 'app', 'page', '']
+// console.log(pathnameToArray(['', '', 'app', '', '', 'page', '', ''])) // [ '', 'app', 'page', '']
+// console.log(pathnameToArray(''))
+// console.log(pathnameToArray('/'))
+// console.log(pathnameToArray('app/page'))
+// console.log(pathnameToArray('/app/page'))
+// console.log(pathnameToArray('/app/page/'))
+// console.log(pathnameToArray('//app/page/'))
+// console.log(pathnameToArray('//app//page/'))
+// console.log(pathnameToArray('//app//page//'))
 // console.log('\n[path.js] isPathnameStrictEqual:')
+// console.log(isPathnameStrictEqual('', ['', '']))
+// console.log(isPathnameStrictEqual('/', ['', '']))
 // console.log(isPathnameStrictEqual('//app//page1//', ['', 'app', 'page1']))
 // console.log(isPathnameStrictEqual('//app//page1//', ['', 'app', 'page1', '']))
 // console.log('\n[path.js] isPathnameLooseEqual:')
+// console.log(isPathnameLooseEqual('', ['', '']))
+// console.log(isPathnameLooseEqual('/', ['', '']))
 // console.log(isPathnameLooseEqual('//app//page1//', ['', 'app', 'page1']))
 // console.log(isPathnameLooseEqual('//app//page1//', ['', 'app', 'page1', '']))
 
 export const neatenSearch = str => isStartWith('?', str) ? str : `?${str}`
 export const neatenQueryStr = str => isStartWith('?', str) ? str.substring(1) : str
 
-export const queryStrToQueryObj = compose(reduce((acc, cur) => {
+// ! 直接用 reduce 会导致变量污染，即 ruduce 的 acc 会被复用
+export const queryStrToQueryObj = compose(tar => reduce((acc, cur) => {
   if (!cur) return acc
   const [key, value] = cur.split('=')
   acc[key] = decodeURIComponent(value)
   return acc
-}, {}), split('&'), neatenQueryStr)
+}, {}, tar), split('&'), neatenQueryStr)
 export const queryObjToQueryStr = compose(join('&'), map(join('=')), map(([k, v]) => [k, encodeURIComponent(v)]), entries)
 export const searchToQueryStr = neatenQueryStr
 export const searchToQueryObj = compose(queryStrToQueryObj, searchToQueryStr)
 export const queryStrToSearch = neatenSearch
 export const queryObjToSearch = compose(queryStrToSearch, queryObjToQueryStr)
 
-export const toSearch = sth => {
-  if (isString(sth)) return neatenSearch(sth)
-  if (isObject(sth)) return queryObjToSearch(sth)
+export const toSearch = tar => {
+  if (isString(tar)) return neatenSearch(tar)
+  if (isObject(tar)) return queryObjToSearch(tar)
 }
-export const toQueryStr = sth => {
-  if (isString(sth)) return neatenQueryStr(sth)
-  if (isObject(sth)) return queryObjToQueryStr(sth)
+export const toQueryStr = tar => {
+  if (isString(tar)) return neatenQueryStr(tar)
+  if (isObject(tar)) return queryObjToQueryStr(tar)
 }
-export const toQueryObj = sth => {
-  if (isString(sth)) return queryStrToQueryObj(sth) // NOTE: queryStrToQueryObj 自带 neatenQueryStr
-  if (isObject(sth)) return sth
+export const toQueryObj = tar => {
+  if (isString(tar)) return queryStrToQueryObj(tar) // NOTE: queryStrToQueryObj 自带 neatenQueryStr
+  if (isObject(tar)) return tar
 }
 
 // console.log('\n[path.js] neatenSearch:')
@@ -169,3 +234,4 @@ export const toQueryObj = sth => {
 // console.log(toQueryObj('a=1&b=2&c=3'))
 // console.log(toQueryObj('?a=1&b=2&c=3'))
 // console.log(toQueryObj({ a: '1', b: '2', c: '3' }))
+// console.log(toQueryObj(''))
