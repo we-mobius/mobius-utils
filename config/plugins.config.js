@@ -69,4 +69,4 @@ const bundleAnalyzer = new BundleAnalyzerPlugin({
 export const getDevelopmentPlugins = () => [indexHtmlPack]
 export const getBuildPlugins = () => [indexHtmlPack]
 export const getProductionPlugins = () => [indexHtmlPack, bundleAnalyzer]
-export const getReleasePlugins = () => [commonClean]
+export const getReleasePlugins = () => []

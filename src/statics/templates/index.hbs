@@ -7,7 +7,7 @@
   <meta http-equiv="Content-Security-Policy" content="{{mobiusConfig.[meta-csp]}}">
   {{!-- 渲染 favicon --}}
   {{#each mobiusConfig.manifest.icons as |icon|}}
-  <link rel="{{icon.rel}}" type="{{icon.type}}" sizes="" href="{{icon.src}}">
+  <link rel="{{icon.rel}}" type="{{icon.type}}" sizes="{{icon.sizes}}" href="{{icon.src}}">
   {{/each}}
   <link rel="icon" type="image/png" href="{{mobiusConfig.favicon}}">
   {{!-- 渲染额外引入的字体资源 --}}
@@ -52,9 +52,6 @@
   {{#each htmlWebpackPlugin.css as |inner-css|}}
   <link rel="stylesheet" href="{{inner-css}}">
   {{/each}}
-  <script>
-    const global = globalThis;
-  </script>
   {{!-- 渲染单独定义的脚本文件 --}}
   {{#each mobiusConfig.scripts as |outer-js|}}
   <link rel='preload' as='script' herf="{{outer-js}}" />

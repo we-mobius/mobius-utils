@@ -48,8 +48,8 @@ export const getBuildConfig = () => ([{
   // },
   entry: {
     // NOTE: entry sort matters style cascading
-    static: './src/static.js',
-    index: './src/index.js'
+    static: './src/static.ts',
+    index: './src/index.ts'
   },
   ...webConfig
 }])
