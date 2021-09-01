@@ -152,7 +152,8 @@
     "/src/*",
     "/public/*",
     "/docs/*",
-    "/bin/*"
+    "/bin/*",
+    "/typings/*"
   ],
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
