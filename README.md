@@ -71,7 +71,7 @@ All the relative documentations of detail, pls check `./docs`，which contains:
 
 ## Author
 
-- **Cigaret** - *Undergraduate of CUC* - kcigaret@outlook.com
+- **Cigaret** - kcigaret@outlook.com
 
 ## License
 
