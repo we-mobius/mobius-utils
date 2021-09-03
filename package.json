@@ -21,7 +21,7 @@
 
     "./ts": "./src/main.ts",
     "./ts/*": "./src/ts/*.ts",
-    "./ts-js/": "./src/ts/*.js",
+    "./ts-js/*": "./src/ts/*.js",
 
     "./esm": "./release/modules/esm/main.js",
     "./umd": {
