@@ -66,11 +66,11 @@ export const getReleaseConfig = () => ([
       // @refer: https://webpack.js.org/configuration/output/#outputlibrarytype
       // libraryTarget: 'umd',
       library: {
-        name: 'MobiusLib',
+        name: 'MobiusUtils',
         type: 'umd'
       },
       // @refer: https://webpack.js.org/configuration/output/#outputglobalobject
-      globalObject: 'this',
+      globalObject: 'globalThis',
       umdNamedDefine: true
     },
     ...reusedConfigs
@@ -88,11 +88,9 @@ export const getReleaseConfig = () => ([
       // @refer: https://webpack.js.org/configuration/output/#outputlibrarytype
       // libraryTarget: 'umd',
       library: {
-        name: 'MobiusLib',
-        type: 'commonjs'
-      },
-      // @refer: https://webpack.js.org/configuration/output/#outputglobalobject
-      globalObject: 'this'
+        name: 'MobiusUtils',
+        type: 'commonjs2'
+      }
     },
     ...reusedConfigs
   },
