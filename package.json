@@ -1,6 +1,6 @@
 {
   "name": "@we-mobius/mobius-utils",
-  "version": "0.3.3",
+  "version": "1.0.0",
   "description": "Utils lib that basically follows FP flavor.",
   "type": "module",
   "typings": "./typings/main.d.ts",
