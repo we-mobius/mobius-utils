@@ -14,15 +14,12 @@
       "node": "./release/modules/esm/main.js",
       "default": "./release/modules/esm/main.js"
     },
-
     "./es": "./release/modules/es/main.js",
     "./es/*": "./release/modules/es/*",
     "./es-js/*": "./release/modules/es/*.js",
-
     "./ts": "./src/main.ts",
     "./ts/*": "./src/ts/*.ts",
     "./ts-js/*": "./src/ts/*.js",
-
     "./esm": "./release/modules/esm/main.js",
     "./umd": {
       "require": "./release/modules/umd/main.cjs",
@@ -31,7 +28,6 @@
       "default": "./release/modules/umd/main.js"
     },
     "./cjs": "./release/modules/cjs/main.cjs",
-
     "./src/*": "./src/*",
     "./src-ts/*": "./src/*.ts",
     "./src-js/*": "./src/*.js",
@@ -42,7 +38,6 @@
     "./esm/*": "./release/modules/esm/*",
     "./cjs/*": "./release/modules/cjs/*",
     "./umd/*": "./release/modules/umd/*",
-
     "./package.json": "./package.json"
   },
   "typesVersions": {
@@ -123,6 +118,7 @@
     "@babel/plugin-transform-runtime": "^7.11.5",
     "@babel/preset-env": "^7.11.5",
     "@commitlint/cli": "^8.3.5",
+    "@types/rx": "^4.1.2",
     "@typescript-eslint/eslint-plugin": "^4.30.0",
     "@typescript-eslint/parser": "^4.30.0",
     "babel-loader": "^8.1.0",
