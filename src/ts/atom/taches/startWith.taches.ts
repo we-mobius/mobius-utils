@@ -1,6 +1,6 @@
 import { curryN } from '../../functional'
-import { TERMINATOR } from '../meta'
-import { Data, Mutation, isAtom } from '../atom'
+import { TERMINATOR } from '../metas'
+import { Data, Mutation, isAtom } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
@@ -61,7 +61,7 @@ export const dynamicStartWithT = curryN(2, (start, target) => {
         _internalStates.startExpired = true
         _internalValues.targetQueue.unshift(value)
         _internalValues.targetQueue.forEach(target => {
-          mutation.triggerOperation(() => target)
+          mutation.triggerTransformation(() => target)
         })
         _internalValues.targetQueue.length = 0
         return TERMINATOR

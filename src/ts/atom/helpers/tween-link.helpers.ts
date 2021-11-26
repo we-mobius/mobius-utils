@@ -1,14 +1,20 @@
 import { isArray } from '../../internal'
-import { isAtom, isData, isMutation, Mutation, Data } from '../atom'
+import { isAtom, isData, isMutation, Mutation, Data } from '../atoms'
 import { isSameTypeOfAtom } from './base.helpers'
 import { pipeAtom, composeAtom } from './normal-link.helpers'
 
-export const tweenAtom = (upstreamAtom, downstreamAtom) => {
+import type { DataMediator, MutationMediator } from '../mediators'
+
+type ValidAtom = Data<any> | Mutation<any, any> | DataMediator<Data<any>> | MutationMediator<Mutation<any, any>>
+
+type ITweenAtom = (upstreamAtom: ValidAtom, downstreamAtom: ValidAtom) => ValidAtom[]
+
+export const tweenAtom: ITweenAtom = (upstreamAtom, downstreamAtom) => {
   if (!isAtom(upstreamAtom)) {
-    throw (new TypeError('"upstreamAtom" argument of tweenAtom are expected to be type of "Atom".'))
+    throw (new TypeError('"upstreamAtom" is expected to be type of "Atom" or "AtomLike".'))
   }
   if (!isAtom(downstreamAtom)) {
-    throw (new TypeError('"downstreamAtom" argument of tweenAtom are expected to be type of "Atom".'))
+    throw (new TypeError('"downstreamAtom" is expected to be type of "Atom" or "AtomLike".'))
   }
 
   if (!isSameTypeOfAtom(upstreamAtom, downstreamAtom)) {
@@ -29,24 +35,31 @@ export const tweenAtom = (upstreamAtom, downstreamAtom) => {
     return [upstreamAtom, tweenAtom, downstreamAtom]
   }
 }
-export const tweenAtoms = (...args) => {
+
+interface ITweenAtoms {
+  (...atoms: ValidAtom[]): typeof atoms
+  (...atoms: [ValidAtom[]]): typeof atoms[0]
+}
+export const tweenAtoms: ITweenAtoms = (...args: any[]): any => {
   if (args.length === 1 && isArray(args[0])) {
     args = args[0]
   }
   const tweenedAtoms = args.reduce((acc, cur, idx, arr) => {
-    const next = arr[idx + 1]
-    if (next) {
-      acc.push(...tweenAtom(cur, next).slice(1))
+    const hasNext = arr[idx + 1]
+    if (hasNext !== undefined) {
+      acc.push(...tweenAtom(cur, hasNext).slice(1))
     }
     return acc
   }, [args[0]])
   return tweenedAtoms
 }
+
+type ITweenPipeAtom = ITweenAtoms
 /**
  * Automatically pipe two atom
  *
- * - if they are in the different type, use normal pipe logic
- * - if they are in the same type, create a tween atom between them,
+ * - if they are in different type, use normal pipe logic
+ * - if they are in same type, create a tween atom between them,
  *   then use normal pipe logic to three atom
  *   - for Data atom, tween atom is the type of Mutation (asIs Mutation)
  *   - for Mutation atom, tween atom is the type of Data
@@ -55,23 +68,23 @@ export const tweenAtoms = (...args) => {
  * @param downstreamAtom Atom, i.e. Data | Mutation
  * @return downstreamAtom
  */
-export const binaryTweenPipeAtom = (...args) => {
+export const binaryTweenPipeAtom: ITweenPipeAtom = (...args: any[]): any => {
   if (args.length === 1 && isArray(args[0])) {
     args = args[0]
   }
   // 只取前两项
-  args = args.slice(0, 2)
-  const [upstreamAtom, downstreamAtom] = args
+  const [upstreamAtom, downstreamAtom] = args.slice(0, 2)
   const tweenedAtoms = tweenAtom(upstreamAtom, downstreamAtom)
   pipeAtom(...tweenedAtoms)
   return tweenedAtoms
 }
 
+type ITweenComposeAtom = ITweenAtoms
 /**
  * Automatically compose two atom
  *
- * - if they are in the different type, use normal compose logic
- * - if they are in the same type, create a tween atom between them,
+ * - if they are in different type, use normal compose logic
+ * - if they are in same type, create a tween atom between them,
  *   then use normal compose logic to three atom
  *   - for Data atom, tween atom is the type of Mutation (asIs Mutation)
  *   - for Mutation atom, tween atom is the type of Data
@@ -80,21 +93,21 @@ export const binaryTweenPipeAtom = (...args) => {
  * @param upstreamAtom Atom, i.e. Data | Mutation
  * @return downstreamAtom
  */
-export const binaryTweenComposeAtom = (...args) => {
+export const binaryTweenComposeAtom: ITweenComposeAtom = (...args: any[]): any => {
   if (args.length === 1 && isArray(args[0])) {
     args = args[0]
   }
   // 只取最后两项
-  args = args.slice(-2)
-  const [downstreamAtom, upstreamAtom] = args
+  const [downstreamAtom, upstreamAtom] = args.slice(-2)
   const tweenedAtoms = tweenAtom(downstreamAtom, upstreamAtom)
   composeAtom(...tweenedAtoms)
   return tweenedAtoms
 }
+
 /**
  * 将 n 个 Atom 顺序进行补间连接
  */
-export const nAryTweenPipeAtom = (...args) => {
+export const nAryTweenPipeAtom: ITweenPipeAtom = (...args: any[]): any => {
   if (args.length === 1 && isArray(args[0])) {
     args = args[0]
   }
@@ -103,15 +116,16 @@ export const nAryTweenPipeAtom = (...args) => {
   return tweenedAtoms
 }
 export const tweenPipeAtom = nAryTweenPipeAtom
+
 /**
  * 将 n 个 Atom 逆序进行补间连接
  */
-export const nAryTweenComposeAtom = (...args) => {
+export const nAryTweenComposeAtom: ITweenComposeAtom = (...args: any[]): any => {
   if (args.length === 1 && isArray(args[0])) {
     args = args[0]
   }
   const tweenedAtoms = tweenAtoms(...args)
-  composeAtom(tweenAtoms)
+  composeAtom(...tweenedAtoms)
   return tweenedAtoms
 }
 export const tweenComposeAtom = nAryTweenComposeAtom

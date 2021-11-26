@@ -1,6 +1,6 @@
 import { isArray, isObject } from '../../internal'
-import { TERMINATOR, isTerminator } from '../meta'
-import { Mutation, Data, isAtom } from '../atom'
+import { TERMINATOR, isTerminator } from '../metas'
+import { Mutation, Data, isAtom } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
 /**

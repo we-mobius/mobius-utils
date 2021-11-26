@@ -1,101 +1,138 @@
-import { isObject, isArray, isFunction, isEmptyObj } from '../../internal'
+import { isPlainObject, isArray, isFunction, isEmptyObj, isNil } from '../../internal/base'
 import { looseCurryN } from '../../functional'
-import { isAtom, Data } from '../atom'
+import { isAtom, Data } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { binaryTweenPipeAtom } from '../helpers'
 
+import type { Mutation } from '../atoms'
+import type { DataMediator, MutationMediator, ReplayDataMediator, ReplayMutationMediator } from '../mediators'
+
+export interface DriverOptions {
+  [key: string]: any
+}
+export interface DriverLevelContexts {
+  inputs?: { [key: string]: any }
+  outputs?: { [key: string]: any }
+  [key: string]: any
+}
+export interface SingletonLevelContexts {
+  inputs?: { [key: string]: any }
+  outputs?: { [key: string]: any }
+  [key: string]: any
+}
+
+const DEFAULT_DRIVER_OPTIONS: DriverOptions = {}
+const DEFAULT_DRIVER_LEVEL_CONTEXTS: DriverLevelContexts = { inputs: {}, outputs: {} }
+const DEFAULT_SINGLETON_LEVEL_CONTEXTS: SingletonLevelContexts = { inputs: {}, outputs: {} }
+
+type PrepareOptions = (options: DriverOptions) => DriverOptions
+type PrepareDriverLevelContexts = () => DriverLevelContexts
+type PrepareSingletonLevelContexts = (options: DriverOptions, driverLevelContexts: DriverLevelContexts) => SingletonLevelContexts
+type PrepareInstance = (options: DriverOptions, driverLevelContexts: DriverLevelContexts, singletonLevelContexts: SingletonLevelContexts) => { [key: string]: any }
+
+const defaultPrepareOptions: PrepareOptions = (options) => options
+const defaultPrepareDriverLevelContexts: PrepareDriverLevelContexts = () => DEFAULT_DRIVER_LEVEL_CONTEXTS
+const defaultPrepareSingletonLevelContexts: PrepareSingletonLevelContexts = (options, driverLevelContexts) => DEFAULT_SINGLETON_LEVEL_CONTEXTS
+const defaultPrepareInstance: PrepareInstance = (options, driverLevelContexts, singletonLevelContexts) => ({ ...singletonLevelContexts })
+
+export interface GeneralDriverCreateOptions {
+  prepareOptions?: PrepareOptions
+  prepareDriverLevelContexts?: PrepareDriverLevelContexts
+  prepareSingletonLevelContexts?: PrepareSingletonLevelContexts
+  prepareInstance: PrepareInstance
+}
+
+const DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS: Required<GeneralDriverCreateOptions> = {
+  prepareOptions: defaultPrepareOptions,
+  prepareDriverLevelContexts: defaultPrepareDriverLevelContexts,
+  prepareSingletonLevelContexts: defaultPrepareSingletonLevelContexts,
+  prepareInstance: defaultPrepareInstance
+}
+
+export interface DriverInterfaces {
+  inputs?: { [key: string]: any }
+  outputs?: { [key: string]: any }
+}
+export type DriverFactory = (options: DriverOptions) => DriverInterfaces
+
 /**
- * @param { {
- *   prepareOptions?: ((options: object) => object),
- *   prepareDriverLevelContexts?: (() => object),
- *   prepareSingletonLevelContexts?: ((options: object, driverLevelContexts: object) => object),
- *   prepareInstance: (options: object, driverLevelContexts: object, singletonLevelContexts: object) => { inputs: object, outputs: object }
- * } | function } createOptions
- * @return { (options?: {}) => { inputs: object, outputs: object } } Driver
+ * @param { GeneralDriverCreateOptions | PrepareSingletonLevelContexts } createOptions
+ * @return { DriverFactory } DriverFactory :: `(options?: {}) => { inputs: object, outputs: object }`
  */
-export const createGeneralDriver = (createOptions = {}) => {
-  if (!isObject(createOptions) && !isFunction(createOptions)) {
-    throw (new TypeError(`"createOptions" is expected to be type of "Object" | "Function", but received "${typeof createOptions}".`))
+export const createGeneralDriver = (
+  createOptions: GeneralDriverCreateOptions | PrepareSingletonLevelContexts = DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS
+): DriverFactory => {
+  if (!isPlainObject(createOptions) && !isFunction(createOptions)) {
+    throw (new TypeError('"createOptions" is expected to be type of "PlainObject" | "Function".'))
   }
   if (isFunction(createOptions)) {
-    createOptions = { prepareSingletonLevelContexts: createOptions }
+    createOptions = { ...DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS, prepareSingletonLevelContexts: createOptions }
+  } else {
+    createOptions = { ...DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS, ...createOptions }
   }
 
   const {
-    prepareOptions = options => options,
-    prepareDriverLevelContexts = () => ({}),
-    prepareSingletonLevelContexts = _ => ({}),
-    prepareInstance = (_0, _1, singletonLevelContexts) => ({ ...singletonLevelContexts })
-  } = createOptions
+    prepareOptions, prepareDriverLevelContexts, prepareSingletonLevelContexts, prepareInstance
+  } = createOptions as Required<GeneralDriverCreateOptions>
 
-  if (!isFunction(prepareOptions)) {
-    throw (new TypeError(`"prepareOptions" is expected to be type of "Function", but received "${typeof prepareOptions}".`))
+  const _driverLevelContexts = prepareDriverLevelContexts()
+  if (!isPlainObject(_driverLevelContexts)) {
+    throw (new TypeError('The returned value of "prepareDriverLevelContexts" is expected to be type of "PlainObject".'))
   }
-  if (!isFunction(prepareDriverLevelContexts)) {
-    throw (new TypeError(`"prepareDriverLevelContexts" is expected to be type of "Function", but received "${typeof prepareDriverLevelContexts}".`))
-  }
-  if (!isFunction(prepareSingletonLevelContexts)) {
-    throw (new TypeError(`"prepareSingletonLevelContexts" is expected to be type of "Function", but received "${typeof prepareSingletonLevelContexts}".`))
-  }
-  if (!isFunction(prepareInstance)) {
-    throw (new TypeError(`"prepareInstance" is expected to be type of "Function", but received "${typeof prepareInstance}".`))
-  }
-
-  const driverLevelContexts = prepareDriverLevelContexts()
-  if (!isObject(driverLevelContexts)) {
-    throw (new TypeError(`"driverLevelContexts" is expected to be type of "Object", but received "${typeof driverLevelContexts}"`))
-  }
+  const preparedDriverLevelContexts = { ...DEFAULT_DRIVER_LEVEL_CONTEXTS, ...prepareDriverLevelContexts() }
 
   /**
-   * @param { object? } options In order to clarify the role of each configuration item,
-   *                            the configuration is best to be in object format.
-   * @return { { inputs: object, outputs: object } } DriverInterfaces
+   * @param { DriverOptions } [options = DEFAULT_DRIVER_OPTIONS] In order to clarify the role of each configuration item,
+   *                                           the configuration is best to be in object format.
+   * @return { DriverFactory } DriverFactory
    */
-  const driver = (options = {}) => {
-    if (!isObject(options)) {
-      throw (new TypeError(`"options" is expected to be type of "Object", but received "${typeof options}".`))
+  const driverFactory = (options: DriverOptions = DEFAULT_DRIVER_OPTIONS): DriverInterfaces => {
+    if (!isPlainObject(options)) {
+      throw (new TypeError('"options" is expected to be type of "PlainObject".'))
     }
 
-    options = prepareOptions(options)
-    if (!isObject(options)) {
-      throw (new TypeError(`The returned value of "prepareOptions" is expected to be type of "Object", but received "${typeof options}".`))
+    const _options = prepareOptions(options)
+    if (!isPlainObject(_options)) {
+      throw (new TypeError('The returned value of "prepareOptions" is expected to be type of "PlainObject".'))
+    }
+    const preparedOptions = { ...DEFAULT_DRIVER_OPTIONS, ..._options }
+
+    const _singletonLevelContexts = prepareSingletonLevelContexts(preparedOptions, preparedDriverLevelContexts)
+    if (!isPlainObject(_singletonLevelContexts)) {
+      throw (new TypeError('"singletonLevelContexts" is expected to be type of "PlainObject"'))
+    }
+    const preparedSingletomLevelContexts = { ...DEFAULT_SINGLETON_LEVEL_CONTEXTS, ..._singletonLevelContexts }
+
+    const { inputs, outputs } = preparedSingletomLevelContexts
+    if (!isPlainObject(inputs)) {
+      throw (new TypeError('"inputs" returned as singletonLevelContexts is expected to be type of "PlainObject"'))
+    }
+    if (!isPlainObject(outputs)) {
+      throw (new TypeError('"outputs" returned as singletonLevelContexts is expected to be type of "PlainObject"'))
     }
 
-    const singletonLevelContexts = prepareSingletonLevelContexts(options, driverLevelContexts)
-    if (!isObject(singletonLevelContexts)) {
-      throw (new TypeError(`"singletonLevelContexts" is expected to be type of "Object", but received "${typeof singletonLevelContexts}"`))
-    }
-
-    const { inputs = {}, outputs = {} } = singletonLevelContexts
-    if (!isObject(inputs)) {
-      throw (new TypeError(`"inputs" returned as singletonLevelContexts is expected to be type of "Object", but received "${typeof inputs}"`))
-    }
-    if (!isObject(outputs)) {
-      throw (new TypeError(`"outputs" returned as singletonLevelContexts is expected to be type of "Object", but received "${typeof outputs}"`))
-    }
-
-    const driverInterfaces = prepareInstance(options, driverLevelContexts, singletonLevelContexts)
+    const driverInterfaces = prepareInstance(preparedOptions, preparedDriverLevelContexts, preparedSingletomLevelContexts)
 
     return driverInterfaces
   }
 
-  return driver
+  return driverFactory
 }
 
-const formatInterfaces = interfaces => {
-  if (!isObject(interfaces)) {
-    throw (new TypeError(`"interfaces" is expected to be type of "Object", but received "${typeof interfaces}"`))
+const formatDriverInterfaces = (driverInterfaces: DriverInterfaces): DriverInterfaces => {
+  if (!isPlainObject(driverInterfaces)) {
+    throw (new TypeError('"driverInterfaces" is expected to be type of "PlainObject".'))
   }
-  const { inputs: { ...inputs } = {}, outputs: { ...outputs } = {} } = interfaces
+  const { inputs: { ...inputs } = {}, outputs: { ...outputs } = {} } = driverInterfaces
 
-  if (!isObject(inputs)) {
-    throw (new TypeError(`"inputs" of interfaces is expected to be type of "Object", but received "${typeof inputs}"`))
+  if (!isPlainObject(inputs)) {
+    throw (new TypeError('"inputs" of interfaces is expected to be type of "PlainObject".'))
   }
-  if (!isObject(outputs)) {
-    throw (new TypeError(`"outputs" of interfaces is expected to be type of "Object", but received "${typeof outputs}"`))
+  if (!isPlainObject(outputs)) {
+    throw (new TypeError('"outputs" of interfaces is expected to be type of "PlainObject".'))
   }
 
-  Object.entries(interfaces).forEach(([key, value]) => {
+  Object.entries(driverInterfaces).forEach(([key, value]) => {
     if (key !== 'inputs' && key !== 'outputs') {
       inputs[key] = value
     }
@@ -104,8 +141,22 @@ const formatInterfaces = interfaces => {
   return { inputs: { ...inputs }, outputs: { ...outputs } }
 }
 
-export const connectInterfaces = (up, down) => {
-  const normalize = value => isAtom(value) ? replayWithLatest(1, value) : replayWithLatest(1, Data.of(value))
+type ValidAtom = Data<any> | Mutation<any, any> | DataMediator<Data<any>> | MutationMediator<Mutation<any, any>>
+interface IConnectDriverInterfaces {
+  (up: ValidAtom, down: any): void
+  (up: any, down: ValidAtom): void
+  (up: Record<string, any>, down: Record<string, any>): void
+  (up: any[], down: any[]): void
+}
+export const connectDriverInterfaces: IConnectDriverInterfaces = (up: any, down: any): void => {
+  interface INormalize {
+    <D extends Data<any>>(value: D): ReplayDataMediator<D>
+    <D extends ReplayDataMediator<Data<any>>>(value: D): D
+    <M extends Mutation<any, any>>(value: M): ReplayMutationMediator<M>
+    <M extends ReplayMutationMediator<Mutation<any, any>>>(value: M): M
+    <D>(value: D): Data<D>
+  }
+  const normalize: INormalize = (value: any): any => isAtom(value) ? replayWithLatest(1, value as any) : replayWithLatest(1, Data.of(value))
 
   // The up & down value are expected to be type of Atom,
   //   -> one of the up | down value is required to be type of Atom at least.
@@ -114,7 +165,7 @@ export const connectInterfaces = (up, down) => {
     if (isArray(down)) {
       down.forEach(i => {
         if (isAtom(i)) {
-          binaryTweenPipeAtom(normalize(up), i)
+          binaryTweenPipeAtom(normalize(up), i as ValidAtom)
         } else {
           // do nothing
         }
@@ -124,19 +175,19 @@ export const connectInterfaces = (up, down) => {
     }
   } else if (isAtom(up) && isAtom(down)) {
     // downstream atom do not need to be replayable
-    binaryTweenPipeAtom(normalize(up), down)
+    binaryTweenPipeAtom(normalize(up), down as ValidAtom)
   } else if (!isAtom(up) && isAtom(down)) {
-    binaryTweenPipeAtom(normalize(up), down)
-  } else if (isObject(up) && isObject(down)) {
+    binaryTweenPipeAtom(normalize(up), down as ValidAtom)
+  } else if (isPlainObject(up) && isPlainObject(down)) {
     Object.entries(up).forEach(([key, value]) => {
-      if (down[key]) {
-        connectInterfaces(value, down[key])
+      if (!isNil(down[key])) {
+        connectDriverInterfaces(value, down[key])
       }
     })
-  } else if (isArray(up) && isArray(down)) {
+  } else if (isArray<any>(up) && isArray<any>(down)) {
     up.forEach((value, idx) => {
-      if (down[idx]) {
-        connectInterfaces(value, down[idx])
+      if (!isNil(down[idx])) {
+        connectDriverInterfaces(value, down[idx])
       }
     })
   } else {
@@ -146,24 +197,33 @@ export const connectInterfaces = (up, down) => {
     ))
   }
 }
+
 /**
- * @param { function } driver
- * @param { { } } driverOptions
- * @param { { inputs?: object, outputs?: object } } interfaces
- * @return { { inputs: object, outputs: object, ... } }
+ * @param { DriverFactory } driverFactory
+ * @param { DriverOptions } driverOptions
+ * @param { DriverInterfaces } interfaces
+ * @return { DriverInterfaces } driverInterfaces
  */
-export const useGeneralDriver = looseCurryN(3, (driver, driverOptions, interfaces) => {
+export const useGeneralDriver = (driver: DriverFactory, driverOptions: DriverOptions, interfaces: DriverInterfaces): DriverInterfaces => {
   const driverInterfaces = driver(driverOptions)
 
   const { inputs: { ...innerInputs } = {}, outputs: { ...innerOutputs } = {}, ...others } = { ...driverInterfaces }
 
   // 只有当 interfaces 是对象且不为空的时候，才执行 connect 逻辑
-  if (isObject(interfaces) && !isEmptyObj(interfaces)) {
-    const { inputs: { ...outerInputs } = {}, outputs: { ...outerOutputs } = {} } = { ...formatInterfaces(interfaces) }
+  if (isPlainObject(interfaces) && !isEmptyObj(interfaces)) {
+    const { inputs: { ...outerInputs } = {}, outputs: { ...outerOutputs } = {} } = { ...formatDriverInterfaces(interfaces) }
 
-    connectInterfaces(outerInputs, innerInputs)
-    connectInterfaces(innerOutputs, outerOutputs)
+    connectDriverInterfaces(outerInputs, innerInputs)
+    connectDriverInterfaces(innerOutputs, outerOutputs)
   }
 
   return { inputs: innerInputs, outputs: innerOutputs, ...others }
-})
+}
+
+/**
+ * @param { DriverFactory } driverFactory
+ * @param { DriverOptions } driverOptions
+ * @param { DriverInterfaces } interfaces
+ * @return { DriverInterfaces } driver
+ */
+export const useGeneralDriver_ = looseCurryN(3, useGeneralDriver)

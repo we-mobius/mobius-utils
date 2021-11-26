@@ -1,42 +1,48 @@
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { isNil, isArray, isPlainObject, isFunction } from '../internal/base'
 import { curry } from '../functional'
 
 export const perf = {
-  get now () {
+  get now (): number {
     return Math.round(performance.now())
   }
 }
 
-export const stdLineLog = curry((file, fnName, description) => `[${perf.now}][${file}] ${fnName}: ${description}...`)
-export const makeTigerLogger = textGen => (text, appends) => console.log(textGen(text || ''), appends || '')
-export const makeLinedTigerLogger = (file, fileName) => makeTigerLogger(stdLineLog(file, fileName))
+/**
+ * @deprecated 重新规划一个更好的日志方案，支持运行时日志和应用监控两个主要场景
+ * @param { string } file file name
+ * @param { string } functionName function name
+ * @param { string } description description
+ * @return { void } no return value
+ */
+export const stdLineLog = curry(
+  (file: string, functionName: string, description: string) => `[${perf.now}][${file}] ${functionName}: ${description}`
+)
 
-// @ref: https://mostly-adequate.gitbooks.io/mostly-adequate-guide/content/appendix_a.html
-// inspect :: a -> String
-export const inspect = (x) => {
-  if (x && typeof x.inspect === 'function') {
+// reference: https://mostly-adequate.gitbooks.io/mostly-adequate-guide/content/appendix_a.html
+
+/**
+ * @signature inspect :: a -> string
+ */
+export const inspect = (x: any): string => {
+  if (isNil(x)) {
+    return String(x)
+  } else if (typeof x.inspect === 'function') {
     return x.inspect()
-  }
-
-  function inspectFn (f) {
-    return f.name ? f.name : f.toString()
-  }
-
-  function inspectTerm (t) {
-    switch (typeof t) {
-      case 'string':
-        return `'${t}'`
-      case 'object': {
-        const ts = Object.keys(t).map(k => [k, inspect(t[k])])
-        return `{${ts.map(kv => kv.join(': ')).join(', ')}}`
+  } else {
+    const inspectTerm = (target: any): string => {
+      if (isFunction(target)) {
+        return target.name !== '' ? target.name : target.toString()
+      } else if (isArray(target)) {
+        return `[${target.map(inspect).join(', ')}]`
+      } else if (isPlainObject(target)) {
+        const pairs = Object.entries(target).map(([k, v]) => [k, inspect(v)])
+        return `{${pairs.map(kv => kv.join(': ')).join(', ')}}`
+      } else {
+        return String(target)
       }
-      default:
-        return String(t)
     }
+    return inspectTerm(x)
   }
-
-  function inspectArgs (args) {
-    return Array.isArray(args) ? `[${args.map(inspect).join(', ')}]` : inspectTerm(args)
-  }
-
-  return (typeof x === 'function') ? inspectFn(x) : inspectArgs(x)
 }

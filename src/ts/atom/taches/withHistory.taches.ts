@@ -1,7 +1,7 @@
 import { isNumber } from '../../internal'
 import { curryN, pipe } from '../../functional'
-import { TERMINATOR } from '../meta'
-import { isAtom, Mutation, Data } from '../atom'
+import { TERMINATOR } from '../metas'
+import { isAtom, Mutation, Data } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 

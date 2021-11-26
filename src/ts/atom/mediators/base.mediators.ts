@@ -1,141 +1,238 @@
-import { isObject } from '../../internal'
+import { isObject, isEmpty } from '../../internal/base'
 import { pipe, compose } from '../../functional'
 
-export const isMediator = tar => isObject(tar) && tar.isMediator
+import { Vain } from '../vain'
+import { isAtom, isData, isMutation, GC_DATA, GC_MUTATION } from '../atoms'
 
-export class BaseMediator {
-  constructor (atom) {
+import type { AtomLike, BaseAtom, Data, Mutation } from '../atoms'
+
+type AnyFunction = (...args: any[]) => any
+
+/******************************************************************************************************
+ *
+ *                                           Mediator Predicatess
+ *
+ ******************************************************************************************************/
+
+/**
+ * @param { any } tar anything
+ * @return { boolean } whether the target is an Mediator instance
+ */
+export const isMediator = <A extends BaseAtom>(tar: any): tar is BaseMediator<A> => isObject(tar) && tar.isMediator
+
+/******************************************************************************************************
+ *
+ *                                           Mediator Classes
+ *
+ ******************************************************************************************************/
+
+/**
+ *
+ */
+interface _MediatorTypeSymbol /** private */ { _type: 'MediatorType' }
+export type MediatorTypeMaker<T extends string> = T & _MediatorTypeSymbol
+export type MediatorType = string & _MediatorTypeSymbol
+
+/**
+ *
+ */
+export abstract class BaseMediator<BA extends BaseAtom> extends Vain {
+  _atom: BA
+
+  constructor (atom: BA) {
+    super()
     if (new.target === BaseMediator) {
-      throw new Error('BaseMediator can not be instantiated!')
+      throw new Error('Mediator class can not be instantiated!')
     }
+
     this._atom = atom
   }
 
-  /***********************************************************
-   *             Mediator's propertys and methods
-   ***********************************************************/
+  /******************************************************************************************************
+   *                                    Mediator's propertys and methods
+   ******************************************************************************************************/
 
-  get isMediator () {
-    return true
-  }
+  get isMediator (): true { return true }
 
-  /***********************************************************
-   *                Atom's propertys and methods
-   ***********************************************************/
+  abstract get mediatorType (): MediatorType
 
-  get atom () {
-    return this._atom
-  }
+  /******************************************************************************************************
+   *                                    Atom's propertys and methods
+   ******************************************************************************************************/
 
-  get isAtom () {
-    return this._atom.isAtom
-  }
+  get atom (): BA { return this._atom }
 
-  get isData () {
-    return this._atom.isData
-  }
+  get atomType (): BA['atomType'] { return this._atom.atomType }
 
-  get isMutation () {
-    return this._atom.isMutation
-  }
+  get particleName (): BA['particleName'] { return this._atom.particleName }
+  get particle (): BA['particle'] { return this._atom.particle }
+  get metaName (): BA['metaName'] { return this._atom.metaName }
+  get meta (): BA['meta'] { return this._atom.meta }
 
-  get isEmpty () {
-    return this._atom.isEmpty
-  }
+  get consumers (): BA['consumers'] { return this._atom.consumers }
 
-  get datar () {
-    if (this.isData) {
-      return this._atom.datar
-    } else {
-      throw (new TypeError('There is no "datar" property on Mutation instance.'))
-    }
-  }
+  get isAtom (): boolean { return isAtom(this._atom) }
 
-  get value () {
-    if (this.isData) {
-      return this._atom.value
-    } else {
-      throw (new TypeError('There is no "value" property on Mutation instance.'))
-    }
-  }
+  get isData (): boolean { return isData(this._atom) }
 
-  get mutator () {
-    if (this.isMutation) {
-      return this._atom.mutator
-    } else {
-      throw (new TypeError('There is no "mutator" property on Data instance.'))
-    }
-  }
+  get isMutation (): boolean { return isMutation(this._atom) }
 
-  get operation () {
-    if (this.isMutation) {
-      return this._atom.operation
-    } else {
-      throw (new TypeError('There is no "operation" property on Data instance.'))
-    }
-  }
+  get isEmpty (): boolean { return isEmpty(this._atom) }
 
-  subscribe (...args) {
-    return this._atom.subscribe(...args)
-  }
-
-  subscribeValue (...args) {
-    return this._atom.subscribeValue(...args)
-  }
-
-  subscribeOperation (...args) {
-    return this._atom.subscribeOperation(...args)
-  }
-
-  trigger (...args) {
-    return this._atom.trigger(...args)
-  }
-
-  triggerValue (...args) {
-    if (this.isData) {
-      return this._atom.triggerValue(...args)
-    } else {
-      throw (new TypeError('There is no "triggerValue" method on Mutation instance.'))
-    }
-  }
-
-  triggerOperation (...args) {
-    if (this.isMutation) {
-      return this._atom.triggerOperation(...args)
-    } else {
-      throw (new TypeError('There is no "triggerOperation" method on Data instance.'))
-    }
-  }
-
-  observe (...args) {
-    return this._atom.observe(...args)
-  }
-
-  beObservedBy (...args) {
-    return this._atom.beObservedBy(...args)
-  }
-
-  mutate (...args) {
-    return this._atom.mutate(...args)
-  }
-
-  registerTrigger (...args) {
-    return this._atom.registerTrigger(...args)
-  }
-
-  pipe (...args) {
+  pipe (...args: Parameters<BA['pipe']>): ReturnType<BA['pipe']> {
     // ! do not use:
     // ! return this._atom.pipe(...args)
-    return pipe(...args)(this)
+    return (pipe(...args) as AnyFunction)(this)
   }
 
-  compose (...args) {
+  compose (...args: Parameters<BA['compose']>): ReturnType<BA['compose']> {
     // ! do not use:
     // ! return this._atom.compose(...args)
+
     return compose(...args)(this)
   }
 
-  release () {
-    this._atom = null
+  release (): void {
+    if (isData(this._atom)) {
+      this._atom = GC_DATA as unknown as BA
+    } else if (isMutation(this._atom)) {
+      this._atom = GC_MUTATION as unknown as BA
+    } else {
+      throw (new TypeError('Invalid atom type!'))
+    }
+  }
+}
+
+/******************************************************************************************************
+ *
+ *                                               DataMediator
+ *
+ ******************************************************************************************************/
+
+/**
+ *
+ */
+export abstract class DataMediator<I extends Data<any>, V> extends BaseMediator<Data<V>> implements AtomLike {
+  get datar (): Data<V>['datar'] {
+    return this._atom.datar
+  }
+
+  get value (): Data<V>['value'] {
+    return this._atom.value
+  }
+
+  subscribe (...args: Parameters<I['subscribe']>): ReturnType<I['subscribe']> {
+    // return this._atom.subscribe(...args) as ReturnType<I['subscribe']>
+    // NOTE: for type support
+    return this._atom.subscribe(args[0], args[1]) as ReturnType<I['subscribe']>
+  }
+
+  subscribeValue (...args: Parameters<I['subscribeValue']>): ReturnType<I['subscribeValue']> {
+    // return this._atom.subscribeValue(...args) as ReturnType<I['subscribeValue']>
+    // NOTE: for type support
+    return this._atom.subscribeValue(args[0], args[1]) as ReturnType<I['subscribeValue']>
+  }
+
+  trigger (...args: Parameters<I['trigger']>): ReturnType<I['trigger']> {
+    return this._atom.trigger(...args) as ReturnType<I['trigger']>
+  }
+
+  triggerValue (...args: Parameters<I['triggerValue']>): ReturnType<I['triggerValue']> {
+    return this._atom.triggerValue(...args) as ReturnType<I['triggerValue']>
+  }
+
+  observe (...args: Parameters<I['observe']>): ReturnType<I['observe']> {
+    // return this._atom.observe(...args) as ReturnType<I['observe']>
+    // NOTE: for type support
+    return this._atom.observe(args[0]) as ReturnType<I['observe']>
+  }
+
+  beObservedBy (...args: Parameters<I['beObservedBy']>): ReturnType<I['beObservedBy']> {
+    // return this._atom.beObservedBy(...args) as ReturnType<I['beObservedBy']>
+    // NOTE: for type support
+    return this._atom.beObservedBy(args[0]) as ReturnType<I['beObservedBy']>
+  }
+
+  mutate (...args: Parameters<I['mutate']>): ReturnType<I['mutate']> {
+    // return this._atom.mutate(...args) as ReturnType<I['mutate']>
+    // NOTE: for type support
+    return this._atom.mutate(args[0], args[1]) as ReturnType<I['mutate']>
+  }
+
+  registerTrigger (...args: Parameters<I['registerTrigger']>): ReturnType<I['registerTrigger']> {
+    // return this._atom.registerTrigger(...args) as ReturnType<I['registerTrigger']>
+    // NOTE: for type support
+    return this._atom.registerTrigger(args[0], args[1]) as ReturnType<I['registerTrigger']>
+  }
+
+  release (): void {
+    this._atom = GC_DATA as I
+  }
+}
+
+/******************************************************************************************************
+ *
+ *                                            MutationMediator
+ *
+ ******************************************************************************************************/
+
+/**
+ *
+ */
+export abstract class MutationMediator<I extends Mutation<any, any>> extends BaseMediator<I> implements AtomLike {
+  get mutator (): I['mutator'] {
+    return this._atom.mutator
+  }
+
+  get transformation (): I['transformation'] {
+    return this._atom.transformation
+  }
+
+  subscribe (...args: Parameters<I['subscribe']>): ReturnType<I['subscribe']> {
+    // return this._atom.subscribe(...args) as ReturnType<I['subscribe']>
+    // NOTE: for type support
+    return this._atom.subscribe(args[0], args[1]) as ReturnType<I['subscribe']>
+  }
+
+  subscribeTransformation (...args: Parameters<I['subscribeTransformation']>): ReturnType<I['subscribeTransformation']> {
+    // return this._atom.subscribeTransformation(...args) as ReturnType<I['subscribeTransformation']>
+    // NOTE: for type support
+    return this._atom.subscribeTransformation(args[0], args[1]) as ReturnType<I['subscribeTransformation']>
+  }
+
+  trigger (...args: Parameters<I['trigger']>): ReturnType<I['trigger']> {
+    return this._atom.trigger(...args) as ReturnType<I['trigger']>
+  }
+
+  triggerTransformation (...args: Parameters<I['triggerTransformation']>): ReturnType<I['triggerTransformation']> {
+    return this._atom.triggerTransformation(...args) as ReturnType<I['triggerTransformation']>
+  }
+
+  observe (...args: Parameters<I['observe']>): ReturnType<I['observe']> {
+    // return this._atom.observe(...args) as ReturnType<I['observe']>
+    // NOTE: for type support
+    return this._atom.observe(args[0]) as ReturnType<I['observe']>
+  }
+
+  beObservedBy (...args: Parameters<I['beObservedBy']>): ReturnType<I['beObservedBy']> {
+    // return this._atom.beObservedBy(...args) as ReturnType<I['beObservedBy']>
+    // NOTE: for type support
+    return this._atom.beObservedBy(args[0]) as ReturnType<I['beObservedBy']>
+  }
+
+  mutate (...args: Parameters<I['mutate']>): ReturnType<I['mutate']> {
+    // return this._atom.mutate(...args) as ReturnType<I['mutate']>
+    // NOTE: for type support
+    return this._atom.mutate(args[0], args[1]) as ReturnType<I['mutate']>
+  }
+
+  registerTrigger (...args: Parameters<I['registerTrigger']>): ReturnType<I['registerTrigger']> {
+    // return this._atom.registerTrigger(...args) as ReturnType<I['registerTrigger']>
+    // NOTE: for type support
+    return this._atom.registerTrigger(args[0], args[1]) as ReturnType<I['registerTrigger']>
+  }
+
+  release (): void {
+    this._atom = GC_MUTATION as I
   }
 }

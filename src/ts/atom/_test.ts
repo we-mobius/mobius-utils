@@ -1,5 +1,5 @@
-import { TERMINATOR, isTerminator } from './meta'
-import { Data, Mutation } from './atom'
+import { TERMINATOR, isTerminator } from './metas'
+import { Data, Mutation } from './atoms'
 import { pipeAtom } from './helpers'
 import { ReplayMediator } from './mediators'
 

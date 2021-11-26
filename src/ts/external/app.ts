@@ -21,7 +21,7 @@ export const makeEventHandler = (handler = v => v) => {
   const agent = handler => {
     eventHandler = handler
   }
-  const [data, triggerMediator, trigger] = createDataFromFunction(agent, e => handler(e))
+  const [data, triggerMediator, trigger] = createDataFromFunction({ agent, handler: e => handler(e) })
 
   return [eventHandler, data, triggerMediator, trigger]
 }
@@ -41,7 +41,7 @@ export const makeElementBasedMessageProxy = (id, type, name) => {
   }
 
   let ele = document.getElementById(id)
-  if (!ele) {
+  if (ele == null) {
     const tempEle = document.createElement('div')
     tempEle.id = id
     tempEle.style.display = 'none'
@@ -51,7 +51,7 @@ export const makeElementBasedMessageProxy = (id, type, name) => {
 
   const ElementBasedMessageProxy = class {
     constructor (ele, type, name) {
-      const [data] = createDataFromEvent(ele, type)
+      const [data] = createDataFromEvent({ target: ele, type })
 
       const onymousInnerMessageD = Data.empty()
       const onymousSendM = Mutation.ofLiftBoth((prev) => {

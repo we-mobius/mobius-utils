@@ -1,26 +1,45 @@
-import { isArray } from '../../internal'
+import { isArray } from '../../internal/base'
 
-export const pipeAtom = (...args) => {
-  if (args.length === 1 && isArray(args[0])) {
-    args = args[0]
+import type { Data, Mutation } from '../atoms'
+import type { DataMediator, MutationMediator } from '../mediators'
+
+type ValidAtom = Data<any> | Mutation<any, any> | DataMediator<Data<any>> | MutationMediator<Mutation<any, any>>
+
+interface IPipeAtom {
+  (...atoms: ValidAtom[]): typeof atoms
+  (...atoms: [ValidAtom[]]): typeof atoms[0]
+}
+/**
+ * Recursively pipe atoms.
+ */
+export const pipeAtom: IPipeAtom = (...atoms: any[]): any => {
+  if (atoms.length === 1 && isArray(atoms[0])) {
+    atoms = atoms[0]
   }
-  args.reverse().forEach((cur, idx, all) => {
-    if (idx >= 1) {
-      cur.beObservedBy(all[idx - 1])
+  atoms.reverse().forEach((atom, index, all) => {
+    if (index >= 1) {
+      atom.beObservedBy(all[index - 1])
     }
   })
 
-  return args
+  return atoms
 }
 
-export const composeAtom = (...args) => {
-  if (args.length === 1 && isArray(args[0])) {
-    args = args[0]
+interface IComposeAtom {
+  (...atoms: ValidAtom[]): typeof atoms
+  (...atoms: [ValidAtom[]]): typeof atoms[0]
+}
+/**
+ * Recursively compose atoms.
+ */
+export const composeAtom: IComposeAtom = (...atoms: any[]): any => {
+  if (atoms.length === 1 && isArray(atoms[0])) {
+    atoms = atoms[0]
   }
-  args.forEach((cur, idx, all) => {
-    if (idx >= 1) {
-      cur.beObservedBy(all[idx - 1])
+  atoms.forEach((atom, index, all) => {
+    if (index >= 1) {
+      atom.beObservedBy(all[index - 1])
     }
   })
-  return args
+  return atoms
 }

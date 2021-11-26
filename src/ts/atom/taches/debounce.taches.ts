@@ -1,7 +1,7 @@
 import { isNumber } from '../../internal'
 import { curryN } from '../../functional'
-import { TERMINATOR } from '../meta'
-import { Data, Mutation, isAtom } from '../atom'
+import { TERMINATOR } from '../metas'
+import { Data, Mutation, isAtom } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 import { replayWithLatest } from '../mediators'
 
@@ -64,7 +64,7 @@ export const dynamicDebounceTimeT = curryN(2, (timer, target) => {
       if (type === 'target') {
         clearTimeout(_internalStates.clock)
         _internalStates.clock = setTimeout(() => {
-          debounceM.triggerOperation(() => _internalValues.target)
+          debounceM.triggerTransformation(() => _internalValues.target)
         }, _internalValues.timer)
         return TERMINATOR
       }

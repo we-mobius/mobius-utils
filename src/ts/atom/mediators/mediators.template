@@ -1,0 +1,118 @@
+import { isObject } from '../../internal'
+import { Data, Mutation } from '../atoms'
+import {
+  BaseMediator, DataMediator, MutationMediator
+} from './base.mediators'
+
+import type { MediatorTypeMaker, MediatorType } from './base.mediators'
+
+type Any = any
+type AnyFunction = (...args: any[]) => any
+
+/******************************************************************************************************
+ *
+ *                                      ExampleMediator Predicatess
+ *
+ ******************************************************************************************************/
+
+/**
+ * @param { Any } tar anything
+ * @return { boolean } whether the target is a ExampleMediator instance
+ */
+export const isExampleMediator = <A extends Data<unknown> | Mutation<AnyFunction>>(tar: Any): tar is ExampleMediator<A> =>
+  isObject(tar) && tar.isExampleMediator
+
+/******************************************************************************************************
+ *
+ *                                      ExampleMediator Classes
+ *
+ ******************************************************************************************************/
+
+/**
+ * Implement MediatorType
+ */
+export const ExampleMediatorType = '[mediator Example]' as MediatorTypeMaker<'[mediator Example]'>
+
+/******************************************************************************************************
+ *
+ *                                      ExampleDataMediator
+ *
+ ******************************************************************************************************/
+
+/**
+ * Implement DataMediator
+ */
+export class ExampleDataMediator<I extends Data<unknown>> extends DataMediator<I> {
+  constructor (atom: I) {
+    super(atom)
+  }
+
+  get type (): MediatorType { return ExampleMediatorType }
+  get mediatorType (): MediatorType { return ExampleMediatorType }
+
+  get isExampleMediator (): true { return true }
+
+  static of<I extends Data<unknown>> (atom: I): ExampleDataMediator<I> {
+    return new ExampleDataMediator(atom)
+  }
+
+  release (): void {
+    super.release()
+  }
+}
+
+/******************************************************************************************************
+ *
+ *                                      ExampleMutationMediator
+ *
+ ******************************************************************************************************/
+
+/**
+ * Implement MutationMediator
+ */
+export class ExampleMutationMediator<I extends Mutation<AnyFunction>> extends MutationMediator<I> {
+  constructor (atom: I) {
+    super(atom)
+  }
+
+  get type (): MediatorType { return ExampleMediatorType }
+  get mediatorType (): MediatorType { return ExampleMediatorType }
+
+  get isExampleMediator (): true { return true }
+
+  static of<I extends Mutation<AnyFunction>> (atom: I): ExampleMutationMediator<I> {
+    return new ExampleMutationMediator(atom)
+  }
+
+  release (): void {
+    super.release()
+  }
+}
+
+/******************************************************************************************************
+ *
+ *                                              ExampleMediator
+ *
+ ******************************************************************************************************/
+
+/**
+ * Implement Mediator
+ */
+export class ExampleMediator<I extends Data<any> | Mutation<AnyFunction>> extends BaseMediator<I> {
+  constructor (atom: I) {
+    super(atom)
+  }
+
+  get type (): MediatorType { return ExampleMediatorType }
+  get mediatorType (): MediatorType { return ExampleMediatorType }
+
+  get isExampleMediator (): true { return true }
+
+  static of <I extends Data<any> | Mutation<AnyFunction>> (atom: I): ExampleMediator<I> {
+    return new ExampleMediator(atom)
+  }
+
+  release (): void {
+    super.release()
+  }
+}

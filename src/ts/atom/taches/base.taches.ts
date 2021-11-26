@@ -1,367 +1,448 @@
-import { isString, isArray, isObject, isFunction } from '../../internal'
+import { isString, isNumber, isArray, isPlainObject, isFunction } from '../../internal/base'
 import { looseCurryN } from '../../functional'
-import { TERMINATOR } from '../meta'
-import { Data, Mutation, isAtom } from '../atom'
+import { TERMINATOR } from '../metas'
+import { Data, Mutation, isAtom, DEFAULT_MUTATION_OPTIONS } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 import { replayWithLatest } from '../mediators'
 
+import type { Vacuo, Terminator } from '../metas'
+import type {
+  MutatorOriginTransformationUnion
+} from '../particles'
+import type { MutationOptions } from '../atoms'
+import type { DataMediator, MutationMediator } from '../mediators'
+
 // S -> Single, M -> Multi
 
-const DEFAULT_MUTATION_OPTIONS = { liftType: 'both' }
+/******************************************************************************************************
+ *
+ *                                           General Tache
+ *
+ ******************************************************************************************************/
 
 /**
- * @param { {} | function } createOptions
- * @return { function }
+ *
  */
-export const createGeneralTache = looseCurryN(2, (createOptions = {}, tacheOptions = { ...DEFAULT_MUTATION_OPTIONS }) => {
-  if (!isObject(createOptions) && !isFunction(createOptions)) {
-    throw (new TypeError(`"createOptions" is expected to be type of "Object" | "Function", but received "${typeof createOptions}".`))
+interface TacheOptions {
+  [key: string]: any
+}
+interface TacheLevelContexts {
+  [key: string]: any
+}
+
+const DEFAULT_TACHE_OPTIONS: TacheOptions = {}
+const DEFAULT_TACHE_LEVEL_CONTEXTS: TacheLevelContexts = {}
+
+type PrepareOptions = (options: TacheOptions) => TacheOptions
+type PrepareTacheLevelContexts = () => TacheLevelContexts
+type PrepareInput = (tacheOptions: TacheOptions, tacheLevelContexts: TacheLevelContexts, sources: any) => any
+type PrepareMidpiece = (tacheOptions: TacheOptions, tacheLevelContexts: TacheLevelContexts, inputs: ReturnType<PrepareInput>) => any
+type PrepareOutput = (tacheOptions: TacheOptions, tacheLevelContexts: TacheLevelContexts, midpiece: ReturnType<PrepareMidpiece>) => any
+type connect = (tacheOptions: TacheOptions, tacheLevelContexts: TacheLevelContexts, pieces: [ReturnType<PrepareInput>, ReturnType<PrepareMidpiece>, ReturnType<PrepareOutput>]) => void
+
+const DEFAULT_PREPARE_OPTIONS: PrepareOptions = () => DEFAULT_TACHE_OPTIONS
+const DEFAULT_PREPARE_TACHE_LEVEL_CONTEXTS: PrepareTacheLevelContexts = () => DEFAULT_TACHE_LEVEL_CONTEXTS
+const DEFAULT_PREPARE_INPUT: PrepareInput = (tacheOptions, tacheLevelContexts, sources) => sources
+const DEFAULT_PREPARE_MIDPIECE: PrepareMidpiece = (tacheOptions, tacheLevelContexts, inputs) => Mutation.ofLiftBoth(any => any)
+const DEFAULT_PREPARE_OUTPUT: PrepareOutput = (tacheOptions, tacheLevelContexts, midpiece) => Data.empty()
+const DEFAULT_CONNET: connect = (tacheOptions, tacheLevelContexts, pieces) => {
+  const [inputs, midpieces, outputs] = pieces
+  pipeAtom(midpieces, outputs)
+  binaryTweenPipeAtom(inputs, midpieces)
+}
+
+interface GeneralTacheCreateOptions {
+  prepareOptions?: PrepareOptions
+  prepareTacheLevelContexts?: PrepareTacheLevelContexts
+  prepareInput?: PrepareInput
+  prepareMidpiece?: PrepareMidpiece
+  prepareOutput?: PrepareOutput
+  connect?: connect
+}
+
+const DEFAULT_GENERAL_TACHE_CREATE_OPTIONS: Required<GeneralTacheCreateOptions> = {
+  prepareOptions: DEFAULT_PREPARE_OPTIONS,
+  prepareTacheLevelContexts: DEFAULT_PREPARE_TACHE_LEVEL_CONTEXTS,
+  prepareInput: DEFAULT_PREPARE_INPUT,
+  prepareMidpiece: DEFAULT_PREPARE_MIDPIECE,
+  prepareOutput: DEFAULT_PREPARE_OUTPUT,
+  connect: DEFAULT_CONNET
+}
+
+type Tache = (...sources: any[]) => ReturnType<PrepareOutput>
+
+/**
+ * @param { GeneralTacheCreateOptions | PrepareMidpiece } createOptions
+ * @param { TacheOptions } [tacheOptions]
+ * @return { Tache } tache :: `(...sources: any[]) => ReturnType<PrepareOutput>`
+ */
+export const createGeneralTache = (
+  createOptions: GeneralTacheCreateOptions | PrepareMidpiece, tacheOptions: TacheOptions = DEFAULT_TACHE_OPTIONS
+): Tache => {
+  if (!isPlainObject(createOptions) && !isFunction(createOptions)) {
+    throw (new TypeError('"createOptions" is expected to be type of "PlainObject" | "Function".'))
   }
+  if (!isPlainObject(tacheOptions)) {
+    throw (new TypeError('"tacheOptions" is expected to be type of "PlainObject".'))
+  }
+
   if (isFunction(createOptions)) {
-    createOptions = { prepareMidpiece: createOptions }
+    createOptions = { ...DEFAULT_GENERAL_TACHE_CREATE_OPTIONS, prepareMidpiece: createOptions }
+  } else {
+    createOptions = { ...DEFAULT_GENERAL_TACHE_CREATE_OPTIONS, ...createOptions }
   }
 
   const {
-    prepareTacheLevelContexts = () => ({}),
-    prepareOptions = options => options,
-    prepareInput = (_0, _1, source) => source,
-    prepareMidpiece = () => Mutation.ofLiftBoth(any => any),
-    prepareOutput = () => Data.empty(),
-    connect = (options, [inputs, midpieces, outputs]) => {
-      pipeAtom(midpieces, outputs)
-      binaryTweenPipeAtom(inputs, midpieces)
-    }
-  } = createOptions
+    prepareOptions, prepareTacheLevelContexts,
+    prepareInput, prepareMidpiece, prepareOutput, connect
+  } = createOptions as Required<GeneralTacheCreateOptions>
 
-  const tacheLevelContexts = prepareTacheLevelContexts()
-  if (!isObject(tacheLevelContexts)) {
-    throw (new TypeError(`"tacheLevelContexts" is expected to be type of "Object", but received "${typeof tacheLevelContexts}".`))
+  const _tacheLevelContexts = prepareTacheLevelContexts()
+  if (!isPlainObject(_tacheLevelContexts)) {
+    throw (new TypeError('"tacheLevelContexts" is expected to be type of "PlainObject".'))
   }
+  const preparedTacheLevelContexts = { ...DEFAULT_TACHE_LEVEL_CONTEXTS, ..._tacheLevelContexts }
 
-  if (!isObject(tacheOptions)) {
-    throw (new TypeError(`"tacheOptions" is expected to be type of "Object", but received "${typeof tacheOptions}".`))
+  const _tacheOptions = prepareOptions(tacheOptions)
+  if (!isPlainObject(_tacheOptions)) {
+    throw (new TypeError('The returned value of "prepareOptions" is expected to be type of "PlainObject".'))
   }
-  tacheOptions = prepareOptions(tacheOptions)
-
-  if (!isObject(tacheOptions)) {
-    throw (new TypeError(`The returned value of "prepareOptions" is expected to be type of "Object", but received "${typeof tacheOptions}".`))
-  }
+  const preparedTacheOptions = { ...DEFAULT_TACHE_OPTIONS, ..._tacheOptions }
 
   return (...sources) => {
-    const inputs = prepareInput(tacheOptions, tacheLevelContexts, sources.length > 1 ? sources : sources[0])
-    const midpieces = prepareMidpiece(tacheOptions, tacheLevelContexts, inputs)
-    const outputs = prepareOutput(tacheOptions, tacheLevelContexts, midpieces)
-    connect(tacheOptions, tacheLevelContexts, [inputs, midpieces, outputs])
+    const inputs = prepareInput(preparedTacheOptions, preparedTacheLevelContexts, sources.length > 1 ? sources : sources[0])
+    const midpieces = prepareMidpiece(preparedTacheOptions, preparedTacheLevelContexts, inputs)
+    const outputs = prepareOutput(preparedTacheOptions, preparedTacheLevelContexts, midpieces)
+    connect(preparedTacheOptions, preparedTacheLevelContexts, [inputs, midpieces, outputs])
     return outputs
   }
-})
+}
+export const createGeneralTache_ = looseCurryN(2, createGeneralTache)
+
 /**
- * @param { function } tacheMaker partial applied createGeneralTache
+ * @param { PartialFunction } tacheMaker partial applied createGeneralTache
  */
-export const useGeneralTache = looseCurryN(3, (tacheMaker, tacheOptions, ...sources) => {
+export const useGeneralTache = (
+  tacheMaker: (options: TacheOptions) => Tache, tacheOptions: TacheOptions, ...sources: any[]
+): Tache => {
   const tache = tacheMaker(tacheOptions)
   const outputs = sources.length > 1 ? tache(...sources) : tache(sources[0])
   return outputs
-})
+}
+export const useGeneralTache_ = looseCurryN(3, useGeneralTache)
+
+/******************************************************************************************************
+ *
+ *                                           SS Tache
+ *
+ ******************************************************************************************************/
 
 /**
- * @param { function | object }  operation
- * @param { ?{ type?: string } } options which type is LiftType the operation will use
- * @accept ({ operation, options? })
- * @accept (operation, options?)
- * @return TacheMaker
+ *
  */
-export const createSSTache = (operation, options = { ...DEFAULT_MUTATION_OPTIONS }) => {
-  // @accept ({ operation, options? })
-  if (isObject(operation) && operation.operation) {
-    options = operation.options ? { ...DEFAULT_MUTATION_OPTIONS, ...operation.options } : { ...DEFAULT_MUTATION_OPTIONS }
-    operation = operation.operation
+type SSTache<P, C> = (
+  source: Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>,
+) => Data<C>
+/**
+ * @param { MutatorOriginTransformationUnion<P, C> } transformation
+ * @param { MutationOptions<P, C> } options same as MutationOptions
+ * @return { SSTache } SSTache :: `(source) => Data<any>`
+ */
+export const createSSTache = <P, C>(
+  transformation: MutatorOriginTransformationUnion<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS
+): SSTache<P, C> => {
+  if (!isFunction(transformation)) {
+    throw (new TypeError('"transformation" is expected to be type of "Function".'))
+  }
+  if (!isPlainObject(options)) {
+    throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
 
-  if (!isFunction(operation)) {
-    throw (new TypeError(`"operation" is expected to be type of "Function", but received ${typeof operation}.`))
-  }
-
-  const { liftType = 'both' } = options
+  const preparedOptions = { ...DEFAULT_MUTATION_OPTIONS, ...options }
 
   /**
-   * @param { Atom }target
-   * @return { Data }
+   * @param { Data<P> | DataMediator<Data<P>> | Mutation<P, C> | MutationMediator<Mutation<P, C>> } source
+   * @return { Data<C> } Data
    */
-  return target => {
-    if (!isAtom(target)) {
+  return source => {
+    if (!isAtom(source)) {
       throw (new TypeError('"target" is expected to be type of "Atom".'))
     }
 
-    const mutation = Mutation.ofLift(operation, { liftType })
-    const outputD = Data.empty()
+    const mutation = Mutation.ofLift(transformation, preparedOptions)
+    const outputD = Data.empty() as Data<C>
 
     pipeAtom(mutation, outputD)
-    binaryTweenPipeAtom(target, mutation)
+    binaryTweenPipeAtom(source, mutation)
 
     return outputD
   }
 }
 
+/******************************************************************************************************
+ *
+ *                                           SM Tache
+ *
+ ******************************************************************************************************/
+
 /**
- * @accept ({}) -> ({ name: { operation, options? } | operation, ...})
- * @accept ([]) -> ([{ operation, options? } | operation ...])
- * @accept (...) -> ({ operation, options? } | operation, ...)
- * @return TacheMaker
+ *
  */
-export const createSMTache = (...args) => {
-  if (args.length === 1 && isObject(args[0])) {
-    return createObjectSMTache(args[0])
-  }
-  if (args.length === 1 && isArray(args[0])) {
-    return createArraySMTache(...args[0])
-  }
-  if (args.length > 1) {
-    return createArraySMTache(...args)
-  }
+interface ArraySMTacheConfig<P> {
+  transformation: MutatorOriginTransformationUnion<P, any>
+  options?: MutationOptions<P, any>
 }
-
+type ArraySMTache<P> = (
+  source: Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>
+) => Array<Data<any>>
 /**
- * @accept ({ operation, options? } | operation, ...)
- * @accept ([{ operation, options? } | operation ...])
- * @return TacheMaker
+ * @param { ArraySMTacheConfig<P>[] } configArr `[{ transformation, options }, ...]`
+ * @return { ArraySMTache<P> } ArraySSTache :: `(source) => Array<Data<any>>`
  */
-export const createArraySMTache = (...configArr) => {
-  // @accept ([{ operation, options? } | operation ...])
-  if (configArr.length === 1 && isArray(configArr[0])) {
-    configArr = configArr[0]
+export const createArraySMTache = <P>(configArr: Array<ArraySMTacheConfig<P>>): ArraySMTache<P> => {
+  if (!isArray(configArr)) {
+    throw (new TypeError('"configArr" is expected to be type of "Array".'))
   }
 
-  configArr = configArr.map(config => {
-    let operation, options
-
-    if (isObject(config) && config.operation) {
-      // @accept config -> { operation, options? }
-      options = config.options ? { ...DEFAULT_MUTATION_OPTIONS, ...config.options } : { ...DEFAULT_MUTATION_OPTIONS }
-      operation = config.operation
-    } else if (isFunction(config)) {
-      // @accept config -> operation
-      options = { ...DEFAULT_MUTATION_OPTIONS }
-      operation = config
-    } else {
-      throw (new TypeError(`"config" is expected to be type of "Object" | "Function", but received ${typeof config}.`))
+  // format configs
+  configArr = configArr.map(({ transformation, options = {} }) => {
+    if (!isFunction(transformation)) {
+      throw (new TypeError('"transformation" is expected to be type of "Function".'))
     }
-
-    if (!isFunction(operation)) {
-      throw (new TypeError(`"operation" is expected to be type of "Function", but received ${typeof config}.`))
-    }
-
-    return { operation, options }
+    options = { ...DEFAULT_MUTATION_OPTIONS, ...options }
+    return { transformation, options }
   })
 
   /**
-   * @param target Atom
+   * @param { Atom } source Atom
    * @return Array of Data
    */
-  return target => {
-    if (!isAtom(target)) {
-      throw (new TypeError('"target" is expected to be type of "Atom".'))
+  return source => {
+    if (!isAtom(source)) {
+      throw (new TypeError('"source" is expected to be type of "Atom".'))
     }
 
-    const mutations = configArr.map(({ operation, options }) => {
-      const { liftType = 'both' } = options
-      return Mutation.ofLift(operation, { liftType })
+    const mutations = configArr.map(({ transformation, options }) => {
+      return Mutation.ofLift(transformation, options)
     })
     const outputs = Array.from({ length: configArr.length }).map(() => Data.empty())
 
     outputs.forEach((output, index) => {
       pipeAtom(mutations[index], output)
-      binaryTweenPipeAtom(target, mutations[index])
+      binaryTweenPipeAtom(source, mutations[index])
     })
 
     return outputs
   }
 }
 
+interface ObjectSMTacheConfig<P> {
+  transformation: MutatorOriginTransformationUnion<P, any>
+  options?: MutationOptions<P, any>
+}
+type ObjectSMTache<P> = (
+  source: Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>
+) => Record<string, Data<any>>
 /**
- * @param { {} } configObj
- * @accept ({ name: { operation, options? } | operation, ...})
- * @return TacheMaker
+ * @param { ObjectSMTacheConfig<P> } configObj `{ [key: string]: { transformation, options? } }`
+ * @return { ObjectSMTache<P> } ObjectSSTache :: `(source) => Record<string, Data<any>>`
  */
-export const createObjectSMTache = (configObj) => {
-  if (!isObject(configObj)) {
-    throw (new TypeError(`"configObj" is expected to be type of "Object", but received ${typeof configObj}.`))
+export const createObjectSMTache = <P>(configObj: Record<string, ObjectSMTacheConfig<P>>): ObjectSMTache<P> => {
+  if (!isPlainObject(configObj)) {
+    throw (new TypeError('"configObj" is expected to be type of "PlainObject".'))
   }
 
-  configObj = Object.entries(configObj).reduce((acc, [name, config]) => {
-    let operation, options
+  // // format configs
+  configObj = Object.entries(configObj).reduce<(typeof configObj)>(
+    (acc, [name, { transformation, options = {} }]) => {
+      if (!isFunction(transformation)) {
+        throw (new TypeError('"transformation" is expected to be type of "Function".'))
+      }
 
-    if (isObject(config) && config.operation) {
-      options = config.options ? { ...DEFAULT_MUTATION_OPTIONS, ...config.options } : { ...DEFAULT_MUTATION_OPTIONS }
-      operation = config.operation
-    } else if (isFunction(config)) {
-      options = { ...DEFAULT_MUTATION_OPTIONS }
-      operation = config
-    } else {
-      throw (new TypeError(`"config" is expected to be type of "Object" | "Function", but received ${typeof config}.`))
+      acc[name] = acc[name] ?? { transformation, options: { ...DEFAULT_MUTATION_OPTIONS, ...options } }
+
+      return acc
     }
-
-    if (!isFunction(operation)) {
-      throw (new TypeError(`"operation" is expected to be type of "Function", but received ${typeof config}.`))
-    }
-
-    acc[name] = acc[name] || { operation, options }
-
-    return acc
-  }, {})
+  , {})
 
   /**
-   * @param target Atom
+   * @param { Atom } source Atom
    * @return Object of Data
    */
-  return target => {
-    if (!isAtom(target)) {
-      throw (new TypeError('"target" is expected to be type of "Atom".'))
+  return source => {
+    if (!isAtom(source)) {
+      throw (new TypeError('"source" is expected to be type of "Atom".'))
     }
 
-    const mutations = Object.entries(configObj).reduce((acc, [name, { operation, options }]) => {
-      const { liftType = 'both' } = options
-      acc[name] = acc[name] || Mutation.ofLift(operation, { liftType })
-      return acc
-    }, {})
+    const mutations = Object.entries(configObj).reduce<Record<string, Mutation<any, P>>>(
+      (acc, [name, { transformation, options }]) => {
+        acc[name] = acc[name] ?? Mutation.ofLift(transformation, options)
+        return acc
+      }
+      , {})
 
-    const outputs = Object.entries(configObj).reduce((acc, [name]) => {
-      acc[name] = acc[name] || Data.empty()
+    const outputs = Object.entries(configObj).reduce<Record<string, Data<any>>>((acc, [name]) => {
+      acc[name] = acc[name] ?? Data.empty()
       return acc
     }, {})
 
     Object.entries(outputs).forEach(([name, output]) => {
       pipeAtom(mutations[name], output)
-      binaryTweenPipeAtom(target, mutations[name])
+      binaryTweenPipeAtom(source, mutations[name])
     })
 
     return outputs
   }
 }
 
+interface ICreateSMTache {
+  <P>(config: Array<ArraySMTacheConfig<P>>): ArraySMTache<P>
+  <P>(config: Record<string, ObjectSMTacheConfig<P>>): ObjectSMTache<P>
+}
 /**
- * @param { ?{ sourcesType?: 'Array' | "Object" } } config
  * @return TacheMaker
  */
-export const createMSTache = (config = {}) => {
-  if (!isObject(config)) {
-    throw (new TypeError(`"config" is expected to be type of "Object", but received "${typeof config}".`))
-  }
-
-  const { sourcesType } = config
-  if (sourcesType.toLowerCase() === 'array') {
-    return createArrayMSTache(config)
-  }
-  if (sourcesType.toLowerCase() === 'object') {
-    return createObjectMSTache(config)
-  }
-
-  /**
-   * @accept ({ name: Atom | Any, ...})
-   * @accept ([Atom | Any, ...])
-   * @accept (Atom | Any, ...)
-   * @return Data
-   */
-  return (...sources) => {
-    if (sources.length === 1 && isObject(sources[0])) {
-      return createObjectMSTache(config)(sources[0])
-    }
-    if (sources.length === 1 && isArray(sources[0])) {
-      return createArrayMSTache(config)(...sources[0])
-    }
-    if (sources.length > 1) {
-      return createArraySMTache(config)(...sources)
-    }
+export const createSMTache: ICreateSMTache = (config: any): any => {
+  if (isPlainObject(config)) {
+    return createObjectSMTache(config)
+  } else if (isArray<any>(config)) {
+    return createArraySMTache(config)
+  } else {
+    throw (new TypeError('"config" is expected to be type of "Array" | "PlainObject".'))
   }
 }
 
+/******************************************************************************************************
+ *
+ *                                           MS Tache
+ *
+ ******************************************************************************************************/
+
 /**
- * @param { ?{
- *   numberOfSources?: number,
- *   acceptNonAtom?: boolean,
- *   opCustomizeType?: 'fully' | 'partly',
- *   opLiftType?: 'both' | 'left' | 'right',
- *   operation: function,
- *   autoUpdateContexts?: boolean
- * } } config
+ *
+ */
+interface MSTacheConfig<P, C> {
+  transformation: (...args: any[]) => any
+  arity?: number
+  acceptNonAtom?: boolean
+  customizeType?: 'partly' | 'fully'
+  options?: MutationOptions<P, C>
+  autoUpdateContexts?: boolean
+}
+const DEFAULT_MS_TACHE_CONFIG: Omit<Required<MSTacheConfig<any, any>>, 'transformation' | 'arity'> = {
+  acceptNonAtom: true,
+  customizeType: 'partly',
+  options: DEFAULT_MUTATION_OPTIONS,
+  autoUpdateContexts: true
+}
+
+interface ArrayMSTacheTrunkContexts {
+  arity: number
+  TERMINATOR: Terminator
+}
+type ArrayMSTacheFullyTransformation<P, C> = ((contexts: ArrayMSTacheTrunkContexts) => MutatorOriginTransformationUnion<P, C>)
+interface ArrayMSTacheConfig<P, C> extends MSTacheConfig<P, C> {
+  transformation: MutatorOriginTransformationUnion<P, C> | ArrayMSTacheFullyTransformation<P, C>
+  sourcesType: 'array'
+}
+interface ArrayMSTache<P, C> {
+  (sources: Array<Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>>): Data<C>
+  (...sources: Array<Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>>): Data<C>
+}
+/**
+ * @param { ArrayMSTacheConfig<C> } config
  * @return TacheMaker
  */
-export const createArrayMSTache = (config = {}) => {
-  if (!isObject(config)) {
-    throw (new TypeError(`"config" is expected to be type of "Object", but received ${typeof config}.`))
+export const createArrayMSTache = <P, C>(
+  config: ArrayMSTacheConfig<P, C>
+): ArrayMSTache<P, C> => {
+  if (!isPlainObject(config)) {
+    throw (new TypeError('"config" is expected to be type of "PlainObject".'))
   }
 
   const {
-    numberOfSources = undefined, acceptNonAtom = true,
-    opCustomizeType = 'partly', opLiftType = 'both', operation, autoUpdateContexts = true
-  } = config
+    arity, acceptNonAtom, customizeType, options, transformation, autoUpdateContexts
+  } = { ...DEFAULT_MS_TACHE_CONFIG, ...config }
 
-  if (!isString(opCustomizeType)) {
-    throw (new TypeError(`"opCustomizeType" is expected to be type of "String", but received "${typeof opCustomizeType}".`))
+  if (!isString(customizeType)) {
+    throw (new TypeError('"customizeType" is expected to be type of "String".'))
   }
-  if (opCustomizeType.toLowerCase() !== 'partly' && opCustomizeType.toLowerCase() !== 'fully') {
-    throw (new TypeError(`"opCustomizeType" is expected to be "fully" | "partly", but received "${opCustomizeType}".`))
+  if (customizeType !== 'partly' && customizeType !== 'fully') {
+    throw (new TypeError('"customizeType" is expected to be "fully" | "partly".'))
   }
-  if (operation === undefined) {
-    throw (new TypeError('"operation" is required when use makeArrayMSTache to make tache.'))
+  if (transformation === undefined) {
+    throw (new TypeError('"transformation" is required when use makeArrayMSTache to make tache.'))
   }
-  if (!isFunction(operation)) {
-    throw (new TypeError(`"operation" is expected to be type of "Function", but received ${typeof operation}.`))
+  if (!isFunction(transformation)) {
+    throw (new TypeError('"transformation" is expected to be type of "Function".'))
   }
 
+  type ValidSource = Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>
   /**
-   * @accept (Atom, ...)
-   * @accept ([Atom, ...])
    * @return Data
    */
-  const tache = (...sources) => {
+  const tache: ArrayMSTache<P, C> = (...sources) => {
+    let preparedSources: ValidSource[]
+
+    let _sources: ValidSource[]
+    if (sources.length === 1 && isArray(sources[0])) {
+      _sources = sources[0]
+    } else {
+      _sources = sources as ValidSource[]
+    }
+
     if (!acceptNonAtom) {
-      sources.forEach(source => {
+      _sources.forEach(source => {
         if (!isAtom(source)) {
-          throw (new TypeError(`"source" is expected to be type of "Atom", but received ${typeof source}.`))
+          throw (new TypeError('"source" is expected to be type of "Atom".'))
         }
       })
+      preparedSources = _sources
     } else {
-      sources = sources.map(source => {
-        return isAtom(source) ? source : replayWithLatest(1, Data.of(source))
+      preparedSources = _sources.map<ValidSource>(source => {
+        return (isAtom(source) ? source : replayWithLatest(1, Data.of(source))) as ValidSource
       })
     }
 
-    const length = sources.length
+    const length = preparedSources.length
 
-    const wrapMutations = Array.from({ length }).map((val, idx) =>
-      Mutation.ofLiftLeft(prev => ({ id: idx, value: prev }))
+    interface WrappedData<P> {
+      id: number
+      value: P | Vacuo
+    }
+    const wrapMutations = Array.from({ length }).map((_, idx) =>
+      Mutation.ofLiftLeft<P, WrappedData<P>>(prev => ({ id: idx, value: prev }))
     )
-    const wrappedDatas = Array.from({ length }).map(() => Data.empty())
+    const wrappedDatas: Array<Data<WrappedData<P>>> = Array.from({ length }).map(() => Data.empty())
 
     const trunkM = Mutation.ofLift((() => {
-      const baseContexts = { numberOfSources: length, TERMINATOR }
+      const baseContexts: ArrayMSTacheTrunkContexts = { arity: length, TERMINATOR }
 
-      if (opCustomizeType.toLowerCase() === 'fully') {
+      if (customizeType === 'fully') {
         const contexts = { ...baseContexts }
-        const actualOperation = operation(contexts)
-        if (!isFunction(actualOperation)) {
-          throw (new TypeError('"operation" is expected to return a "Function" when "opCustomizeType" is specified to "fully".'))
+        const actualTransformation = (transformation as ArrayMSTacheFullyTransformation<P, C>)(contexts)
+        if (!isFunction(actualTransformation)) {
+          throw (new TypeError('"transformation" is expected to return a "Function" when "customizeType" is specified to "fully".'))
         }
-        return actualOperation
-      }
-      if (opCustomizeType.toLowerCase() === 'partly') {
+        return actualTransformation
+      } else if (customizeType === 'partly') {
         const contexts = {
           ...baseContexts,
           states: Array.from({ length: length }),
           values: Array.from({ length: length })
         }
-        // actual operation which will takes prevDatar(or its value) & datar(ot its value) as argument
-        return (prev, cur, mutation, ...args) => {
+        // actual transformation which will takes prevDatar(or its value) & datar(ot its value) as argument
+        const actualTransformation: MutatorOriginTransformationUnion<P, C> = (prev: any, cur: any, mutation: any, ...args: any[]): any => {
           if (autoUpdateContexts) {
             const { id, value } = prev
             contexts.states[id] = true
             contexts.values[id] = value
           }
-          return operation(prev, cur, mutation, contexts, ...args)
+          return transformation(prev, cur, mutation, contexts, ...args)
         }
+        return actualTransformation
       }
-    })(), { liftType: opLiftType })
+    })() as MutatorOriginTransformationUnion<P, C>, options)
 
     const output = Data.empty()
 
@@ -372,124 +453,138 @@ export const createArrayMSTache = (config = {}) => {
     wrapMutations.forEach((wrapMutation, idx) => {
       pipeAtom(wrapMutation, wrappedDatas[idx])
     })
-    sources.forEach((source, idx) => {
+    preparedSources.forEach((source, idx) => {
       binaryTweenPipeAtom(source, wrapMutations[idx])
     })
 
     return output
   }
 
-  if (numberOfSources) {
-    return looseCurryN(numberOfSources, tache)
+  if (isNumber(arity)) {
+    return looseCurryN(arity, tache)
   } else {
-    return (...sources) => {
-      if (sources.length === 1 && isArray(sources[0])) {
-        sources = sources[0]
-      }
-      return tache(...sources)
-    }
+    return tache
   }
 }
 
+interface ObjectMSTacheTrunkContexts {
+  keysOfSources: string[]
+  TERMINATOR: Terminator
+}
+type ObjectMSTacheFullyTransformation<P, C> = ((contexts: ObjectMSTacheTrunkContexts) => MutatorOriginTransformationUnion<P, C>)
+interface ObjectMSTacheConfig<P, C> extends MSTacheConfig<P, C> {
+  transformation: MutatorOriginTransformationUnion<P, C> | ObjectMSTacheFullyTransformation<P, C>
+  sourcesType: 'object'
+}
+type ObjectMSTache<P, C> = (
+  sources: Record<string, Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>>
+) => Data<C>
 /**
- * @param { ?{
- *   acceptNonAtom?: boolean,
- *   opCustomizeType?: 'fully' | 'partly',
- *   opLiftType?: 'both' | 'left' | 'right',
- *   operation: function,
- *   autoUpdateContexts?: boolean
- * } }config
+ * @param { ObjectMSTacheConfig<C> } config
  * @return TacheMaker
  */
-export const createObjectMSTache = (config = {}) => {
-  if (!isObject(config)) {
-    throw (new TypeError(`"config" is expected to be type of "Object", but received "${typeof config}".`))
+export const createObjectMSTache = <P, C>(
+  config: ObjectMSTacheConfig<P, C>
+): ObjectMSTache<P, C> => {
+  if (!isPlainObject(config)) {
+    throw (new TypeError('"config" is expected to be type of "PlainObject".'))
   }
 
   const {
-    acceptNonAtom = true,
-    opCustomizeType = 'partly', opLiftType = 'both', operation, autoUpdateContexts = true
-  } = config
+    arity, acceptNonAtom, customizeType, options, transformation, autoUpdateContexts
+  } = { ...DEFAULT_MS_TACHE_CONFIG, ...config }
 
-  if (!isString(opCustomizeType)) {
-    throw (new TypeError(`"opCustomizeType" is expected to be type of "String", but received "${typeof opCustomizeType}".`))
+  if (!isString(customizeType)) {
+    throw (new TypeError('"customizeType" is expected to be type of "String".'))
   }
-  if (opCustomizeType.toLowerCase() !== 'partly' && opCustomizeType.toLowerCase() !== 'fully') {
-    throw (new TypeError(`"opCustomizeType" is expected to be "fully" | "partly", but received "${opCustomizeType}".`))
+  if (customizeType !== 'partly' && customizeType !== 'fully') {
+    throw (new TypeError('"customizeType" is expected to be "fully" | "partly".'))
   }
-  if (operation === undefined) {
-    throw (new TypeError('"operation" is required when use makeObjectMSTache to make tache.'))
+  if (transformation === undefined) {
+    throw (new TypeError('"transformation" is required when use makeArrayMSTache to make tache.'))
   }
-  if (!isFunction(operation)) {
-    throw (new TypeError(`"operation" is expected to be type of "Function", but received "${typeof operation}".`))
+  if (!isFunction(transformation)) {
+    throw (new TypeError('"transformation" is expected to be type of "Function".'))
   }
 
+  type ValidSource = Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>
   /**
    * @param sources Object
    * @accept ({ name: Atom | Any, ...})
    * @return Data
    */
-  const tache = (sources) => {
-    if (!isObject(sources)) {
-      throw (new TypeError(`"sources" is expected to be type of "Object", but received "${typeof sources}".`))
+  const tache: ObjectMSTache<P, C> = (sources) => {
+    if (!isPlainObject(sources)) {
+      throw (new TypeError('"sources" is expected to be type of "PlainObject".'))
     }
+
+    let preparedSources: Record<string, ValidSource>
 
     if (!acceptNonAtom) {
       Object.values(sources).forEach(source => {
         if (!isAtom(source)) {
-          throw (new TypeError(`"source" is expected to be type of "Atom", but received "${typeof source}".`))
+          throw (new TypeError('"source" is expected to be type of "Atom".'))
         }
       })
+      preparedSources = sources
     } else {
-      sources = Object.entries(sources).reduce((newSources, [name, source]) => {
-        newSources[name] = newSources[name] || (isAtom(source) ? source : replayWithLatest(1, Data.of(source)))
-        return newSources
-      }, {})
+      preparedSources = Object.entries(sources).reduce<Record<string, ValidSource>>(
+        (newSources, [name, source]) => {
+          newSources[name] = newSources[name] ?? (isAtom(source) ? source : replayWithLatest(1, Data.of(source)))
+          return newSources
+        },
+        {}
+      )
     }
 
-    const wrapMutations = Object.entries(sources).reduce((mutations, [key]) => {
-      mutations[key] = Mutation.ofLiftLeft((prev) => ({ key: key, value: prev }))
-      return mutations
-    }, {})
-    const wrappedDatas = Object.entries(sources).reduce((datas, [key]) => {
+    interface WrappedData<P> {
+      key: string
+      value: P | Vacuo
+    }
+    const wrapMutations = Object.entries(preparedSources).reduce<Record<string, Mutation<P, WrappedData<P>>>>(
+      (mutations, [key]) => {
+        mutations[key] = Mutation.ofLiftLeft((prev) => ({ key: key, value: prev }))
+        return mutations
+      }, {})
+    const wrappedDatas = Object.entries(preparedSources).reduce<Record<string, Data<P>>>((datas, [key]) => {
       datas[key] = Data.empty()
       return datas
     }, {})
 
     const trunkM = Mutation.ofLift((() => {
-      const baseContexts = { keysOfSources: Object.keys(sources), TERMINATOR }
+      const baseContexts: ObjectMSTacheTrunkContexts = { keysOfSources: Object.keys(preparedSources), TERMINATOR }
 
-      if (opCustomizeType.toLowerCase() === 'fully') {
+      if (customizeType === 'fully') {
         const contexts = { ...baseContexts }
-        const actualOperation = operation(contexts)
-        if (!isFunction(actualOperation)) {
-          throw (new TypeError('"operation" is expected to return a "Function" when "opCustomizeType" is specified to "fully".'))
+        const actualTransformation = (transformation as ObjectMSTacheFullyTransformation<P, C>)(contexts)
+        if (!isFunction(actualTransformation)) {
+          throw (new TypeError('"transformation" is expected to return a "Function" when "customizeType" is specified to "fully".'))
         }
-        return actualOperation
-      }
-      if (opCustomizeType.toLowerCase() === 'partly') {
+        return actualTransformation
+      } else if (customizeType === 'partly') {
         const contexts = {
           ...baseContexts,
-          states: Object.keys(sources).reduce((acc, key) => {
+          states: Object.keys(preparedSources).reduce<Record<string, boolean>>((acc, key) => {
             acc[key] = false
             return acc
           }, {}),
-          values: Object.keys(sources).reduce((acc, key) => {
+          values: Object.keys(preparedSources).reduce<Record<string, C | undefined>>((acc, key) => {
             acc[key] = undefined
             return acc
           }, {})
         }
-        // actual operation which will takes prevDatar(or its value) & datar(ot its value) as argument
-        return (prev, cur, mutation, ...args) => {
+        // actual transformation which will takes prevDatar(or its value) & datar(ot its value) as argument
+        const actualTransformation: MutatorOriginTransformationUnion<P, C> = (prev: any, cur: any, mutation: any, ...args: any[]): any => {
           if (autoUpdateContexts) {
             const { key, value } = prev
             contexts.states[key] = true
             contexts.values[key] = value
           }
-          return operation(prev, cur, mutation, contexts, ...args)
+          return transformation(prev, cur, mutation, contexts, ...args)
         }
+        return actualTransformation
       }
-    })(), { liftType: opLiftType })
+    })() as MutatorOriginTransformationUnion<P, C>, options)
 
     const output = Data.empty()
 
@@ -510,7 +605,53 @@ export const createObjectMSTache = (config = {}) => {
   return tache
 }
 
+interface ICreateMSTache {
+  <P, C>(config: ArrayMSTacheConfig<P, C>): ArrayMSTache<P, C>
+  <P, C>(config: ObjectMSTacheConfig<P, C>): ObjectMSTache<P, C>
+}
+/**
+ * @return TacheMaker
+ */
+export const createMSTache: ICreateMSTache = (config: any): any => {
+  if (!isPlainObject(config)) {
+    throw (new TypeError(`"config" is expected to be type of "PlainObject", but received "${typeof config}".`))
+  }
+
+  const { sourcesType } = config
+  if (sourcesType === 'array') {
+    return createArrayMSTache(config as any)
+  } else if (sourcesType === 'object') {
+    return createObjectMSTache(config as any)
+  }
+
+  type ValidSource = Data<any> | DataMediator<Data<any>> | Mutation<any, any> | MutationMediator<Mutation<any, any>>
+  /**
+   * @accept ({ name: Atom | Any, ...})
+   * @accept ([Atom | Any, ...])
+   * @accept (Atom | Any, ...)
+   * @return Data
+   */
+  return (...sources: any[]) => {
+    if (sources.length === 1 && isPlainObject(sources[0])) {
+      return createObjectMSTache(config as any)(sources[0])
+    }
+
+    if (sources.length === 1 && isArray(sources[0])) {
+      return createArrayMSTache(config as any)(...sources[0] as ValidSource[])
+    }
+    if (sources.length > 1) {
+      return createArrayMSTache(config as any)(...sources)
+    }
+  }
+}
+
+/******************************************************************************************************
+ *
+ *                                           MM Tache
+ *
+ ******************************************************************************************************/
+
 // TODO: waiting for suitable usage scenarios
-export const createMMTache = () => {
+export const createMMTache = (): void => {
   throw (new Error('makeMMTache to be developed.'))
 }

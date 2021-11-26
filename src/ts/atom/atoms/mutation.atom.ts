@@ -1,116 +1,222 @@
-import { isUndefined, isFunction, isObject, isEmpty } from '../../internal'
-import { Mutator, Datar, isDatar, isMutator, isTerminator } from '../meta'
+import { isNil, isFunction, isObject, isPlainObject, isEmpty } from '../../internal/base'
+import { isPausor, isTerminator } from '../metas'
+import {
+  Mutator, Datar, isDatar, isMutator,
+  DEFAULT_TRANSFORMATION_LIFT_OPTIONS, DEFAULT_MUTATOR_OPTIONS
+} from '../particles'
+import {
+  AtomType, BaseAtom,
+  DEFAULT_BASEATOM_OPTIONS,
+  DEFAULT_SUBSCRIBE_OPTIONS, DEFAULT_ATOM_TRIGGER_REGISTER_OPTIONS
+} from './base.atom'
 import { isData } from './data.atom'
-import { BaseAtom } from './base.atom'
+
+import type { Vacuo } from '../metas'
+import type {
+  MutatorOptions, TransformationLiftOptions,
+  MutatorTransformation, LiftBothTransformation, LiftLeftTransformation, LiftRightTransformation,
+  MutatorOriginTransformationUnion
+} from '../particles'
+import type {
+  AtomLike,
+  BaseAtomOptions,
+  SubscribeOptions, Subscription,
+  AtomTriggerRegisterOptions, TriggerController, InternalTrigger, Trigger
+} from './base.atom'
+import type { Data } from './data.atom'
+
+/******************************************************************************************************
+ *
+ *                                           Mutation Predicatess
+ *
+ ******************************************************************************************************/
 
 /**
- * @param { any } tar
- * @return { boolean }
+ * @param { any } tar anything
+ * @return { boolean } whether the target is a Mutation instance
  */
-export const isMutation = tar => isObject(tar) && tar.isMutation
+export const isMutation = <P = any, C = any>(tar: any): tar is Mutation<P, C> => isObject(tar) && tar.isMutation
 
-export class Mutation extends BaseAtom {
-  constructor (operation, options = {}) {
+/******************************************************************************************************
+ *
+ *                                           Mutation Classes
+ *
+ ******************************************************************************************************/
+
+/**
+ *
+ */
+export interface MutationOptions<P, C> extends BaseAtomOptions {
+  lift?: TransformationLiftOptions
+  mutator?: MutatorOptions
+  isLifted?: boolean
+  originTransformation?: null | MutatorOriginTransformationUnion<P, C>
+}
+export const DEFAULT_MUTATION_OPTIONS: Required<MutationOptions<any, any>> = {
+  ...DEFAULT_BASEATOM_OPTIONS,
+  lift: DEFAULT_TRANSFORMATION_LIFT_OPTIONS,
+  mutator: DEFAULT_MUTATOR_OPTIONS,
+  isLifted: false,
+  originTransformation: null
+}
+export type MutatorConsumer<P, C> = (mutator: Mutator<P, C>, mutation: Mutation<P, C>) => void
+export type TransformationConsumer<P, C> = (transformation: (cur: Datar<C>, ...args: any[]) => C, mutation: Mutation<P, C>) => void
+export type MutationConsumer<P, C> = MutatorConsumer<P, C> | TransformationConsumer<P, C>
+
+export interface MutationSubscription<P, C> extends Subscription {
+  proxyConsumer: MutatorConsumer<P, C>
+}
+
+export class Mutation<P, C> extends BaseAtom implements AtomLike {
+  private readonly _options: Required<MutationOptions<P, C>>
+  private _mutator: Mutator<P, C>
+  private readonly _consumers: Set<MutatorConsumer<P, C>>
+
+  constructor (mutator: Mutator<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS) {
     super()
-    if (!isObject(options)) {
-      throw (new TypeError(
-        `"options" is expected to be type of "Object", but received "${typeof options}".`
-      ))
+    if (!isMutator(mutator)) {
+      throw (new TypeError('"mutator" is expected to be type of "Mutator".'))
     }
-    this._options = options
-
-    if (isMutator(operation)) {
-      this._mutator = operation
-    } else if (isFunction(operation)) {
-      this._mutator = Mutator.of(operation)
-    } else {
-      throw new TypeError(
-        `"operation" is expected to be type of "Mutator" | "Function", but received "${typeof operation}".`
-      )
+    if (!isPlainObject(options)) {
+      throw (new TypeError('"options" is expected to be type of "PlainObject".'))
     }
+    this._options = { ...DEFAULT_MUTATION_OPTIONS, ...options }
 
+    this._mutator = mutator
     this._consumers = new Set()
   }
 
-  /**
-   * @return { 'MutationAtom' } 'MutationAtom'
-   */
-  get type () { return 'MutationAtom' }
+  get type (): AtomType { return AtomType.Mutation }
+  get atomType (): AtomType { return AtomType.Mutation }
+
+  get particleName (): string { return 'mutator' }
+  get particle (): Mutator<P, C> { return this._mutator }
+  get metaName (): string { return 'transformation' }
+  get meta (): Mutator<P, C>['transformation'] { return this._mutator.transformation }
+
+  get consumers (): Set<MutatorConsumer<P, C>> { return this._consumers }
 
   /**
    * @return { true } true
    */
-  get isMutation () { return true }
+  get isMutation (): true { return true }
 
-  get isEmpty () { return this._mutator.isEmpty }
-
-  static of (operation, options = {}) {
-    return new Mutation(operation, options)
-  }
-
-  static empty (options = {}) {
-    return new Mutation(Mutator.empty(), options)
-  }
-
-  static ofLift (operation, options = {}) {
-    const { liftType: type } = options
-    return new Mutation(Mutator.lift(operation, { type }), { ...options, isLifted: true, origin_operation: operation })
-  }
-
-  static ofLiftBoth (operation, options = {}) {
-    return new Mutation(Mutator.liftBoth(operation), { ...options, isLifted: true, origin_operation: operation })
-  }
-
-  static ofLiftLeft (operation, options = {}) {
-    return new Mutation(Mutator.liftLeft(operation), { ...options, isLifted: true, origin_operation: operation })
-  }
-
-  static ofLiftRight (operation, options = {}) {
-    return new Mutation(Mutator.liftRight(operation), { ...options, isLifted: true, origin_operation: operation })
-  }
+  get isEmpty (): boolean { return this._mutator.isEmpty }
 
   /**
-   * Static value of Mutation.
+   * Create a new Mutation instance with Mutator or Function.
    *
-   * @return { Mutator } mutator
+   * @param { Mutator<AnyFunction> | AnyFunction } transformation can be a Mutator or a function
+   * @param { MutatorOptions } [options.mutator] Mutator options, when use a Function to create,
+   *                                             `Mutator.of` will be used as Mutator factory,
+   *                                             and `options.mutator` will be used as Mutator options.
    */
-  get mutator () { return this._mutator }
-  /**
-   * @return { function } operation
-   */
-  get operation () {
-    if (this._options && this._options.isLifted) {
-      return this._options.origin_operation
+  static of <P, C>(
+    transformation: MutatorTransformation<P, C> | Mutator<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS
+  ): Mutation<P, C> {
+    if (isMutator<P, C>(transformation)) {
+      return new Mutation(transformation, options)
+    } else if (isFunction(transformation)) {
+      return new Mutation(Mutator.of(transformation, undefined, options.mutator), options)
     } else {
-      return this._mutator.operation
+      throw (new TypeError('"transformation" is expected to be type of "Mutator" or "Function".'))
     }
   }
 
   /**
-   * Steram value of Mutation.
-   *
-   * @param { function } consumer The consumer will be invoked by trigger method when there is a adequate value.
-   * @return { { unsubscribe: function } } SubscriptionController
+   * Same as `Mutation.of(Mutator.of(VACUO, CHAOS, options.mutator), options)`.
    */
-  subscribe (consumer) {
-    this._consumers.add(consumer)
-    return {
-      unsubscribe: () => {
-        return this._consumers.delete(consumer)
-      }
-    }
+  static empty (options: MutationOptions<any, any> = DEFAULT_MUTATION_OPTIONS): Mutation<any, Vacuo> {
+    const _options = { ...DEFAULT_MUTATION_OPTIONS, ...options }
+    return new Mutation(Mutator.empty(_options.mutator), _options)
   }
 
-  subscribeOperation (consumer) {
-    /*
-      通过 Mutation.of(operation, options) 创建的 Mutation，其 operation 不一定是 curried function
-      所以这里不能是: consumer(mutator.operation(mutator.datar))
-    */
-    const proxyConsumer = (mutator, mutation) => {
-      consumer((...args) => {
-        return mutator.operation(mutator.datar, ...args)
-      })
+  static ofLift <P, C>(
+    transformation: MutatorOriginTransformationUnion<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS
+  ): Mutation<P, C> {
+    return new Mutation(
+      Mutator.ofLift(transformation, options.lift),
+      { ...options, isLifted: true, originTransformation: transformation }
+    )
+  }
+
+  static ofLiftBoth <P, C>(
+    transformation: LiftBothTransformation<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS
+  ): Mutation<P, C> {
+    return new Mutation(
+      Mutator.ofLiftBoth(transformation),
+      { ...options, isLifted: true, originTransformation: transformation }
+    )
+  }
+
+  static ofLiftLeft <P, C>(
+    transformation: LiftLeftTransformation<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS
+  ): Mutation<P, C> {
+    return new Mutation(
+      Mutator.ofLiftLeft(transformation),
+      { ...options, isLifted: true, originTransformation: transformation }
+    )
+  }
+
+  static ofLiftRight <P, C>(
+    transformation: LiftRightTransformation<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS
+  ): Mutation<P, C> {
+    return new Mutation(
+      Mutator.ofLiftRight(transformation),
+      { ...options, isLifted: true, originTransformation: transformation }
+    )
+  }
+
+  /**
+   * Mutator of Mutation.
+   */
+  get mutator (): Mutator<P, C> { return this._mutator }
+
+  /**
+   * Transformation of Mutator of Mutation.
+   *
+   * If the transformation is lifted, the origin transformation will
+   *   be returned as first choice instead of lifted transformation.
+   */
+  get transformation (): Mutator<P, C>['transformation'] {
+    return this._mutator.transformation
+  }
+
+  get originTransformation (): MutatorOriginTransformationUnion<P, C> | null {
+    return this._options.originTransformation
+  }
+
+  /**
+   * Stream value of Mutation.
+   *
+   * @param { MutatorConsumer<DV> } consumer The consumer will be invoked by "trigger" method when there is a adequate value.
+   * @param { SubscribeOptions } options
+   * @param { boolean } [options.isExtracted = false] Whether to extract the value from the datar before it be passed to consumer.
+   * @return { MutationSubscription<P, C> } MutationSubscription<P, C>
+   */
+  // TODO: how can i narrow consumer's type by `options.isExtracted`?
+  // subscribe (consumer: MutatorConsumer<P, C>, options?: { isExtracted: false }): MutationSubscription<P, C>
+  // subscribe (consumer: TransformationConsumer<P, C>, options?: { isExtracted: true }): MutationSubscription<P, C>
+  subscribe (consumer: MutationConsumer<P, C>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS): MutationSubscription<P, C> {
+    const { isExtracted } = { ...DEFAULT_SUBSCRIBE_OPTIONS, ...options }
+    let proxyConsumer: MutatorConsumer<P, C>
+    if (isExtracted) {
+      /**
+       * Mutation's transformation may not be a curried function, eg. created by Mutation.of(operation, options).
+       * So the body of `fakeTransformation` can not't be `consumer(mutator.transformation(mutator.datar))`.
+       */
+      proxyConsumer = (mutator, mutation) => {
+        // TODO: consider what is `transformation`,
+        // the `transformation` fn or the `transformation` fn bind `Mutation.datar` as 1st argument.
+        const fakeTransformation = (cur: Datar<C>, ...args: any[]): C => {
+          return mutator.transformation(mutator.datar, cur, ...args)
+        }
+        return (consumer as TransformationConsumer<P, C>)(fakeTransformation, mutation)
+      }
+    } else {
+      proxyConsumer = consumer as MutatorConsumer<P, C>
     }
+
     this._consumers.add(proxyConsumer)
     return {
       proxyConsumer: proxyConsumer,
@@ -121,14 +227,29 @@ export class Mutation extends BaseAtom {
   }
 
   /**
-   * @param { Mutator | undefined } mutator
-   * @return { void }
+   * Same as `.subscribe(consumer, { ...options, isExtracted: true })`.
+   *
+   * Get a transformation of mutator of mutation, which bind latest
+   *   datar of mutation as first argument.
    */
-  trigger (mutator) {
-    if (!isUndefined(mutator) && !isMutator(mutator)) {
-      throw (new TypeError('Mutation must be triggered with a Mutator.'))
+  subscribeTransformation (
+    consumer: TransformationConsumer<P, C>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS
+  ): MutationSubscription<P, C> {
+    return this.subscribe(consumer, { ...DEFAULT_SUBSCRIBE_OPTIONS, ...options, isExtracted: true })
+  }
+
+  /**
+   * `Empty mutator` will not be triggered.
+   *
+   * @param { Mutator<MT> | undefined } mutator mutator
+   * @return { void } void
+   */
+  trigger (mutator?: Mutator<P, C>): void {
+    const _mutator = mutator ?? this._mutator
+
+    if (!isMutator(_mutator)) {
+      throw (new TypeError('"Mutation" must be triggered with a "Mutator".'))
     }
-    const _mutator = mutator || this.mutator
 
     if (!isEmpty(_mutator)) {
       this._consumers.forEach(consumer => {
@@ -137,8 +258,19 @@ export class Mutation extends BaseAtom {
     }
   }
 
-  triggerOperation (operation) {
-    return this.trigger(Mutator.of(operation))
+  /**
+   * Internally call `trigger` method which will not trigger `empty mutator`,
+   *   so the `Vacuo` value will not be triggered by `triggerTransformation` method.
+   *
+   * @param { MT | undefined } transformation transformation
+   * @return { void } void
+   */
+  triggerTransformation (transformation?: Mutator<P, C>['transformation']): void {
+    if (isNil(transformation)) {
+      return this.trigger()
+    } else {
+      return this.trigger(Mutator.of(transformation))
+    }
   }
 
   /**
@@ -148,12 +280,12 @@ export class Mutation extends BaseAtom {
    *
    * @param { Mutation } mutation data -> current mutation (-> other data)
    */
-  observe (data) {
+  observe (data: Data<P>): ReturnType<(typeof data)['subscribe']> {
     if (!isData(data)) {
-      throw (new TypeError('Mutation can only observe a Data!'))
+      throw (new TypeError('"Mutation" can only observe a "Data"!'))
     }
-    return data.subscribe((datar, data) => {
-      this.mutate(datar, data)
+    return data.subscribe((_datar: (typeof data)['datar'], _data: typeof data) => {
+      this.mutate(_datar, _data)
     })
   }
 
@@ -164,8 +296,11 @@ export class Mutation extends BaseAtom {
    *
    * @param { Mutation } mutation (other data ->) current mutation -> data
    */
-  beObservedBy (data) {
+  beObservedBy (data: Data<C>): MutationSubscription<P, C> {
     return data.observe(this)
+    // return this.subscribe((mutator, mutation) => {
+    //   data.mutate(mutator, mutation)
+    // })
   }
 
   /**
@@ -180,68 +315,97 @@ export class Mutation extends BaseAtom {
    * @param { Data } data
    * @return { Mutation } Mutation(this)
    */
-  mutate (datar, data) {
-    let _datar = null
-    if (isDatar(datar)) {
+  // mutate <DV>(datar: Datar<OrBaseMeta<DV>>, data: Data<DV>): Mutation<P, C>
+  // mutate <DV>(datar: Data<DV>, data: Data<DV>): Mutation<P, C>
+  // mutate <DV>(datar: OrBaseMeta<DV>, data: Data<DV>): Mutation<P, C>
+  mutate (datar: Data<P> | Datar<P> | P, data?: Data<P>): this {
+    let _datar: Datar<P>
+    if (isDatar<P>(datar)) {
       _datar = datar
-    } else if (isData(datar)) {
+    } else if (isData<P>(datar)) {
       _datar = datar.datar
     } else {
       _datar = Datar.of(datar)
     }
 
-    if (isTerminator(_datar.value)) return this
-
-    let _data
-    if (!data) {
-      _data = isData(data) ? datar : _data
+    let _data: Data<P> | undefined
+    if (isNil(data)) {
+      _data = isData(datar) ? datar : _data
     } else {
       if (isData(data)) {
         _data = data
       } else {
-        throw (new TypeError(`"data" is expected to be type of "Data", but received "${typeof data}".`))
+        throw (new TypeError('"data" is expected to be type of "Data".'))
       }
     }
 
-    // NOTE: 运行效果相当于：const _tempMutator = this._mutator.fill(_datar)
-    // 但实际意义完全不同
-    const _tempMutator = Mutator.of(_datar.run(this._mutator, _data)).fill(_datar)
+    // Datar's run method will always return the transformation of mutator which passed to it as first argument.
+    const newMutator = Mutator.of(_datar.run(this._mutator, _data), _datar, this._mutator.options)
 
-    this._mutator = _tempMutator
-    this.trigger()
+    if (isTerminator(_datar.value)) {
+      // If the value of received datar is TERMINATOR,
+      //   throw away the result,
+      //   do not update the mutator of current Mutation,
+      //   and do not trigger consumers(subscribers).
+    } else if (isPausor(_datar.value)) {
+      // If the value of received datar is PAUSOR,
+      //   update the mutator of current Mutation with new Mutator,
+      //   but do not trigger consumers(subscribers).
+      this._mutator = newMutator
+    } else {
+      // Else,
+      //   update the mutator of current Mutation with new Mutator,
+      //   and trigger consumers(subscribers).
+      this._mutator = newMutator
+      this.trigger()
+    }
 
     return this
   }
 
   /**
-   * @param { function } trigger Takes an internalTrigger(Function) as first parameter,
-   *                             invoke internalTrigger with any value will lead to
-   *                             Mutation's trigger method be triggerd with given value.
-   * @param { { forceWrap?: boolean } } options
-   * @accept ((mutator -> trigger(mutator)) -> controller, options)
-   * @accept ((operation -> trigger(mutator)) -> controller, { forceWrap: true })
-   * @return { {} } TriggerController
+   * @param { Trigger<MT | Mutator<MT>> } trigger Which Take an internalTrigger(Function) as first parameter,
+   *                                              invoke internalTrigger with any value will lead to
+   *                                              Mutation's trigger method be triggerd with that value.
+   * @param { AtomTriggerRegisterOptions } options
+   * @param { boolean } [options.forceWrap = false] If true, the emitted value of trigger will always be wrapped in Mutator.
+   * @return { TriggerController } TriggerController
    */
-  registerTrigger (trigger, options = {}) {
-    if (!trigger) {
-      throw (new TypeError(`"trigger" is required, but received "${trigger}".`))
+  registerTrigger (
+    trigger: Trigger<Mutator<P, C> | ((...args: any[]) => C) | C>,
+    options: AtomTriggerRegisterOptions = DEFAULT_ATOM_TRIGGER_REGISTER_OPTIONS
+  ): TriggerController {
+    if (isNil(trigger)) {
+      throw (new TypeError('"trigger" is required.'))
     }
     if (!isFunction(trigger)) {
-      throw (new TypeError(`"trigger" is expected to be type of "Function", but received "${typeof trigger}".`))
+      throw (new TypeError('"trigger" is expected to be type of "Function".'))
     }
-    if (!isObject(options)) {
-      throw (new TypeError(`"options" is expected to be type of "Object", but received "${typeof options}".`))
+    if (!isPlainObject(options)) {
+      throw (new TypeError('"options" is expected to be type of "PlainObject".'))
     }
 
-    const { forceWrap = false } = options
+    const { forceWrap } = { ...DEFAULT_ATOM_TRIGGER_REGISTER_OPTIONS, ...options }
 
-    const _internalTriggerFunction = (...args) => {
-      if (!isMutator(args[0]) || forceWrap) {
-        args[0] = Mutator.of(args[0])
+    const internalTrigger: InternalTrigger<Mutator<P, C> | ((...args: any[]) => C) | C> = (acceptValue, ...args) => {
+      if (forceWrap) {
+        return this.trigger(...[Mutator.of(() => acceptValue), ...args])
       }
-      this.trigger(...args)
+
+      if (!isMutator<P, C>(acceptValue)) {
+        if (!isFunction(acceptValue)) {
+          return this.trigger(...[Mutator.of(() => acceptValue), ...args])
+        } else {
+          return this.trigger(...[Mutator.of(acceptValue), ...args])
+        }
+      } else {
+        return this.trigger(...[acceptValue, ...args])
+      }
     }
-    const controller = trigger(_internalTriggerFunction)
+
+    const controller = trigger(internalTrigger)
     return controller
   }
 }
+
+export const GC_MUTATION = Mutation.of(() => Symbol('GC_MUTATION'))

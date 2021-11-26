@@ -6,7 +6,8 @@
   },
   "globals": {
     "Atomics": "readonly",
-    "SharedArrayBuffer": "readonly"
+    "SharedArrayBuffer": "readonly",
+    "wx": true
   },
   "overrides": [
     {

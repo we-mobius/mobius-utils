@@ -1,5 +1,5 @@
 import { isArray } from '../../internal'
-import { Data, Mutation, isAtom } from '../atom'
+import { Data, Mutation, isAtom } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
 /**

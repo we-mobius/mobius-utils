@@ -1,7 +1,7 @@
 import { isFunction } from '../../internal'
 import { curryN } from '../../functional'
-import { TERMINATOR } from '../meta'
-import { Mutation, Data, isAtom } from '../atom'
+import { TERMINATOR } from '../metas'
+import { Mutation, Data, isAtom } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 

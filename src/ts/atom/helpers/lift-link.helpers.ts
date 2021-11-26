@@ -1,9 +1,21 @@
 import { isArray, isFunction } from '../../internal'
-import { isAtom, Mutation, Data } from '../atom'
-import { isMutator } from '../meta'
+import { isAtom, Mutation, Data } from '../atoms'
+import { isMutator } from '../particles'
 import { pipeAtom, composeAtom } from './normal-link.helpers'
 
-export const liftAtom = target => {
+import type { Mutator } from '../particles'
+import type { DataMediator, MutationMediator } from '../mediators'
+
+type ValidAtom = Data<any> | Mutation<any, any> | DataMediator<Data<any>> | MutationMediator<Mutation<any, any>>
+
+interface ILiftAtom {
+  <A extends ValidAtom>(target: A): A
+  <A, B>(target: Mutator<A, B>): Mutation<A, B>
+  <R>(target: (...args: any[]) => R): Mutation<any, R>
+  <A>(target: A): A
+}
+
+export const liftAtom: ILiftAtom = (target: any): any => {
   if (isAtom(target)) {
     return target
   } else if (isMutator(target)) {
@@ -15,41 +27,49 @@ export const liftAtom = target => {
   }
 }
 
-export const binaryLiftPipeAtom = (...args) => {
+interface ILiftPipeAtom {
+  (...atoms: ValidAtom[]): typeof atoms
+  (...atoms: [ValidAtom[]]): typeof atoms[0]
+}
+export const binaryLiftPipeAtom: ILiftPipeAtom = (...args: any[]): any => {
   if (args.length === 1 && isArray(args[0])) {
     args = args[0]
   }
   // 只取前两项
-  args = args.slice(0, 2)
-  const liftedAtoms = args.map(liftAtom)
-  pipeAtom(liftedAtoms)
+  const liftedAtoms = args.slice(0, 2).map(liftAtom) as any[]
+  pipeAtom(...liftedAtoms)
   return liftedAtoms
 }
-export const binaryLiftComposeAtom = (...args) => {
+
+interface ILiftComposeAtom {
+  (...atoms: ValidAtom[]): typeof atoms
+  (...atoms: [ValidAtom[]]): typeof atoms[0]
+}
+export const binaryLiftComposeAtom: ILiftComposeAtom = (...args: any[]): any => {
   if (args.length === 1 && isArray(args[0])) {
     args = args[0]
   }
   // 只取最后两项
-  args = args.slice(-2)
-  const liftedAtoms = args.map(liftAtom)
-  composeAtom(liftedAtoms)
+  const liftedAtoms = args.slice(-2).map(liftAtom) as any[]
+  composeAtom(...liftedAtoms)
   return liftedAtoms
 }
 
-export const nAryLiftPipeAtom = (...args) => {
+export const nAryLiftPipeAtom: ILiftPipeAtom = (...args: any[]): any => {
   if (args.length === 1 && isArray(args[0])) {
     args = args[0]
   }
-  const liftedAtoms = args.map(liftAtom)
-  pipeAtom(liftedAtoms)
+  const liftedAtoms = args.map(liftAtom) as any[]
+  pipeAtom(...liftedAtoms)
   return liftedAtoms
 }
 export const liftPipeAtom = nAryLiftPipeAtom
-export const nAryLiftComposeAtom = (...args) => {
+
+export const nAryLiftComposeAtom: ILiftComposeAtom = (...args: any[]): any => {
   if (args.length === 1 && isArray(args[0])) {
     args = args[0]
   }
-  const liftedAtoms = args.map(liftAtom)
+  const liftedAtoms = args.map(liftAtom) as any[]
   composeAtom(liftedAtoms)
   return liftedAtoms
 }

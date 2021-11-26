@@ -1,5 +1,5 @@
 import { curryN } from '../../functional'
-import { TERMINATOR } from '../meta'
+import { TERMINATOR } from '../metas'
 import { Data, Mutation, isAtom } from '../../atom'
 import { replayWithLatest } from '../mediators'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'

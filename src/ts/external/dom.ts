@@ -1,45 +1,56 @@
-import { isString, isNumber } from '../internal'
-import { curryN } from '../functional'
+import { isString, isNumber, isFunction } from '../internal'
+import { curry } from '../functional'
 
-export const injectScript = (src, onload = () => {}, removeAfterLoad = false) => {
+type InjectScript = (src: string, onload?: GlobalEventHandlers['onload'], removeAfterLoaded?: boolean) => HTMLScriptElement
+export const injectScript: InjectScript = (
+  src: string, onload, removeAfterLoaded = false
+): HTMLScriptElement => {
   const script = document.createElement('script')
   script.setAttribute('type', 'text/javascript')
   script.src = src
   script.onload = (...args) => {
-    onload(...args)
-    if (removeAfterLoad) {
-      script.parentNode.removeChild(script)
+    if (isFunction(onload)) {
+      onload.bind(script)(...args)
+    }
+    if (removeAfterLoaded) {
+      script.parentNode?.removeChild(script)
     }
   }
   document.head.appendChild(script)
   return script
 }
 
-export const makeCustomEvent = curryN(3, (type, detail, options) =>
-  new CustomEvent(type, { ...(options || {}), detail: { eventType: type, ...(detail || {}) } })
-)
+type CustomEventMaker = <T extends string, D extends Record<string, unknown>>
+  (type: T, detail: D, options: EventInit) => CustomEvent<D>
 
 /**
- * @param selector String, id | selector
- * @param interval Number, polling interval (in ms)
- * @return undefined
+ * "event.detail" is of type object always,
+ * and there is an "eventType" property in it,
+ * which equals to custom type's name.
  */
-export const pollingToGetNode = curryN(3, (selector, interval, callback) => {
+export const makeCustomEvent: CustomEventMaker = (type, detail, options) =>
+  new CustomEvent(type, { ...(options ?? {}), detail: { eventType: type, ...(detail ?? {}) } })
+
+/**
+ * @param { string } selector element's id or selector
+ * @param { number } interval polling interval (in ms)
+ * @return { void } no return value
+ */
+export const pollingToGetNode = curry((selector: string, interval: number, callback: (node: Element) => void): void => {
   if (!isString(selector)) {
-    throw (new TypeError('"selector" argument of pollingToGetNode is expected to be type of "String".'))
+    throw (new TypeError('"selector" is expected to be type of "String".'))
   }
   if (!isNumber(interval)) {
-    throw (new TypeError('"interval" argument of pollingToGetNode is expected to be type of "Number".'))
+    throw (new TypeError('"interval" is expected to be type of "Number".'))
   }
-  let node
-  let timer = 0
-  timer = setInterval(() => {
+  let node: Element | null = null
+  const timer = setInterval(() => {
     if (selector.includes('#') || selector.includes('.')) {
-      node = node || document.querySelector(selector)
+      node = node ?? document.querySelector(selector)
     } else {
-      node = node || document.getElementById(selector)
+      node = node ?? document.getElementById(selector)
     }
-    if (node) {
+    if (node !== null) {
       clearInterval(timer)
       callback(node)
     }

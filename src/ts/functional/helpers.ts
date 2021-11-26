@@ -109,11 +109,11 @@ type HPLooseCurryS = (fn: AnyFunction, ...args: any[]) => AnyFunction
  * Loose simple curry will pass all of the args it received to target function,
  * even if the arg's length is greater than target function's arity.
  */
-export const looseCurryS: HPLooseCurryS = (fn, ...existingArgs) => {
+export const looseCurryS: LooseCurryS = (fn, ...existingArgs) => {
   return (...appendingArgs) => {
     const totalArgs = [...existingArgs, ...appendingArgs]
     if (totalArgs.length < fn.length) {
-      return looseCurryS(fn, ...totalArgs) // as PartialParameters<typeof fn>
+      return looseCurryS(fn, ...totalArgs as PartialParameters<typeof fn>) // as PartialParameters<typeof fn>
     }
     return fn(...totalArgs)
   }
@@ -130,12 +130,12 @@ type HPCurryS = (fn: AnyFunction, ...args: any[]) => AnyFunction
  * Strict simple curry will take exactly the required args that target function needs,
  * redundant args will be ignored.
  */
-export const curryS: HPCurryS = (fn, ...existingArgs) => {
+export const curryS: CurryS = (fn, ...existingArgs) => {
   return (...appendingArgs) => {
     const targetArity = fn.length
     const totalArgs = [...existingArgs, ...appendingArgs]
     if (totalArgs.length < targetArity) {
-      return curryS(fn, ...totalArgs) //  as PartialParameters<typeof fn>
+      return curryS(fn, ...totalArgs as PartialParameters<typeof fn>) //  as PartialParameters<typeof fn>
     } else {
       return fn(...totalArgs.slice(0, targetArity))
     }
@@ -311,7 +311,6 @@ export const curry: HPCurry = (fn, ...existingArgs) => {
     }
   }
 }
-
 /******************************************************************************************************
  *
  *                                          CurryN Function
@@ -487,26 +486,74 @@ type Compose<FNS extends AnyFunction[]> = Reverse<FNS> extends infer _ ? Restric
 
 type ComposeLeft = <FNS extends AnyFunction[]>
   (...fns: FNS & Pipe<FNS> extends AnyFunction ? FNS : never) => Pipe<FNS>
+
 // NOTE: 另外一种 compose 实现
 // @refer: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/ReduceRight
 // const compose = (...args) => value => args.reduceRight((acc, fn) => fn(acc), value)
 // 本质是一个闭包，直觉上不喜欢（虽然能够带来一些调试上的好处）
 //   -> @refer: https://www.freecodecamp.org/news/pipe-and-compose-in-javascript-5b04004ac937/
 // 下面这种更符合函数式思维，实现上更接近数学定义
-export const composeL: ComposeLeft = ((...fns) => {
+export const composeL: ComposeLeft = (...fns: any[]) => {
   const initialFunction = fns.shift() ?? asIs
-  const composedFunction = fns.reduce((g, f) => (...args) => f(g(...args)), initialFunction)
+  const composedFunction = fns.reduce((g, f) => (...args: any[]) => f(g(...args)), initialFunction)
   return composedFunction
-}) as ComposeLeft
+}
 
 type ComposeRight = <FNS extends AnyFunction[]>
   (...fns: FNS & Compose<FNS> extends AnyFunction ? FNS : never) => Compose<FNS>
-export const composeR: ComposeRight = (...fns) => composeL(...fns.reverse())
+
+export const composeR: ComposeRight = (...fns: any[]) => (composeL as any)(...fns.reverse())
 
 export const pipeL = composeL
 export const pipeR = composeR
-export const compose = composeR
-export const pipe = pipeL
+
+type NAryF<S extends any[], R> = (...args: S) => R
+type UnAryF<I, O> = (input: I) => O
+interface HPPipe {
+  <A extends any[], B>(fn1: NAryF<A, B>): NAryF<A, B>
+  <A extends any[], B, C>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>): NAryF<A, C>
+  <A extends any[], B, C, D>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>): NAryF<A, D>
+  <A extends any[], B, C, D, E>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>): NAryF<A, E>
+  // eslint-disable-next-line max-len
+  <A extends any[], B, C, D, E, F>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>, fn5: UnAryF<E, F>): NAryF<A, F>
+  // eslint-disable-next-line max-len
+  <A extends any[], B, C, D, E, F, G>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>, fn5: UnAryF<E, F>, fn6: UnAryF<F, G>): NAryF<A, G>
+  // eslint-disable-next-line max-len
+  <A extends any[], B, C, D, E, F, G, H>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>, fn5: UnAryF<E, F>, fn6: UnAryF<F, G>, fn7: UnAryF<G, H>): NAryF<A, H>
+  // eslint-disable-next-line max-len
+  <A extends any[], B, C, D, E, F, G, H, I>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>, fn5: UnAryF<E, F>, fn6: UnAryF<F, G>, fn7: UnAryF<G, H>, fn8: UnAryF<H, I>): NAryF<A, I>
+  // eslint-disable-next-line max-len
+  <A extends any[], B, C, D, E, F, G, H, I, J>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>, fn5: UnAryF<E, F>, fn6: UnAryF<F, G>, fn7: UnAryF<G, H>, fn8: UnAryF<H, I>, fn9: UnAryF<I, J>): NAryF<A, J>
+  // eslint-disable-next-line max-len
+  <A extends any[], B, C, D, E, F, G, H, I, J, K>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>, fn5: UnAryF<E, F>, fn6: UnAryF<F, G>, fn7: UnAryF<G, H>, fn8: UnAryF<H, I>, fn9: UnAryF<I, J>, fn10: UnAryF<J, K>): NAryF<A, K>
+  // eslint-disable-next-line max-len
+  <A extends any[], B, C, D, E, F, G, H, I, J, K>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>, fn5: UnAryF<E, F>, fn6: UnAryF<F, G>, fn7: UnAryF<G, H>, fn8: UnAryF<H, I>, fn9: UnAryF<I, J>, fn10: UnAryF<J, K>, ...fns: Array<UnAryF<any, any>>): NAryF<A, any>
+}
+interface HPCompose {
+  <A extends any[], B>(fn: NAryF<A, B>): NAryF<A, B>
+  <A extends any[], B, C>(fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, C>
+  <A extends any[], B, C, D>(fn3: UnAryF<C, D>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, D>
+  <A extends any[], B, C, D, E>(fn4: UnAryF<D, E>, fn3: UnAryF<C, D>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, E>
+  <A extends any[], B, C, D, E, F>(fn5: UnAryF<D, E>, fn4: UnAryF<C, D>, fn3: UnAryF<B, C>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, F>
+  // eslint-disable-next-line max-len
+  <A extends any[], B, C, D, E, F, G>(fn6: UnAryF<E, F>, fn5: UnAryF<D, E>, fn4: UnAryF<C, D>, fn3: UnAryF<B, C>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, G>
+  // eslint-disable-next-line max-len
+  <A extends any[], B, C, D, E, F, G, H>(fn7: UnAryF<F, G>, fn6: UnAryF<E, F>, fn5: UnAryF<D, E>, fn4: UnAryF<C, D>, fn3: UnAryF<B, C>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, H>
+  // eslint-disable-next-line max-len
+  <A extends any[], B, C, D, E, F, G, H, I>(fn8: UnAryF<G, H>, fn7: UnAryF<F, G>, fn6: UnAryF<E, F>, fn5: UnAryF<D, E>, fn4: UnAryF<C, D>, fn3: UnAryF<B, C>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, I>
+  // eslint-disable-next-line max-len
+  <A extends any[], B, C, D, E, F, G, H, I, J>(fn9: UnAryF<H, I>, fn8: UnAryF<G, H>, fn7: UnAryF<F, G>, fn6: UnAryF<E, F>, fn5: UnAryF<D, E>, fn4: UnAryF<C, D>, fn3: UnAryF<B, C>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, J>
+  // eslint-disable-next-line max-len
+  <A extends any[], B, C, D, E, F, G, H, I, J, K>(fn10: UnAryF<I, J>, fn9: UnAryF<H, I>, fn8: UnAryF<G, H>, fn7: UnAryF<F, G>, fn6: UnAryF<E, F>, fn5: UnAryF<D, E>, fn4: UnAryF<C, D>, fn3: UnAryF<B, C>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, K>
+}
+export const compose: HPCompose = composeR
+export const pipe: HPPipe = pipeL
+
+/******************************************************************************************************
+ *
+ *                                       Memorize Function
+ *
+ ******************************************************************************************************/
 
 type Memorize =
   <FN extends AnyFunction>
@@ -528,6 +575,12 @@ export const memorize: Memorize = (fn, hasher = defaultMemorizeHasher) => {
     return cache.get(hash)
   }
 }
+
+/******************************************************************************************************
+ *
+ *                                       Invoker Function
+ *
+ ******************************************************************************************************/
 
 // // eslint-disable-next-line @typescript-eslint/ban-types
 // type getType<KEY extends string, TARGET extends Object> = TARGET[KEY]
@@ -559,6 +612,12 @@ const invokerFactory = (curryFn: AnyFunction) => {
 export const invoker = invokerFactory(curryN as AnyFunction)
 export const looseInvoker = invokerFactory(looseCurryN as AnyFunction)
 
+/******************************************************************************************************
+ *
+ *                                       Arity Function
+ *
+ ******************************************************************************************************/
+
 type FallbackType = (fn: AnyFunction) => AnyFunction
 
 export const nAry = curry((n: number, fn) => curryN(n, fn))
@@ -584,8 +643,14 @@ export const tap: Tap = fn => (...args) => {
   return args[0]
 }
 
-type Execute = <FN extends AnyFunction>(fn: FN, ...args: [Parameters<FN>, ...any[]]) => ReturnType<FN>
+type Execute = <FN extends AnyFunction>(fn: FN, ...args: [...Parameters<FN>, ...any[]]) => ReturnType<FN>
 export const execute: Execute = (fn, ...args) => fn(...args)
+
+/******************************************************************************************************
+ *
+ *                                            Quick Tests
+ *
+ ******************************************************************************************************/
 
 /*
                   arguments num controller & curry test

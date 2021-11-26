@@ -1,15 +1,22 @@
-import { isObject } from '../../internal'
-import { Data, Mutation } from '../atom'
+import { Datar, Mutator } from '../particles'
+import { Data, Mutation } from '../atoms'
 
-export const createEmptyData = () => Data.empty()
-export const createEmptyMutation = () => Mutation.empty()
+export const createEmptyDatar = Datar.empty
+export const createEmptyMutator = Mutator.empty
 
-export const createDataOf = (value, options) => Data.of(value, options)
-export const createMutationOf = (operation, options) => {
-  if (!options || !isObject(options)) return Mutation.of(operation)
-  return Mutation.ofLift(operation, options)
-}
+export const createDatarOf = Datar.of
+export const createMutatorOf = Mutator.of
+export const createMutatorOfLift = Mutator.ofLift
+export const createMutatorOfLiftLeft = Mutator.ofLiftLeft
+export const createMutatorOfLiftRight = Mutator.ofLiftRight
+export const createMutatorOfLiftBoth = Mutator.ofLiftBoth
 
-export const createMutationOfLL = (operation, options) => Mutation.ofLiftLeft(operation, options)
-export const createMutationOfLR = (operation, options) => Mutation.ofLiftRight(operation, options)
-export const createMutationOfLB = (operation, options) => Mutation.ofLiftBoth(operation, options)
+export const createEmptyData = Data.empty
+export const createEmptyMutation = Mutation.empty
+
+export const createDataOf = Data.of
+export const createMutationOf = Mutation.of
+export const createMutationofLift = Mutation.ofLift
+export const createMutationOfLiftLeft = Mutation.ofLiftLeft
+export const createMutationOfLiftRight = Mutation.ofLiftRight
+export const createMutationOfLiftBoth = Mutation.ofLiftBoth

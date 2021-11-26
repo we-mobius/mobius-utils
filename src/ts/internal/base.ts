@@ -38,12 +38,13 @@ export const isNull = (tar: any): tar is null =>
 export const isObject = (tar: any): tar is Object =>
   tar instanceof Object
 /**
- * 使用 typeof 判断是否为对象，非 null、非 Function、非原始类型的值都是对象
+ * 使用 typeof 判断是否为对象，非 null、非 Function、非原始类型的值都是对象，
+ * 比如 Array、Map、Set 等
  */
 export const isGeneralObject = (tar: any): tar is Object =>
   tar !== null && typeof tar === 'object'
 
-interface PlainObject {
+export interface PlainObject {
   [key: string]: any
   [key: number]: any
   [key: symbol]: any

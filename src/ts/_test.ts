@@ -1,5 +1,5 @@
 import { compose, flip, curryS, curry, curryN, looseCurryN, unary } from './functional'
-import { map, flat, get, getByPath } from './internal'
+import { map, flat, getPropByPath } from './internal'
 
 // const a = [1, 2, 3]
 // const b = [4, 5, 6]
@@ -9,4 +9,4 @@ import { map, flat, get, getByPath } from './internal'
 
 // console.log(flat(res))
 
-console.log(getByPath('a.b,c/e/"f".["g.h"]\\i\\j', { a: { b: { c: 'gg' } } }))
+console.log(getPropByPath('a.b,c/e/"f".["g.h"]\\i\\j', { a: { b: { c: 'gg' } } }))

@@ -1,6 +1,6 @@
 import { curryN } from '../../functional'
-import { TERMINATOR, isVoid } from '../meta'
-import { Data, Mutation, isAtom } from '../atom'
+import { TERMINATOR, isVoid } from '../metas'
+import { Data, Mutation, isAtom } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 

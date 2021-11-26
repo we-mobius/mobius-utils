@@ -14,3 +14,5 @@ export * from './dom'
 
 export * from './app'
 export * from './scope'
+
+export * from './thirdpartLibs'

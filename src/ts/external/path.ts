@@ -1,9 +1,8 @@
 import {
   isString, isArray, isObject,
-  isTruthy, allPass,
-  split, isStartWith,
-  spreadToArray, map, filter, reject, reduce, join, unshift,
-  hasOwnProperty, prop, entries
+  isTruthy,
+  split,
+  spreadToArray, filter, reject, join, unshift
 } from '../internal'
 
 import { compose } from '../functional'
@@ -12,68 +11,104 @@ import { compose } from '../functional'
 // @see https://npm.taobao.org/mirrors/node/latest/docs/api/url.html
 // @see https://github.com/medialize/URI
 
-// removeRepetition :: [a] -> [a]
-export const removeRepetition = reject((item, index, arr) => {
+type PathnameString = string
+type PathnameArray = string[]
+type PathnameUnion = PathnameString | PathnameArray
+
+type Filter<T> = (tar: T[]) => T[]
+/**
+ * @signature removeRepetition :: [a] -> [a]
+ */
+export const removeRepetition: Filter<string> = reject((item: string, index: number, arr: string[]) => {
   return arr[index - 1] !== undefined ? item === arr[index - 1] : false
 })
-// removeRepetitionOf :: [a] -> ([a] -> [a])
-export const removeRepetitionOf = ofList => reject((item, index, arr) => {
-  return (arr[index - 1] !== undefined && ofList.includes(item)) ? item === arr[index - 1] : false
-})
-// removeRepetitionExcept :: [a] -> ([a] -> [a])
-export const removeRepetitionExcept = exceptList => reject((item, index, arr) => {
-  return (arr[index - 1] !== undefined && !exceptList.includes(item)) ? item === arr[index - 1] : false
-})
-// removeRepetitionOfEmpty :: [a] -> ([a] -> [a])
+/**
+ * @signature removeRepetitionOf :: [a] -> ([a] -> [a])
+ */
+export const removeRepetitionOf = (ofList: string[]): Filter<string> =>
+  reject((item: string, index: number, arr: string[]) => {
+    return (arr[index - 1] !== undefined && ofList.includes(item)) ? item === arr[index - 1] : false
+  })
+/**
+ * @signature removeRepetitionExcept :: [a] -> ([a] -> [a])
+ */
+export const removeRepetitionExcept = (exceptList: string[]): Filter<string> =>
+  reject((item: string, index: number, arr: string[]) => {
+    return (arr[index - 1] !== undefined && !exceptList.includes(item)) ? item === arr[index - 1] : false
+  })
+/**
+ * @signature removeRepetitionOfEmpty :: [a] -> [a]
+ */
 export const removeRepetitionOfEmpty = removeRepetitionOf([''])
 export const removeRepetitionOfSlash = removeRepetitionOf(['/'])
-const removeInnerEmpty = arr => arr.filter((item, index, arr) => (index === 0 || index === arr.length - 1) ? true : item !== '')
+/**
+ * remove empty string item in target array, except the first and the last item.
+ */
+const _removeInnerEmpty: Filter<string> = arr =>
+  arr.filter((item, index, arr) => (index === 0 || index === arr.length - 1) ? true : item !== '')
 
-const _keepMinimumPathArr = arr => arr.length === 1 && arr[0] === '' ? ['', ''] : arr
+const _keepMinimumPathArr: Filter<string> = arr => arr.length === 1 && arr[0] === '' ? ['', ''] : arr
+
 /**
  * - remove repetition of slash & empty char
  * - add '' or '/' as prefix of pathname
  */
-export const neatenPathname = pathname => {
+export const neatenPathname = (pathname: PathnameUnion): typeof pathname => {
   // ['path', 'to', 'page'] -> join('/') -> 'path/to/page'
   //   -> expected to be: '/path/to/page', unshift('') solve the problem
   if (isArray(pathname)) {
-    return compose(removeInnerEmpty, _keepMinimumPathArr, removeRepetitionOfEmpty, unshift(''))(pathname)
-  }
-  if (isString(pathname)) {
-    return compose(
-      join('/'), _keepMinimumPathArr, removeRepetitionOfEmpty, split('/'), join(''), removeRepetitionOfSlash, unshift('/'), spreadToArray
-    )(pathname)
+    // add '' to the beginning of pathname array, redandant '' will be removed by other steps
+    const _0 = unshift('')(pathname)
+    // redandant '' will be removed
+    const _1 = removeRepetitionOfEmpty(_0)
+    const _2 = _keepMinimumPathArr(_1)
+    const _3 = _removeInnerEmpty(_2)
+    return _3
+  } else if (isString(pathname)) {
+    const _0 = spreadToArray(pathname)
+    // add '/' to the beginning of pathname array, redandant '/' will be removed by other steps
+    const _1 = unshift('/')(_0)
+    // redandant '/' will be removed
+    const _2 = removeRepetitionOfSlash(_1)
+    const _3 = join('')(_2)
+    const _4 = split('/')(_3)
+    const _5 = removeRepetitionOfEmpty(_4)
+    const _6 = _keepMinimumPathArr(_5)
+    const _7 = join('/')(_6)
+    return _7
+  } else {
+    throw (new TypeError('"pathname" must be string or array.'))
   }
 }
 
 /**
  * @example
- * ```
- * pathnameToArray(['']) // ['', '']
- * pathnameToArray(['', '']) // ['', '']
- * pathnameToArray(['app', 'page']) // [ '', 'app', 'page' ]
- * pathnameToArray(['', 'app', 'page']) // [ '', 'app', 'page']
- * pathnameToArray(['', 'app', '', 'page']) // [ '', 'app', 'page']
- * pathnameToArray(['', 'app', '', 'page', '']) // [ '', 'app', 'page', '']
- * pathnameToArray(['', '', 'app', '', 'page', '']) // [ '', 'app', 'page', '']
- * pathnameToArray(['', '', 'app', '', '', 'page', '']) // [ '', 'app', 'page', '']
- * pathnameToArray(['', '', 'app', '', '', 'page', '', '']) // [ '', 'app', 'page', '']
- * pathnameToArray('app/page') // [ '', 'app', 'page' ]
- * pathnameToArray('/app/page') // [ '', 'app', 'page' ]
- * pathnameToArray('/app/page/') // [ '', 'app', 'page', '' ]
- * pathnameToArray('//app/page/') // [ '', 'app', 'page', '' ]
- * pathnameToArray('//app//page/') // [ '', 'app', 'page', '' ]
- * pathnameToArray('//app//page//') // [ '', 'app', 'page', '' ]
+ * ```ts
+ * pathnameToArray(['']) 👉 ['', '']
+ * pathnameToArray(['', '']) 👉 ['', '']
+ * pathnameToArray(['app', 'page']) 👉 [ '', 'app', 'page' ]
+ * pathnameToArray(['', 'app', 'page']) 👉 [ '', 'app', 'page']
+ * pathnameToArray(['', 'app', '', 'page']) 👉 [ '', 'app', 'page']
+ * pathnameToArray(['', 'app', '', 'page', '']) 👉 [ '', 'app', 'page', '']
+ * pathnameToArray(['', '', 'app', '', 'page', '']) 👉 [ '', 'app', 'page', '']
+ * pathnameToArray(['', '', 'app', '', '', 'page', '']) 👉 [ '', 'app', 'page', '']
+ * pathnameToArray(['', '', 'app', '', '', 'page', '', '']) 👉 [ '', 'app', 'page', '']
+ * pathnameToArray('app/page') 👉 [ '', 'app', 'page' ]
+ * pathnameToArray('/app/page') 👉 [ '', 'app', 'page' ]
+ * pathnameToArray('/app/page/') 👉 [ '', 'app', 'page', '' ]
+ * pathnameToArray('//app/page/') 👉 [ '', 'app', 'page', '' ]
+ * pathnameToArray('//app//page/') 👉 [ '', 'app', 'page', '' ]
+ * pathnameToArray('//app//page//') 👉 [ '', 'app', 'page', '' ]
  * ```
  */
-export const pathnameToArray = pathname => {
+export const pathnameToArray = (pathname: PathnameUnion): PathnameArray => {
   const neatedPathname = neatenPathname(pathname)
   if (isArray(neatedPathname)) {
     return neatedPathname
-  }
-  if (isString(neatedPathname)) {
+  } if (isString(neatedPathname)) {
     return split('/', neatedPathname)
+  } else {
+    throw (new TypeError('"pathname" must be string or array.'))
   }
 }
 
@@ -98,37 +133,57 @@ export const pathnameToArray = pathname => {
  * pathnameToString('//app//page//') // '/app/page/'
  * ```
  */
-export const pathnameToString = pathname => {
+export const pathnameToString = (pathname: PathnameUnion): PathnameString => {
   const neatedPathname = neatenPathname(pathname)
   if (isString(neatedPathname)) {
     return neatedPathname
-  }
-  if (isArray(neatedPathname)) {
+  } if (isArray(neatedPathname)) {
     return join('/', neatedPathname)
+  } else {
+    throw (new TypeError('"pathname" must be string or array.'))
   }
 }
 
-// 判断两个 pathname 是否相等，有两种模式
-//  -> 严格模式：字符串形式的 pathname 必须完全相同
-//    -> '/app/page' equals '/app/page'
-//    -> '/app/page' not equals '/app/page/'
-//  -> 宽松模式：模糊处理路径名最后的 '/'
-//    -> '/app/page' equals '/app/page/'
-export const isPathnameStrictEqual = (pathname1, pathname2) => pathnameToString(pathname1) === pathnameToString(pathname2)
-export const isPathnameLooseEqual = (pathname1, pathname2) => {
+/**
+ * (strict) judge whether two pathname are equal.
+ *  - strict mode: pathname must be equal
+ *  - loose mode: pathname must be equal despite the last '/'
+ * @example
+ * ```ts
+ * '/app/page' equals '/app/page'
+ * '/app/page' not equals '/app/page/'
+ * ```
+ */
+export const isPathnameStrictEqual = (pathname1: PathnameUnion, pathname2: PathnameUnion): boolean =>
+  pathnameToString(pathname1) === pathnameToString(pathname2)
+/**
+ * (loose) judge whether two pathname are equal.
+ *  - loose mode: pathname must be equal despite the last '/'
+ *  - strict mode: pathname must be equal
+ * @example
+ * ```ts
+ * '/app/page' equals '/app/page'
+ * '/app/page' equals '/app/page/'
+ * ```
+ */
+export const isPathnameLooseEqual = (pathname1: PathnameUnion, pathname2: PathnameUnion): boolean => {
   const preCook = compose(join('/'), filter(isTruthy), pathnameToArray)
   return preCook(pathname1) === preCook(pathname2)
 }
-export const isPathnameEqual = (mode, pathnames) => {
-  // @accept { mode, pathnames }
-  if (allPass([isObject, hasOwnProperty('pathnames'), compose(isArray, prop('pathnames'))], mode)) {
-    pathnames = mode.pathnames
-    mode = mode.mode || 'strict'
-    return isPathnameEqual(mode, pathnames)
+/**
+ * judge whether two pathname are equal.
+ * @param { 'strict' | 'loose' } mode mode of comparing
+ * @return { boolean } whether two pathname are equal
+ */
+export const isPathnameEqual = (mode: 'strict' | 'loose', pathname1: PathnameUnion, pathname2: PathnameUnion): boolean => {
+  mode = mode ?? 'strict'
+  if (mode === 'strict') {
+    return isPathnameStrictEqual(pathname1, pathname2)
+  } else if (mode === 'loose') {
+    return isPathnameLooseEqual(pathname1, pathname2)
+  } else {
+    throw (new TypeError('"mode" must be "strict" or "loose".'))
   }
-  mode = mode || 'strict'
-  if (mode === 'strict') return isPathnameStrictEqual(...pathnames)
-  if (mode === 'loose') return isPathnameLooseEqual(...pathnames)
 }
 
 // console.log('\n[path] pathnameToString:')
@@ -177,33 +232,91 @@ export const isPathnameEqual = (mode, pathnames) => {
 // console.log(isPathnameLooseEqual('//app//page1//', ['', 'app', 'page1']))
 // console.log(isPathnameLooseEqual('//app//page1//', ['', 'app', 'page1', '']))
 
-export const neatenSearch = str => isStartWith('?', str) ? str : `?${str}`
-export const neatenQueryStr = str => isStartWith('?', str) ? str.substring(1) : str
+type SearchString = string
+type QueryString = string
+type QueryObject = Record<string, string>
+type QueryUnion = SearchString | QueryString | QueryObject
 
-// ! 直接用 reduce 会导致变量污染，即 ruduce 的 acc 会被复用
-export const queryStrToQueryObj = compose(tar => reduce((acc, cur) => {
-  if (!cur) return acc
-  const [key, value] = cur.split('=')
-  acc[key] = decodeURIComponent(value)
-  return acc
-}, {}, tar), split('&'), neatenQueryStr)
-export const queryObjToQueryStr = compose(join('&'), map(join('=')), map(([k, v]) => [k, encodeURIComponent(v)]), entries)
+/**
+ * @return { string } search string
+ * @example
+ * ```ts
+ * '?name=cigaret' 👉 '?name=cigaret'
+ * 'name=cigaret' 👉 '?name=cigaret'
+ * ```
+ */
+export const neatenSearch = (str: string): SearchString => str.indexOf('?') === 0 ? str : `?${str}`
+/**
+ * @return { string } query string
+ * @example
+ * ```ts
+ * '?name=cigaret' 👉 'name=cigaret'
+ * 'name=cigaret' 👉 'name=cigaret'
+ * ```
+ */
+export const neatenQueryStr = (str: string): QueryString => str.indexOf('?') === 0 ? str.substring(1) : str
+
+/**
+ * @return { QueryObject } query object
+ * @example
+ * ```ts
+ * 'name=cigaret' 👉 { name: 'cigaret' }
+ * ```
+ */
+export const queryStrToQueryObj = (str: QueryString): QueryObject => {
+  const queryString = neatenQueryStr(str)
+  const querys = queryString.split('&')
+  const queryObj: QueryObject = {}
+  querys.forEach(query => {
+    if (query === '') return
+    const [key, value] = query.split('=')
+    queryObj[key] = decodeURIComponent(value)
+  })
+  return queryObj
+}
+/**
+ * @return { QueryString } query string
+ * @example
+ * ```ts
+ * { name: 'cigaret' } 👉 'name=cigaret'
+ * ```
+ */
+export const queryObjToQueryStr = (obj: QueryObject): QueryString => {
+  const queryStr = Object.entries(obj).map(([k, v]) => [k, encodeURIComponent(v)]).map(([k, v]) => `${k}=${v}`).join('&')
+  return queryStr
+}
 export const searchToQueryStr = neatenQueryStr
-export const searchToQueryObj = compose(queryStrToQueryObj, searchToQueryStr)
+export const searchToQueryObj = (str: string): QueryObject => queryStrToQueryObj(searchToQueryStr(str))
 export const queryStrToSearch = neatenSearch
-export const queryObjToSearch = compose(queryStrToSearch, queryObjToQueryStr)
+export const queryObjToSearch = (str: QueryObject): string => queryStrToSearch(queryObjToQueryStr(str))
 
-export const toSearch = tar => {
-  if (isString(tar)) return neatenSearch(tar)
-  if (isObject(tar)) return queryObjToSearch(tar)
+export const toSearch = (tar: QueryUnion): SearchString => {
+  if (isString(tar)) {
+    return neatenSearch(tar)
+  } else if (isObject(tar)) {
+    return queryObjToSearch(tar)
+  } else {
+    throw (new TypeError('"target" is expected to be type of "string" | "object".'))
+  }
 }
-export const toQueryStr = tar => {
-  if (isString(tar)) return neatenQueryStr(tar)
-  if (isObject(tar)) return queryObjToQueryStr(tar)
+export const toQueryStr = (tar: QueryUnion): QueryString => {
+  if (isString(tar)) {
+    return neatenQueryStr(tar)
+  } else if (isObject(tar)) {
+    return queryObjToQueryStr(tar)
+  } else {
+    throw (new TypeError('"target" is expected to be type of "string" | "object".'))
+  }
 }
-export const toQueryObj = tar => {
-  if (isString(tar)) return queryStrToQueryObj(tar) // NOTE: queryStrToQueryObj 自带 neatenQueryStr
-  if (isObject(tar)) return tar
+export const toQueryObj = (tar: QueryUnion): QueryObject => {
+  if (isString(tar)) {
+    // NOTE: queryStrToQueryObj 自带 neatenQueryStr
+    return queryStrToQueryObj(tar)
+  } else if (isObject(tar)) {
+    return tar
+  } else {
+    throw (new TypeError('"target" is expected to be type of "string" | "object".'))
+  }
 }
 
 // console.log('\n[path] neatenSearch:')

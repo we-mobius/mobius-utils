@@ -1,7 +1,7 @@
-import { isString, isArray, isNumber, getByPath } from '../../internal'
+import { isString, isArray, isNumber, getPropByPath } from '../../internal'
 import { curryN } from '../../functional'
-import { TERMINATOR } from '../meta'
-import { Data, Mutation, isAtom } from '../atom'
+import { TERMINATOR } from '../metas'
+import { Data, Mutation, isAtom } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
@@ -59,7 +59,7 @@ export const dynamicPluckT = curryN(2, (selector, target) => {
       }
       // redundant conditional judgement
       if (type === 'target') {
-        return getByPath(_internalValues.selector, _internalValues.target)
+        return getPropByPath(_internalValues.selector, _internalValues.target)
       }
     }
   })())

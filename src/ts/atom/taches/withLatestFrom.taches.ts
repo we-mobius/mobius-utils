@@ -1,6 +1,6 @@
 import { curryN } from '../../functional'
-import { TERMINATOR } from '../meta'
-import { Data, Mutation, isAtom } from '../atom'
+import { TERMINATOR } from '../metas'
+import { Data, Mutation, isAtom } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
 const withLatestFromTacheFactory = mutationFactory => {
@@ -82,7 +82,7 @@ export const promiseWithLatestFromT = withLatestFromTacheFactory(() => {
           return TERMINATOR
         } else {
           promised.forEach(val => {
-            mutation.triggerOperation(() => [val, _internalValues.target])
+            mutation.triggerTransformation(() => [val, _internalValues.target])
           })
           _internalStates.promised = []
           return TERMINATOR

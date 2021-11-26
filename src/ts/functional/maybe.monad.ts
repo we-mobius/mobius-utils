@@ -58,7 +58,7 @@ export class Maybe {
 
 // Derived class Just -> Presence of a value
 // Or named `Some` in some other monad implements
-export class Just extends Maybe {
+export class Just<V> extends Maybe {
   constructor (value) {
     super()
     this._value = value

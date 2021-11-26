@@ -1,6 +1,6 @@
 import { isNil } from '../../internal'
-import { VOID } from '../meta'
-import { Data, Mutation, isAtom } from '../atom'
+import { VOID } from '../metas'
+import { Data, Mutation, isAtom } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
 /**

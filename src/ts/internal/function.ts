@@ -1,4 +1,3 @@
-import { hardDeepMerge } from './object'
 import { isNormalFunction, isAsyncFunction } from './base'
 
 type AnyFunction = (...args: any[]) => any

@@ -1,45 +1,74 @@
 import {
-  isString, isFunction, isBoolean, isNumber, isPlainObject,
-  isEventTarget, isObservable, isGeneralObject, isIterable,
-  hasOwnProperty, asIs
-} from '../../internal'
+  isFunction, isNumber, isPlainObject,
+  isEventTarget, isObservable, isIterable,
+  asIs
+} from '../../internal/base'
 import { compose } from '../../functional'
 import { createDataWithTrigger, createMutationWithTrigger } from './hybrid-create.helpers'
 
+import type { InternalTrigger, Trigger } from '../atoms'
+import type { Observable, Subscription } from 'rxjs'
+
 /************************************************************************************************************************
+ *
  *                                                 IterableTrigger creators
+ *
  ************************************************************************************************************************/
+
 /**
- * @param iterable Iterable, which values will be trigged in sequence
- * @param autoStart Boolean, optional, default to false, indicate if the iterable will be iterated automatically
- * @param repeatable Boolean, optional, defautl to true, indicate if the iterable will be iterated repeatedly
- * @param handler Function, optional, default to asIS, will be apply to values before them passed to trigger
+ *
  */
-export const createIterableTrigger = ({ iterable, handler = asIs, autoStart = false, repeatable = true } = {}) => {
-  if (!isFunction(handler)) {
-    throw (new TypeError('"handler" is expected to be a Function.'))
+interface IterableTriggerCreateOptions<V, R> {
+  iterable: Iterable<V>
+  autoStart?: boolean
+  repeatable?: boolean
+  handler?: (arg: V, ...args: any[]) => R
+}
+
+const DEFAULT_ITERABLE_TRIGGER_CREATE_OPTIONS: Omit<Required<IterableTriggerCreateOptions<any, any>>, 'iterable'> = {
+  autoStart: false,
+  repeatable: true,
+  handler: asIs
+}
+
+/**
+ * @param { Iterable } options.iterable which values will be trigged in sequence
+ * @param { boolean } [options.autoStart = false] indicate if the iterable will be iterated automatically
+ * @param { boolean } [options.repeatable = true] indicate if the iterable will be iterated repeatedly
+ * @param { Function } [options.handler = asIs] will be apply to values before them passed to trigger
+ */
+export const createIterableTrigger = <V = any, R = V>(options: IterableTriggerCreateOptions<V, R>): Trigger<R> => {
+  if (!isPlainObject(options)) {
+    throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
+
+  const { iterable, autoStart, repeatable, handler } = { ...DEFAULT_ITERABLE_TRIGGER_CREATE_OPTIONS, ...options }
+
   if (!isIterable(iterable)) {
-    throw (new TypeError('"iterable" is expected to be iterable.'))
+    throw (new TypeError('"iterable" is expected to be type of "Iterable".'))
+  }
+  if (!isFunction(handler)) {
+    throw (new TypeError('"handler" is expected to be type of "Function".'))
   }
 
-  const iterateState = { times: 0, done: false, values: [] }
-  const internalTriggers = new WeakSet()
+  interface IterateStates { times: number, done: boolean, values: V[] }
 
-  const iterate = () => {
+  const iterateStates: IterateStates = { times: 0, done: false, values: [] }
+  const internalTriggers: Set<InternalTrigger<R>> = new Set()
+
+  const iterate = (): IterateStates => {
     try {
-      iterateState.values = [...iterable]
-      iterateState.values.forEach(i => {
+      iterateStates.values = [...iterable]
+      iterateStates.values.forEach(i => {
         internalTriggers.forEach(trigger => {
           trigger(handler(i))
         })
       })
-      iterateState.done = true
-      iterateState.times += 1
+      iterateStates.done = true
+      iterateStates.times += 1
     } catch (error) {
     }
-
-    return iterateState
+    return iterateStates
   }
 
   return internalTrigger => {
@@ -51,402 +80,485 @@ export const createIterableTrigger = ({ iterable, handler = asIs, autoStart = fa
 
     return {
       start: () => {
-        if (repeatable || iterateState.times === 0) {
-          iterate()
+        if (repeatable || iterateStates.times === 0) {
+          return iterate()
         }
-        return iterateState
+        return iterateStates
       },
-      cancel: () => {}
-    }
-  }
-}
-export const formatIterableTriggerCreatorFlatArgs = (...args) => {
-  let res = {}
-
-  if (args.length === 1) {
-    // accept ({ iterable, ... })
-    // accept (Any)
-    if (isPlainObject(args[0]) && hasOwnProperty('iterable', args[0])) {
-      res = args[0]
-    } else {
-      res = { iterable: args[0] }
-    }
-  } else if (args.length > 1) {
-    const argsKeyList = ['autoStart', 'repeatable']
-    args.forEach(arg => {
-      if (isIterable(arg)) {
-        res.iterable = res.iterable || arg
-      } else if (isFunction(arg)) {
-        res.handler = res.handler || arg
-      } else if (isBoolean(arg)) {
-        res[argsKeyList.shift()] = arg
+      pause: () => {
+        // do nothing
+      },
+      cancel: () => {
+        // do nothing
       }
-    })
+    }
   }
-
-  return res
 }
-export const createIterableTriggerF = compose(createIterableTrigger, formatIterableTriggerCreatorFlatArgs)
-export const createDataFromIterable = compose(createDataWithTrigger, createIterableTriggerF)
-export const createMutationFromIterable = compose(createMutationWithTrigger, createIterableTriggerF)
+export const createDataFromIterable = compose(createDataWithTrigger, createIterableTrigger)
+export const createMutationFromIterable = compose(createMutationWithTrigger, createIterableTrigger)
 
 /************************************************************************************************************************
+ *
  *                                                 EventTrigger creators
+ *
  ************************************************************************************************************************/
+
 /**
- * @param target EventTarget, which has addEventListener method & removeEventListener method
- * @param type String, event type which will pass as first argument of addEventListener & removeEventListener
- * @param handler Function, optional, default to asIS, will be apply to event argument before it passed to trigger
- * @return Trigger
+ *
  */
-export const createEventTrigger = ({ target, type, handler = asIs } = {}) => {
+interface EventTriggerCreateOptions<R> {
+  target: EventTarget
+  type: string
+  autoStart?: boolean
+  handler?: (arg: Event, ...args: any[]) => R
+}
+
+const DEFAULT_EVENT_TRIGGER_CREATE_OPTIONS: Omit<Required<EventTriggerCreateOptions<any>>, 'target' | 'type'> = {
+  autoStart: true,
+  handler: asIs
+}
+
+/**
+ * @param { EventTarget } options.target which has addEventListener method & removeEventListener method
+ * @param { string } options.type event type which will pass as first argument of addEventListener & removeEventListener
+ * @param { boolean } [options.autoStart = true] indicate if the event will be listened automatically
+ * @param { Function } [options.handler = asIs] will be apply to event argument before it passed to trigger
+ */
+export const createEventTrigger = <R = any>(options: EventTriggerCreateOptions<R>): Trigger<R> => {
+  if (!isPlainObject(options)) {
+    throw (new TypeError('"options" is expected to be type of "PlainObject".'))
+  }
+
+  const { target, type, autoStart, handler } = { ...DEFAULT_EVENT_TRIGGER_CREATE_OPTIONS, ...options }
+
   if (!isFunction(handler)) {
-    throw (new TypeError('"handler" is expected to be a Function.'))
+    throw (new TypeError('"handler" is expected to be type of "Function".'))
   }
+
   if (!isEventTarget(target)) {
-    throw (new TypeError('"target" is expected to be an instance of EventTarget.'))
+    throw (new TypeError('"target" is expected to be type of "EventTarget".'))
   }
+
   return internalTrigger => {
-    const listener = e => {
+    const listener: EventListenerOrEventListenerObject = e => {
       internalTrigger(handler(e))
     }
-    target.addEventListener(type, listener)
+
+    const listen = (): void => {
+      target.addEventListener(type, listener)
+    }
+
+    if (autoStart) {
+      listen()
+    }
+
     return {
+      start: () => {
+        if (!autoStart) {
+          listen()
+        }
+      },
+      pause: () => {
+        // TODO: pause logic
+      },
       cancel: () => {
         target.removeEventListener(type, listener)
       }
     }
   }
 }
-export const formatEventTriggerCreatorFlatArgs = (...args) => {
-  let res = {}
-
-  if (args.length === 1) {
-    // accept ({ target: EventTarget, ... })
-    // accept (Any)
-    if (isPlainObject(args[0]) && hasOwnProperty('target', args[0])) {
-      res = args[0]
-    } else {
-      res = { target: args[0] }
-    }
-  } else if (args.length > 1) {
-    args.forEach(arg => {
-      if (isGeneralObject(arg)) {
-        res.target = res.target || arg
-      } else if (isString(arg)) {
-        res.type = res.type || arg
-      } else if (isFunction(arg)) {
-        res.handler = res.handler || arg
-      }
-    })
-  }
-
-  return res
-}
-export const createEventTriggerF = compose(createEventTrigger, formatEventTriggerCreatorFlatArgs)
-export const createDataFromEvent = compose(createDataWithTrigger, createEventTriggerF)
-export const createMutationFromEvent = compose(createMutationWithTrigger, createEventTriggerF)
+export const createDataFromEvent = compose(createDataWithTrigger, createEventTrigger)
+export const createMutationFromEvent = compose(createMutationWithTrigger, createEventTrigger)
 
 /************************************************************************************************************************
+ *
  *                                                 IntervalTrigger creators
+ *
  ************************************************************************************************************************/
+
 /**
- * @param start Number, optional, default to 0, (in millisecond) will be the start value of interval value
- * @param step Number, optional, default to 1000, (in millisecond) will add to start value when interval goes
- * @param interval Number, optional, default to 1000, (in millisecond) will be the ms argument of setInterval
- * @param autoStart Boolean, optional, default to true, indicate if the interval will auto start
- * @param handler Function, optional, default to asIs, will be apply to interval value before it passed to trigger
+ *
+ */
+interface IntervalTriggerCreateOptions<R> {
+  start?: number
+  step?: number
+  interval?: number
+  autoStart?: boolean
+  handler?: (arg: number, ...args: any[]) => R
+}
+
+const DEFAULT_INTERVAL_TRIGGER_CREATE_OPTIONS: Required<IntervalTriggerCreateOptions<any>> = {
+  start: 0,
+  step: 1000,
+  interval: 1000,
+  autoStart: true,
+  handler: asIs
+}
+
+/**
+ * @param { number } [options.start = 0] (in millisecond) will be the start value of interval value
+ * @param { number } [options.step = 1000] (in millisecond) will add to start value when interval goes
+ * @param { number } [options.interval = 1000] (in millisecond) will be the ms argument of setInterval
+ * @param { boolean } [options.autoStart = true] indicate if the interval will auto start
+ * @param { Function } [options.handler = asIs] will be apply to interval value before it passed to trigger
  * @return Trigger
  */
-export const createIntervalTrigger = ({ handler = asIs, start = 0, step = 1000, interval = 1000, autoStart = true } = {}) => {
-  if (!isFunction(handler)) {
-    throw (new TypeError('"handler" is expected to be a Function.'))
+export const createIntervalTrigger = <R = any>(options: IntervalTriggerCreateOptions<R>): Trigger<R> => {
+  if (!isPlainObject(options)) {
+    throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
-  let i = start
-  let timer = 0
-  let started = false
-  const internalTriggers = new WeakSet()
 
-  const startInterval = () => {
-    started = true
+  const { start, step, interval, autoStart, handler } = { ...DEFAULT_INTERVAL_TRIGGER_CREATE_OPTIONS, ...options }
+
+  if (!isFunction(handler)) {
+    throw (new TypeError('"handler" is expected to be type of "Function".'))
+  }
+
+  interface IntervalStates { i: number, timer: NodeJS.Timeout, started: boolean }
+  const intervalStates: IntervalStates = { i: start, timer: 0 as unknown as NodeJS.Timeout, started: false }
+
+  const internalTriggers: Set<InternalTrigger<R>> = new Set()
+
+  const startInterval = (): IntervalStates => {
+    intervalStates.started = true
     try {
-      timer = setInterval(() => {
-        i += step
+      intervalStates.timer = setInterval(() => {
+        intervalStates.i += step
         internalTriggers.forEach(trigger => {
-          trigger(handler(i))
+          trigger(handler(intervalStates.i))
         })
       }, interval)
     } catch (error) {
-      started = false
+      intervalStates.started = false
     }
 
-    return timer
+    return intervalStates
   }
 
   return internalTrigger => {
     internalTriggers.add(internalTrigger)
 
-    if (!started && autoStart) {
+    if (!intervalStates.started && autoStart) {
       startInterval()
     }
 
     return {
       start: () => {
-        if (!started) {
+        if (!intervalStates.started) {
           return startInterval()
         }
-        return timer
+        return intervalStates
+      },
+      pause: () => {
+        // TODO: pause logic
       },
       cancel: () => {
-        clearInterval(timer)
+        clearInterval(intervalStates.timer)
       }
     }
   }
 }
-export const formatIntervalTriggerCreatorFlatArgs = (...args) => {
-  let res = {}
-
-  if (args.length === 1) {
-    if (isPlainObject(args[0])) {
-      res = args[0]
-    }
-  } else if (args.length > 1) {
-    const argsKeyList = ['start', 'step', 'interval', 'autoStart', 'handler']
-    args.forEach((val) => {
-      if (isFunction(val)) {
-        res.handler = res.handler || val
-      } else {
-        res[argsKeyList.shift()] = val
-      }
-    })
-  }
-
-  return res
-}
-export const createIntervalTriggerF = compose(createIntervalTrigger, formatIntervalTriggerCreatorFlatArgs)
-export const createDataFromInterval = compose(createDataWithTrigger, createIntervalTriggerF)
-export const createMutationFromInterval = compose(createMutationWithTrigger, createIntervalTriggerF)
+export const createDataFromInterval = compose(createDataWithTrigger, createIntervalTrigger)
+export const createMutationFromInterval = compose(createMutationWithTrigger, createIntervalTrigger)
 
 /************************************************************************************************************************
+ *
  *                                                 TimeoutTrigger creators
+ *
  ************************************************************************************************************************/
+
 /**
- * @param timeout Number, required, (in millisecond) will be the ms argument of setTimeout
- * @param autoStart Boolean, optional, default to true, indicate if the timeout will auto start
- * @param handler Function, optional, default to asIs, result of its execution will be passed to trigger
- * @return Trigger
+ *
  */
-export const createTimeoutTrigger = ({ timeout, handler = asIs, autoStart = true } = {}) => {
-  if (!isFunction(handler)) {
-    throw (new TypeError('"handler" is expected to be a Function.'))
+interface TimeoutTriggerCreateOptions<R> {
+  timeout: number
+  autoStart?: boolean
+  handler?: (...args: any[]) => R
+}
+
+const DEFAULT_TIMEOUT_TRIGGER_CREATE_OPTIONS: Omit<Required<TimeoutTriggerCreateOptions<any>>, 'timeout'> = {
+  autoStart: true,
+  handler: asIs
+}
+
+/**
+ * @param { number } options.timeout (in millisecond) will be the ms argument of setTimeout
+ * @param { boolean } [options.autoStart = true] indicate if the timeout will auto start
+ * @param { Function } [options.handler = asIs] result of its execution will be passed to trigger
+ */
+export const createTimeoutTrigger = <R = any>(options: TimeoutTriggerCreateOptions<R>): Trigger<R> => {
+  if (!isPlainObject(options)) {
+    throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
+
+  const { timeout, autoStart, handler } = { ...DEFAULT_TIMEOUT_TRIGGER_CREATE_OPTIONS, ...options }
+
   if (!isNumber(timeout)) {
-    throw (new TypeError('"timeout" is required and expected to be a Number.'))
+    throw (new TypeError('"timeout" is expected to be type of "Number".'))
+  }
+  if (!isFunction(handler)) {
+    throw (new TypeError('"handler" is expected to be type of "Function".'))
   }
 
-  let started = false
-  let timer = 0
-  const internalTriggers = new WeakSet()
+  interface TimeoutStates { timer: NodeJS.Timeout, started: boolean }
+  const timeoutStates: TimeoutStates = { timer: 0 as unknown as NodeJS.Timeout, started: false }
 
-  const start = () => {
-    started = true
+  const internalTriggers: Set<InternalTrigger<R>> = new Set()
+
+  const start = (): TimeoutStates => {
+    timeoutStates.started = true
+
     try {
-      timer = setTimeout(() => {
+      timeoutStates.timer = setTimeout(() => {
         internalTriggers.forEach(trigger => {
           trigger(handler())
         })
       }, timeout)
     } catch (error) {
-      started = false
+      timeoutStates.started = false
     }
 
-    return timer
+    return timeoutStates
   }
 
   return internalTrigger => {
     internalTriggers.add(internalTrigger)
 
-    if (!started && autoStart) {
+    if (!timeoutStates.started && autoStart) {
       start()
     }
 
     return {
       start: () => {
-        if (!started) {
+        if (!timeoutStates.started) {
           return start()
         }
-        return timer
+        return timeoutStates
+      },
+      pause: () => {
+        // TODO: pause logic
       },
       cancel: () => {
-        clearTimeout(timer)
+        clearTimeout(timeoutStates.timer)
       }
     }
   }
 }
-export const formatTimeoutTriggerCreatorFlatArgs = (...args) => {
-  let res = {}
-
-  if (args.length === 1) {
-    if (isPlainObject(args[0])) {
-      res = args[0]
-    }
-  } else if (args.length > 1) {
-    args.forEach(arg => {
-      if (isNumber(arg)) {
-        res.timeout = hasOwnProperty('timeout', res) ? res.timeout : arg
-      } else if (isFunction(arg)) {
-        res.handler = hasOwnProperty('handler', res) ? res.handler : arg
-      } else if (isBoolean(arg)) {
-        res.autoStart = hasOwnProperty('autoStart', res) ? res.autoStart : arg
-      }
-    })
-  }
-
-  return res
-}
-export const createTimeoutTriggerF = compose(createTimeoutTrigger, formatTimeoutTriggerCreatorFlatArgs)
-export const createDataFromTimeout = compose(createDataWithTrigger, createTimeoutTriggerF)
-export const createMutationFromTimeout = compose(createMutationWithTrigger, createTimeoutTriggerF)
+export const createDataFromTimeout = compose(createDataWithTrigger, createTimeoutTrigger)
+export const createMutationFromTimeout = compose(createMutationWithTrigger, createTimeoutTrigger)
 
 /************************************************************************************************************************
+ *
  *                                                 ObservableTrigger creators
+ *
  ************************************************************************************************************************/
+
 /**
- * @param observable Observable, required
- * @param autoStart Boolean, optional, default to true, indicate if the Observable will be subscribed automatically
- * @param handler Function, optional, default to asIs, will be apply to emitted value of Observable before it passed to trigger
- * @return Trigger
+ *
  */
-export const createObservableTrigger = ({ observable, handler = asIs, autoStart = true }) => {
-  if (!isFunction(handler)) {
-    throw (new TypeError('"handler" is expected to be a Function.'))
+interface ObservableTriggerCreateOptions<V, R> {
+  observable: Observable<V>
+  autoStart?: boolean
+  handler?: (arg: V, ...args: any[]) => R
+}
+const DEFAULT_OBSERVABLE_TRIGGER_CREATE_OPTIONS: Omit<Required<ObservableTriggerCreateOptions<any, any>>, 'observable'> = {
+  autoStart: true,
+  handler: asIs
+}
+
+/**
+ * @param { Observable } options.observable Observable(Rx)
+ * @param { boolean } [options.autoStart = true] indicate if the Observable will be subscribed automatically
+ * @param { Function } [options.handler = asIs] will be apply to emitted value of Observable before it passed to trigger
+ */
+export const createObservableTrigger = <V = any, R = V>(options: ObservableTriggerCreateOptions<V, R>): Trigger<R> => {
+  if (!isPlainObject(options)) {
+    throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
+
+  const { observable, autoStart, handler } = { ...DEFAULT_OBSERVABLE_TRIGGER_CREATE_OPTIONS, ...options }
+
   if (!isObservable(observable)) {
-    throw (new TypeError('"observable" is expected to be an observable object which implements the subscribe method.'))
+    throw (new TypeError('"observable" is expected to be type of "Observable" which implements the "subscribe" method.'))
+  }
+  if (!isFunction(handler)) {
+    throw (new TypeError('"handler" is expected to be type of "Function".'))
   }
 
-  let started = false
-  let subscription
-  const internalTriggers = new WeakSet()
+  interface ObservableStates { subscription: Subscription, started: boolean }
+  const observableStates: ObservableStates = { subscription: null as unknown as Subscription, started: false }
 
-  const start = () => {
+  const internalTriggers: Set<InternalTrigger<R>> = new Set()
+
+  const start = (): ObservableStates => {
     try {
-      started = true
-      subscription = observable.subscribe(val => {
+      observableStates.started = true
+      observableStates.subscription = observable.subscribe(val => {
         internalTriggers.forEach(trigger => {
           trigger(handler(val))
         })
       })
     } catch (error) {
-      started = false
+      observableStates.started = false
     }
-    return subscription
+
+    return observableStates
   }
 
   return internalTrigger => {
     internalTriggers.add(internalTrigger)
 
-    if (!started && autoStart) {
+    if (!observableStates.started && autoStart) {
       start()
     }
 
     return {
       start: () => {
-        if (!started) {
+        if (!observableStates.started) {
           return start()
         }
-        return subscription
+        return observableStates
       },
       cancel: () => {
-        return subscription.unsubscribe()
+        return observableStates.subscription.unsubscribe()
       }
     }
   }
 }
-export const formatObservableTriggerCreatorFlatArgs = (...args) => {
-  let res = {}
-
-  if (args.length === 1) {
-    if (isPlainObject(args[0])) {
-      res = args[0]
-    }
-  } else if (args.length > 1) {
-    args.forEach(arg => {
-      if (isObservable(arg)) {
-        res.observable = hasOwnProperty('observable', res) ? res.observable : arg
-      } else if (isFunction(arg)) {
-        res.handler = hasOwnProperty('handler', res) ? res.handler : arg
-      } else if (isBoolean(arg)) {
-        res.autoStart = hasOwnProperty('autoStart', res) ? res.autoStart : arg
-      }
-    })
-  }
-  return res
-}
-export const createObservableTriggerF = compose(createObservableTrigger, formatObservableTriggerCreatorFlatArgs)
-export const createDataFromObservable = compose(createDataWithTrigger, createObservableTriggerF)
-export const createMutationFromObservable = compose(createMutationWithTrigger, createObservableTriggerF)
+export const createDataFromObservable = compose(createDataWithTrigger, createObservableTrigger)
+export const createMutationFromObservable = compose(createMutationWithTrigger, createObservableTrigger)
 
 /************************************************************************************************************************
+ *
  *                                                 normal function trigger creators
+ *
  ************************************************************************************************************************/
+
 /**
- * @param agent Function, required, which takes emitFunction as argument, it will execute in create process
- * @param autoStart Boolean, optional, default to true, indicate if the shouldEmit will be set to true initially
- * @param handler Function, optional, default to asIs, will be apply to emitted value of emitFunction before it passed to trigger
- * @return Trigger
+ *
  */
-export const createFunctionTrigger = ({ agent, handler = asIs, autoStart = true }) => {
+type emitFunction<P extends any[]> = (...args: P) => void
+interface FunctionTriggerCreateOptions<P extends any[], R> {
+  agent: (emitFunction: emitFunction<P>, ...args: any[]) => void
+  autoBind?: boolean
+  autoStart?: boolean
+  handler?: (...args: P) => R
+}
+const DEFAULT_FUNCTION_TRIGGER_CREATE_OPTIONS: Omit<Required<FunctionTriggerCreateOptions<any[], any>>, 'agent'> = {
+  autoBind: true,
+  autoStart: true,
+  handler: asIs
+}
+
+/**
+ * @param { Function } options.agent which takes emitFunction as argument, it will execute in create process
+ * @param { boolean } [options.autoStart = true] indicate if the shouldEmit will be set to true initially
+ * @param { Function } [options.handler = asIs] will be apply to emitted value of emitFunction before it passed to trigger
+ * @example
+ * ```ts
+ * //                                  slow usecase
+ * // first create an emit variable which used to hold the real emit function,
+ * //   we can separately call this function to emit values to our trigger later
+ * let emit
+ *
+ * // then we create an agent function, which takes an inner emit function as 1st argument,
+ * //   and internally assign the inner emit function to the emit variable which we created in last step
+ * const agent = (innerEmit) => {
+ *   emit = innerEmit
+ * }
+ *
+ * // then create a trigger, specify the agent function
+ * //   and the handler function which will be called with the arguments passed to emit function later
+ * //   the return value will be passed to the trigger
+ * const trigger = createFunctionTrigger({ agent, handler: (score) => score + 1 })
+ *
+ * // call the emit function which hold be the pre-declared variable
+ * //   the trigger will emit 100 (which equals to `99 + 1`)
+ * emit(99)
+ *
+ * //                                 quick usecase
+ * // create all we need using the `createFunctionTriggerAgent` function
+ * //   only need to specify the handler function
+ * const agent = createFunctionTriggerAgent((score: number) => score + 1)
+ *
+ * // then pass the created agent to the FunctionTrigger creator using the spread operator
+ * const const trigger = createFunctionTrigger({ ...agent })
+ *
+ * // call the emit function hold by `agent` to trigger value
+ * emit(99)
+ * ```
+ */
+export const createFunctionTrigger = <P extends any[] = any[], R = any>(options: FunctionTriggerCreateOptions<P, R>): Trigger<R> => {
+  if (!isPlainObject(options)) {
+    throw (new TypeError('"options" is expected to be type of "PlainObject".'))
+  }
+
+  const { agent, autoBind, autoStart, handler } = { ...DEFAULT_FUNCTION_TRIGGER_CREATE_OPTIONS, ...options }
+
   if (!isFunction(agent)) {
-    throw (new TypeError('"agent" is expected to be a Function.'))
+    throw (new TypeError('"agent" is expected to be type of "Function".'))
   }
   if (!isFunction(handler)) {
-    throw (new TypeError('"handler" is expected to be a Function.'))
+    throw (new TypeError('"handler" is expected to be type of "Function".'))
   }
 
-  let shouldEmit = autoStart
+  interface FunctionStates { isBound: boolean, shouldEmit: boolean, emitFunction: ((...args: P) => void) | null }
+  const functionStates: FunctionStates = { isBound: false, shouldEmit: autoStart, emitFunction: null }
 
   return internalTrigger => {
-    let emitFunction = (...args) => {
-      if (shouldEmit) {
+    functionStates.emitFunction = (...args) => {
+      if (functionStates.emitFunction !== null && functionStates.shouldEmit) {
         internalTrigger(handler(...args))
       }
     }
-    agent(emitFunction)
-    return {
-      start: () => { shouldEmit = true },
-      pause: () => { shouldEmit = false },
-      cancel: () => {
-        shouldEmit = false
-        emitFunction = null
-      }
-    }
-  }
-}
-export const formatFunctionTriggerCreatorFlatArgs = (...args) => {
-  let res = {}
 
-  if (args.length === 1) {
-    if (isPlainObject(args[0])) {
-      res = args[0]
-    } else if (isFunction(args[0])) {
-      res.agent = args[0]
-    }
-  } else if (args.length > 1) {
-    args.forEach(arg => {
-      if (isFunction(arg)) {
-        if (!res.agent) {
-          res.agent = arg
-        } else if (!res.handler) {
-          res.handler = arg
-        }
-      } else if (isBoolean(arg)) {
-        res.autoStart = hasOwnProperty('autoStart', res) ? res.autoStart : arg
+    const bind = (): void => {
+      if (!functionStates.isBound && functionStates.emitFunction !== null) {
+        agent(functionStates.emitFunction)
       }
-    })
+    }
+
+    if (autoBind) {
+      bind()
+    }
+
+    return {
+      start: () => {
+        bind()
+        functionStates.shouldEmit = true
+        return functionStates
+      },
+      pause: () => {
+        functionStates.shouldEmit = false
+      },
+      cancel: () => {
+        functionStates.shouldEmit = false
+      }
+    }
   }
-  return res
 }
-export const createFunctionTriggerF = compose(createFunctionTrigger, formatFunctionTriggerCreatorFlatArgs)
-export const createDataFromFunction = compose(createDataWithTrigger, createFunctionTriggerF)
-export const createMutationFromFunction = compose(createMutationWithTrigger, createFunctionTriggerF)
+export const createDataFromFunction = compose(createDataWithTrigger, createFunctionTrigger)
+export const createMutationFromFunction = compose(createMutationWithTrigger, createFunctionTrigger)
+
+interface FunctionTriggerAgent<P extends any[], R> {
+  agent: (emitFunction: emitFunction<P>) => void
+  handler: (...args: P) => R
+  emit: typeof asIs | emitFunction<P>
+  isBound: boolean
+}
+export const createFunctionTriggerAgent = <P extends any[], R>(
+  handler: (...args: P) => R
+): FunctionTriggerAgent<P, R> => {
+  let emit: emitFunction<P> | typeof asIs = asIs
+  let isBound = false
+  const agent = (innerEmit: emitFunction<P>): void => {
+    emit = innerEmit
+    isBound = true
+  }
+  return {
+    agent,
+    handler,
+    emit,
+    isBound
+  }
+}

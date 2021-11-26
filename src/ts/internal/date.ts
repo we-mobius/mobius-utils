@@ -1,5 +1,7 @@
 import { isDate } from './base'
 
+// reference: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Intl
+
 export const isOutDated = (tar: any): boolean => isDate(tar) && (new Date(tar).getTime() < new Date().getTime())
 
 interface UnitsDict {

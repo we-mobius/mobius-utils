@@ -1,125 +1,101 @@
-/* eslint-disable camelcase */
-import {
-  isString, isObject, isError,
-  hasOwnProperty, propEq,
-  allPass
-} from '../internal'
-import { compose } from '../functional'
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-export const makeBaseResponse = ({ code, code_message, status, status_message, data }) => ({
-  code: code,
-  code_message: code_message,
-  status: status,
-  status_message: status_message || '',
-  data: data || {}
+import { isNumber, isString, isPlainObject } from '../internal/base'
+
+export enum ResponseStatus {
+  success = 'success',
+  fail = 'fail',
+  error = 'error',
+  unknown = 'unknown'
+}
+export interface ResponseCode {
+  code: number
+  codeMessage: string
+}
+export interface BaseResponse extends ResponseCode {
+  status: ResponseStatus
+  statusMessage: string
+  data: Record<string, any>
+}
+export interface SuccessResponse extends BaseResponse {
+  status: ResponseStatus.success
+}
+export interface FailResponse extends BaseResponse {
+  status: ResponseStatus.fail
+}
+export interface ErrorResponse extends BaseResponse {
+  status: ResponseStatus.error
+}
+export interface UnknownResponse extends BaseResponse {
+  status: ResponseStatus.unknown
+}
+export type ResponseUnion = SuccessResponse | FailResponse | ErrorResponse | UnknownResponse
+interface StatusSpecifiedResponse extends Omit<BaseResponse, 'status'> {
+  [key: string]: any
+}
+type PartialStatusSpecifiedResponse = Partial<StatusSpecifiedResponse>
+
+const DEFAULT_STATUS_MESSAGE = ''
+export const DEFAULT_SUCCESS_RESPONSE_CODE: ResponseCode = { code: 0, codeMessage: 'SUCCESS' }
+export const DEFAULT_FAIL_RESPONSE_CODE: ResponseCode = { code: 1, codeMessage: 'FAIL' }
+export const DEFAULT_ERROR_RESPONSE_CODE: ResponseCode = { code: 2, codeMessage: 'UNDEFINED_RUNTIME_ERROR' }
+export const DEFAULT_UNKNOWN_RESPONSE_CODE: ResponseCode = { code: 3, codeMessage: 'UNKNOWN_RESPONSE' }
+const DEFAULT_DATA = {}
+
+export const isResponseCode = (tar: any): tar is ResponseCode =>
+  isPlainObject(tar) && isNumber(tar.code) && isString(tar.codeMessage)
+export const isResponse = (tar: any): tar is ResponseUnion =>
+  isPlainObject(tar) && tar.status in ResponseStatus && isString(tar.statusMessage) && isPlainObject(tar.data)
+export const isResponseLike = (tar: any): boolean =>
+  isPlainObject(tar) && isString(tar.status) && isString(tar.statusMessage) && isPlainObject(tar.data)
+export const isSuccessResponse = (tar: any): tar is SuccessResponse =>
+  isResponse(tar) && tar.status === ResponseStatus.success
+export const isFailResponse = (tar: any): tar is FailResponse =>
+  isResponse(tar) && tar.status === ResponseStatus.fail
+export const isErrorResponse = (tar: any): tar is ErrorResponse =>
+  isResponse(tar) && tar.status === ResponseStatus.error
+export const isUnknowResponse = (tar: any): tar is UnknownResponse =>
+  isResponse(tar) && tar.status === ResponseStatus.unknown
+
+export const makeSuccessResponse = ({ statusMessage, code, codeMessage, data }: PartialStatusSpecifiedResponse): SuccessResponse => ({
+  status: ResponseStatus.success,
+  statusMessage: statusMessage ?? DEFAULT_STATUS_MESSAGE,
+  code: code ?? DEFAULT_SUCCESS_RESPONSE_CODE.code,
+  codeMessage: codeMessage ?? DEFAULT_SUCCESS_RESPONSE_CODE.codeMessage,
+  data: data ?? DEFAULT_DATA
 })
-
-export const formatResponseMakerFlattenArgs = (...args) => {
-  const objectArgs = args.reduce((res, arg) => {
-    // isError 检测应该在 isString 之前，即对于 ErrorResponse，自定义的 status_message 优先级大于 error.message
-    // 检测顺序： isResponse -> isResponseCode -> isObject
-    if (isResponse(arg)) {
-      res = { ...arg }
-    } else if (isResponseCode(arg)) {
-      res = { ...res, ...arg }
-    } else if (isError(arg)) {
-      // 避免覆盖自定义 status_message
-      res = { ...res, status_message: res.status_message || arg.message, data: { error: arg } }
-    } else if (isString(arg)) {
-      // 自定义 status_message 可以覆盖 error.message
-      res = { ...res, status_message: arg }
-    } else if (isObject(arg)) {
-      res.data = res.data || {}
-      res = { ...res, data: { ...res.data, ...arg } }
-    } else {
-      res.data = res.data || {}
-      res.data.response = res.data.response || []
-      res.data.response.push(arg)
-    }
-    return res
-  }, {})
-  return objectArgs
-}
-
-export const makeSuccessResponse = ({ code, code_message, status_message, data }) =>
-  makeBaseResponse({ code, code_message, status: 'success', status_message, data })
-
-export const makeFailResponse = ({ code, code_message, status_message, data }) =>
-  makeBaseResponse({ code, code_message, status: 'fail', status_message, data })
-
-export const makeErrorResponse = ({ code, code_message, status_message, data }) =>
-  makeBaseResponse({ code, code_message, status: 'error', status_message, data })
-
-export const makeUnknownResponse = ({ code, code_message, status_message, data }) => {
-  console.warn(`[MobiusUtils][data] makeUnknownResponse: unknown response detected, ${JSON.stringify({ code, code_message, status_message, data })}`)
-  return makeBaseResponse({ code, code_message, status: 'unknown', status_message, data })
-}
-export const makeSuccessResponseF = compose(makeSuccessResponse, formatResponseMakerFlattenArgs)
-export const makeFailResponseF = compose(makeFailResponse, formatResponseMakerFlattenArgs)
-export const makeErrorResponseF = compose(makeErrorResponse, formatResponseMakerFlattenArgs)
-export const makeUnknownResponseF = compose(makeUnknownResponse, formatResponseMakerFlattenArgs)
-
-const propStatusEq = propEq('status')
-export const isResponseCode = allPass([isObject, hasOwnProperty('code'), hasOwnProperty('code_message')])
-export const hasValidResponseCode = isResponseCode
-export const isResponse = allPass([
-  isObject,
-  // hasOwnProperty('code'), hasOwnProperty('code_message'), // response code is not required
-  hasOwnProperty('status'), hasOwnProperty('status_message'),
-  hasOwnProperty('data')
-])
-export const isSuccessResponse = allPass([isResponse, propStatusEq('success')])
-export const isFailResponse = allPass([isResponse, propStatusEq('fail')])
-export const isErrorResponse = allPass([isResponse, propStatusEq('error')])
-export const isUnknowResponse = allPass([isResponse, propStatusEq('unknown')])
-
-export const DEFAULT_SUCCESS_RESPONSE_CODE = { code: 0, code_message: 'SUCCESS' }
-export const DEFAULT_FAIL_RESPONSE_CODE = { code: 2, code_message: 'FAIL' }
-export const DEFAULT_ERROR_RESPONSE_CODE = { code: 1, code_message: 'UNDIFINED_RUNTIME_ERROR' }
-export const DEFAULT_UNKNOWN_RESPONSE_CODE = { code: 3, code_message: 'UNKNOWN_RESPONSE' }
-export const formatSuccessResponse = response => {
-  if (!hasValidResponseCode(response)) {
-    response = { ...response, ...DEFAULT_SUCCESS_RESPONSE_CODE }
+export const makeFailResponse = ({ statusMessage, code, codeMessage, data }: PartialStatusSpecifiedResponse): FailResponse => ({
+  status: ResponseStatus.fail,
+  statusMessage: statusMessage ?? DEFAULT_STATUS_MESSAGE,
+  code: code ?? DEFAULT_FAIL_RESPONSE_CODE.code,
+  codeMessage: codeMessage ?? DEFAULT_FAIL_RESPONSE_CODE.codeMessage,
+  data: data ?? DEFAULT_DATA
+})
+export const makeErrorResponse = ({ statusMessage, code, codeMessage, data }: PartialStatusSpecifiedResponse): ErrorResponse => ({
+  status: ResponseStatus.error,
+  statusMessage: statusMessage ?? DEFAULT_STATUS_MESSAGE,
+  code: code ?? DEFAULT_ERROR_RESPONSE_CODE.code,
+  codeMessage: codeMessage ?? DEFAULT_ERROR_RESPONSE_CODE.codeMessage,
+  data: data ?? DEFAULT_DATA
+})
+export const makeUnknownResponse = ({ statusMessage, code, codeMessage, data }: PartialStatusSpecifiedResponse): UnknownResponse => {
+  console.warn(`[MobiusUtils][data] makeUnknownResponse: unknown response detected, ${JSON.stringify({ code, codeMessage, statusMessage, data })}`)
+  return {
+    status: ResponseStatus.unknown,
+    statusMessage: statusMessage ?? DEFAULT_STATUS_MESSAGE,
+    code: code ?? DEFAULT_UNKNOWN_RESPONSE_CODE.code,
+    codeMessage: codeMessage ?? DEFAULT_UNKNOWN_RESPONSE_CODE.codeMessage,
+    data: data ?? DEFAULT_DATA
   }
+}
+
+export const dataToResponse = (data: Record<string, any>): SuccessResponse => {
+  return makeSuccessResponse({ data })
+}
+export const errorToResponse = (error: Error): ErrorResponse => {
+  const response = makeErrorResponse({})
+  response.statusMessage = error.message
+  response.data.error = error
   return response
-}
-export const formatFailResponse = response => {
-  if (!hasValidResponseCode(response)) {
-    response = { ...response, ...DEFAULT_FAIL_RESPONSE_CODE }
-  }
-  return response
-}
-export const formatErrorResponse = response => {
-  if (!hasValidResponseCode(response)) {
-    response = { ...response, ...DEFAULT_ERROR_RESPONSE_CODE }
-  }
-  return response
-}
-export const formatUnknownResponse = response => {
-  if (!hasValidResponseCode(response)) {
-    response = { ...response, ...DEFAULT_UNKNOWN_RESPONSE_CODE }
-  }
-  return response
-}
-export const formatResponse = response => {
-  if (isResponse(response)) {
-    if (isSuccessResponse(response)) return formatSuccessResponse(response)
-    if (isFailResponse(response)) return formatFailResponse(response)
-    if (isErrorResponse(response)) return formatErrorResponse(response)
-    if (isUnknowResponse(response)) return formatUnknownResponse(response)
-  }
-  if (isObject(response)) {
-    return makeSuccessResponse({ ...DEFAULT_SUCCESS_RESPONSE_CODE, status_message: 'success response', data: { ...response } })
-  }
-  if (isString(response)) {
-    return makeFailResponse({ ...DEFAULT_FAIL_RESPONSE_CODE, status_message: response, data: { response: {} } })
-  }
-  if (isError(response)) {
-    return makeErrorResponse({ ...DEFAULT_ERROR_RESPONSE_CODE, status_message: response.message, data: { error: response } })
-  }
-  return makeUnknownResponse({
-    ...DEFAULT_UNKNOWN_RESPONSE_CODE,
-    status_message: 'So sad, unknown response occurred ;(',
-    data: { response: [response] }
-  })
 }

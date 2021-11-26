@@ -1,11 +1,34 @@
 import {
-  isString, isObject, isArray, isFunction
+  isString, isPlainObject, isFunction
 } from '../internal'
 import {
   Data, isAtom,
   replayWithLatest,
   binaryTweenPipeAtom
 } from '../atom'
+
+type ScopeManagerCreator = (...args: any[]) => any | any
+interface ScopeManagerCreateOptions {
+  isStray?: boolean
+  strayFlag?: string
+}
+interface GetInstanceOptions {
+  acceptPromise?: boolean
+}
+export interface ScopeManager<Creator extends ScopeManagerCreator> {
+  getCreator: () => Creator
+  getOptions: () => ScopeManagerCreateOptions
+  isRegisteredScope: (scope: string) => boolean
+  releaseScope: (scope: string) => boolean
+  releaseManager: () => boolean
+
+  registerScope: <Instance extends any>(
+    scope: string, options: { instance?: Instance, params?: Parameters<Creator>[0]}
+  ) => ReturnType<Creator> | Creator | Instance
+
+  getInstance: (scope: string, options?: GetInstanceOptions) => any
+  scope: (scope: string, params?: Parameters<Creator>[0]) => any
+}
 
 /**
  * Map{
@@ -16,40 +39,29 @@ import {
  *   ...
  * }
  */
-
 const SCOPE_MANAGERS = new Map()
 
 /**
  * @param { object | function } creator
- * @param { object? } options
+ * @param { ScopeManagerCreateOptions } options
  * @return ScopeManager
  */
-const createScopeManager = (creator, options) => {
-  if (!creator) throw (new TypeError('"creator" is required!'))
+const createScopeManager = <Creator extends ScopeManagerCreator>(
+  creator: Creator, options: ScopeManagerCreateOptions
+): ScopeManager<Creator> => {
   const scopeMap = new Map()
   const promiseMap = new Map()
 
   return {
     getCreator: () => creator,
     getOptions: () => options,
-
-    /**
-     * @param { string } scope
-     * @return { boolean } given scope is registered or not
-     */
-    isRegisteredScope: scope => !!scopeMap.get(scope),
-
-    /**
-     * @param { string } scope
-     * @return { boolean }
-     */
-    releaseScope: scope => {
-      return scopeMap.delete(scope)
-    },
+    isRegisteredScope: scope => scopeMap.get(scope) !== undefined,
+    releaseScope: scope => scopeMap.delete(scope),
     releaseManager: () => {
-      const { isStray, strayFlag } = options
+      const { isStray = false, strayFlag } = options
       if (isStray) {
         let res = false
+        // TODO: strayFlay 同名检测
         SCOPE_MANAGERS.forEach((val, key) => {
           if (!res && key.flag === strayFlag) {
             res = SCOPE_MANAGERS.delete(key)
@@ -66,55 +78,34 @@ const createScopeManager = (creator, options) => {
      * if there is none, create one,
      * if there is one, just return it.
      *
-     * @param { string | object } scope
-     * @param { { instance?, params? }? } options can be omitted when the type of scope is Object
-     *
-     * @accept ({ scope, instance?, params? })
-     * @accept (scope, { instance?, params? })
-     *
+     * @param { string } scope
+     * @param { { instance?, params? } } [options] can be omitted when the type of scope is Object
      * @return instance
      */
-    registerScope: (scope, options) => {
-      let _scope, _instance, _params
-      // accept ({ scope, instance?, params? })
-      if (isObject(scope)) {
-        _instance = scope.instance
-        _params = scope.params
-        _scope = scope.scope
-      } else if (isString(scope)) {
-        // accept (scope, { instance?, params? })
-        _scope = scope
-        if (options && !isObject(options)) {
-          throw (new TypeError(`"options" is expected to be type of "Object" when "scope" is of type "String", but received "${typeof options}".`))
-        }
-        if (isObject(options)) {
-          _instance = options.instance
-          _params = options.params
-        }
-      } else {
-        throw (new TypeError(`first argument of registerScope is expected to be type of "String" | "Object", but received "${typeof scope}".`))
+    registerScope: function (scope, options) {
+      if (!isString(scope)) {
+        throw (new TypeError('"scope" is required and is expected to be type of "String".'))
+      }
+      if (options !== undefined && !isPlainObject(options)) {
+        throw (new TypeError('"options" is expected to be type of "Object" when provided.'))
       }
 
-      if (!isString(_scope)) throw (new TypeError(`"scope" is required and is expected to be type of "String", but received "${typeof _scope}".`))
-      if (!creator && !_instance) throw (new TypeError('One of "creator" and "instance" is required at least.'))
-      if (isObject(_params)) {
-        _params = { ..._params, '@scopeName': _scope }
+      let { instance: _instance, params = { '@scopeName': scope } } = options ?? {}
+
+      if (isPlainObject(params)) {
+        params = { ...params, '@scopeName': scope }
       }
 
-      let instance = scopeMap.get(_scope)
+      let instance = scopeMap.get(scope)
 
       // If there is no instance registered, create one.
       // Then check if there is a promise has been made, if so, trigger it
-      if (!instance) {
-        instance = _instance ||
-         (isFunction(creator)
-           ? (_params ? creator(_params) : creator({ '@scopeName': _scope }))
-           : creator
-         )
-        scopeMap.set(_scope, instance)
+      if (instance === undefined) {
+        instance = _instance ?? (isFunction(creator) ? creator(params) : creator)
+        scopeMap.set(scope, instance)
 
-        const promise = promiseMap.get(_scope)
-        if (promise) {
+        const promise = promiseMap.get(scope)
+        if (promise !== undefined) {
           if (isAtom(instance)) {
             binaryTweenPipeAtom(replayWithLatest(1, instance), promise)
           } else {
@@ -127,51 +118,33 @@ const createScopeManager = (creator, options) => {
     },
 
     /**
-     * @param { string | object } scope
-     * @param { { acceptPromise?: true }? }options
-     *
-     * @accept accept ({ scope, options | ...options })
-     * @accept accept (scope, options? )
-     *
+     * @param { string } scope
+     * @param { { acceptPromise?: boolean } } [options]
      * @return instance | Atom of instance
      */
-    getInstance: (scope, options = {}) => {
-      // accept ({ scope, options | ...options })
-      const _scope = isObject(scope) ? scope.scope : scope
-      if (!isString(_scope)) {
-        throw (new TypeError(`"scope" is required and is expected to be type of "String", but received "${typeof _scope}".`))
+    getInstance: function (scope, options = {}) {
+      if (!isString(scope)) {
+        throw (new TypeError('"scope" is required and is expected to be type of "String".'))
       }
-
-      if (isObject(scope)) {
-        if (!scope.options) {
-          options = Object.assign({}, scope)
-          delete options.scope
-        } else {
-          options = scope.options
-        }
-      } else if (isString(scope)) {
-        options = options || {}
-      }
-
-      if (!isObject(options)) {
-        throw (new TypeError(`"options" is expected to be type of "Object", but received "${typeof options}".`))
+      if (!isPlainObject(options)) {
+        throw (new TypeError('"options" is expected to be type of "PlainObject".'))
       }
 
       const { acceptPromise = true } = options
 
-      const instance = scopeMap.get(_scope)
-      if (instance) return instance
+      const instance = scopeMap.get(scope)
+      if (instance !== undefined) return instance
       if (!acceptPromise) return false
-      const promise = promiseMap.get(_scope)
-      if (promise) return promise
-      const _promise = Data.empty()
-      promiseMap.set(_scope, _promise)
-      return _promise
+      // no instance exists & acceptPromise
+      const promise = promiseMap.get(scope)
+      if (promise !== undefined) return promise
+      promiseMap.set(scope, Data.empty())
+      return promiseMap.get(scope)
     },
 
     // ! use function declaration to keep "this" context
     /**
-     * registerScope -> getInstance
+     * Same as pipe(registerScope, getInstance)
      */
     scope: function (scope, params) {
       this.registerScope(scope, { params })
@@ -181,13 +154,19 @@ const createScopeManager = (creator, options) => {
 }
 
 /**
- * @param creator Any
- * @param { { isStray?: false, strayFlag?: string } } options
- * @return ScopeManager
+ * Make and return a ScopeManager.
+ *
+ * @param { ScopeManagerCreator } creator scope manager creator
+ * @param { boolean } [options.isStray = false]
+ * @param { string } [options.strayFlag]
+ * @return { ScopeManager } ScopeManager
+ * @todo TODO: strayFlay 同名检测
  */
-export const makeScopeManager = (creator, options = {}) => {
-  if (!isObject(options)) {
-    throw (new TypeError(`"options" is expected to be type of "Object", but received "${typeof options}".`))
+export const makeScopeManager = <Creator extends ScopeManagerCreator>(
+  creator: Creator, options: ScopeManagerCreateOptions = {}
+): ScopeManager<Creator> => {
+  if (!isPlainObject(options)) {
+    throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
 
   const { isStray = false, strayFlag } = options
@@ -195,11 +174,12 @@ export const makeScopeManager = (creator, options = {}) => {
   let manager
 
   if (isStray) {
+    // TODO: strayFlay 同名检测
     manager = createScopeManager(creator, options)
     SCOPE_MANAGERS.set({ creator, options: { isStray, strayFlag }, flag: strayFlag }, manager)
   } else {
     manager = SCOPE_MANAGERS.get(creator)
-    if (!manager) {
+    if (manager === undefined) {
       manager = createScopeManager(creator, options)
       SCOPE_MANAGERS.set(creator, manager)
     }

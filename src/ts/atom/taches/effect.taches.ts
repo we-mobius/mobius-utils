@@ -1,7 +1,7 @@
 import { isFunction } from '../../internal'
 import { curryN } from '../../functional'
-import { TERMINATOR } from '../meta'
-import { Data, Mutation, isAtom } from '../atom'
+import { TERMINATOR } from '../metas'
+import { Data, Mutation, isAtom } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
@@ -63,7 +63,7 @@ export const dynamicEffectT = curryN(2, (effect, target) => {
         let _returned
         const result = _internalValues.effect(
           value => {
-            effectM.triggerOperation(() => value)
+            effectM.triggerTransformation(() => value)
           },
           _internalValues.target,
           returned => {
