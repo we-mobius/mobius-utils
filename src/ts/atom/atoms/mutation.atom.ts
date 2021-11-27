@@ -126,7 +126,7 @@ export class Mutation<P, C> extends BaseAtom implements AtomLike {
   /**
    * Same as `Mutation.of(Mutator.of(VACUO, CHAOS, options.mutator), options)`.
    */
-  static empty (options: MutationOptions<any, any> = DEFAULT_MUTATION_OPTIONS): Mutation<any, Vacuo> {
+  static empty <C = Vacuo>(options: MutationOptions<any, any> = DEFAULT_MUTATION_OPTIONS): Mutation<any, C> {
     const _options = { ...DEFAULT_MUTATION_OPTIONS, ...options }
     return new Mutation(Mutator.empty(_options.mutator), _options)
   }

@@ -1,45 +1,42 @@
 import { isArray } from '../../internal/base'
 
-import type { Data, Mutation } from '../atoms'
-import type { DataMediator, MutationMediator } from '../mediators'
+import type { AtomLike } from '../atoms'
 
-type ValidAtom = Data<any> | Mutation<any, any> | DataMediator<Data<any>> | MutationMediator<Mutation<any, any>>
-
-interface IPipeAtom {
-  (...atoms: ValidAtom[]): typeof atoms
-  (...atoms: [ValidAtom[]]): typeof atoms[0]
-}
 /**
  * Recursively pipe atoms.
  */
-export const pipeAtom: IPipeAtom = (...atoms: any[]): any => {
-  if (atoms.length === 1 && isArray(atoms[0])) {
-    atoms = atoms[0]
+export const pipeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
+  let _atoms: AtomLike[]
+  if (args.length === 1 && isArray<AtomLike>(args[0])) {
+    _atoms = args[0]
+  } else {
+    _atoms = args as AtomLike[]
   }
-  atoms.reverse().forEach((atom, index, all) => {
+
+  _atoms.reverse().forEach((atom, index, all) => {
     if (index >= 1) {
       atom.beObservedBy(all[index - 1])
     }
   })
 
-  return atoms
+  return _atoms as T
 }
 
-interface IComposeAtom {
-  (...atoms: ValidAtom[]): typeof atoms
-  (...atoms: [ValidAtom[]]): typeof atoms[0]
-}
 /**
  * Recursively compose atoms.
  */
-export const composeAtom: IComposeAtom = (...atoms: any[]): any => {
-  if (atoms.length === 1 && isArray(atoms[0])) {
-    atoms = atoms[0]
+export const composeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
+  let _atoms: AtomLike[]
+  if (args.length === 1 && isArray<AtomLike>(args[0])) {
+    _atoms = args[0]
+  } else {
+    _atoms = args as AtomLike[]
   }
-  atoms.forEach((atom, index, all) => {
+
+  _atoms.forEach((atom, index, all) => {
     if (index >= 1) {
       atom.beObservedBy(all[index - 1])
     }
   })
-  return atoms
+  return _atoms as T
 }

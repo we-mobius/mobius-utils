@@ -5,6 +5,7 @@ import {
 } from '../../atom'
 import { isMediator, DataMediator, MutationMediator } from './base.mediators'
 
+import type { Datar } from '../particles'
 import type { Subscription } from '../atoms'
 import type { MediatorTypeMaker, MediatorType } from './base.mediators'
 
@@ -40,9 +41,8 @@ export const DEFAULT_FLAT_MEDIATOR_OPTIONS: Required<FlatMediatorOptions> = {
 }
 
 type FlatMediatorUnion
-  = FlatDataMediator<Data<any>>
-  | FlatMutationMediator<Mutation<any, any>>
-  | FlatMediator
+  = FlatDataMediator<any>
+  | FlatMutationMediator<any, any>
 
 /******************************************************************************************************
  *
@@ -53,15 +53,17 @@ type FlatMediatorUnion
 /**
  *
  */
-export class FlatDataMediator<I extends Data<any>> extends DataMediator<I> {
-  private readonly _originAtom: I
+export class FlatDataMediator<V> extends DataMediator<V> {
+  private readonly _originAtom: Data<V>
   private _connection: { unsubscribe: () => void } | null
   private _subscription: Subscription | null
   private readonly _options: Required<FlatMediatorOptions>
 
-  constructor (atom: I, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS) {
-    const flattedD = Data.empty()
-    super(flattedD as unknown as I)
+  constructor (
+    atom: Data<V>, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS
+  ) {
+    const flattedD = Data.empty<V>()
+    super(flattedD)
 
     this._options = { ...DEFAULT_FLAT_MEDIATOR_OPTIONS, ...options }
 
@@ -81,7 +83,7 @@ export class FlatDataMediator<I extends Data<any>> extends DataMediator<I> {
 
   get isFlatMediator (): true { return true }
 
-  static of<I extends Data<any>> (atom: I, options?: FlatMediatorOptions): FlatDataMediator<I>
+  static of<V> (atom: Data<V>, options?: FlatMediatorOptions): FlatDataMediator<V>
   static of<I extends FlatMediatorUnion> (atom: I): I
   static of<I extends Data<any> | FlatMediatorUnion> (
     atom: I, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS
@@ -103,12 +105,12 @@ export class FlatDataMediator<I extends Data<any>> extends DataMediator<I> {
   }
 
   connect (): void {
-    this._subscription = this._originAtom.subscribe(({ value }: I['datar']) => {
+    this._subscription = this._originAtom.subscribe(({ value }: Datar<V>) => {
       // If there is a exist connection, disconnect it.
       this.disconnect()
       if (isData(value)) {
         // Data -> extract value(Data) -> asIsM -> newData(this._atom)
-        const asIsM = Mutation.ofLiftLeft(prevD => prevD)
+        const asIsM: Mutation<any, V> = Mutation.ofLiftLeft(prevD => prevD)
         const subscription2 = this._atom.observe(asIsM)
         const subscription1 = asIsM.observe(value)
         // value is a normal Data which means it will not replay the latest value automatically
@@ -151,15 +153,17 @@ export class FlatDataMediator<I extends Data<any>> extends DataMediator<I> {
 /**
  *
  */
-export class FlatMutationMediator<I extends Mutation<any, any>> extends MutationMediator<I> {
-  _originAtom: I
-  _connection: { unsubscribe: () => void } | null
-  _subscription: Subscription | null
-  _options: FlatMediatorOptions
+export class FlatMutationMediator<P, C> extends MutationMediator<P, C> {
+  private readonly _originAtom: Mutation<P, C>
+  private _connection: { unsubscribe: () => void } | null
+  private _subscription: Subscription | null
+  private readonly _options: FlatMediatorOptions
 
-  constructor (atom: I, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS) {
-    const flattedM = Mutation.ofLiftLeft(prevD => prevD)
-    super(flattedM as unknown as I)
+  constructor (
+    atom: Mutation<P, C>, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS
+  ) {
+    const flattedM: Mutation<any, any> = Mutation.ofLiftLeft(prevD => prevD)
+    super(flattedM)
 
     this._options = { ...DEFAULT_FLAT_MEDIATOR_OPTIONS, ...options }
 
@@ -179,7 +183,7 @@ export class FlatMutationMediator<I extends Mutation<any, any>> extends Mutation
 
   get isFlatMediator (): true { return true }
 
-  static of<I extends Mutation<any, any>> (atom: I, options?: FlatMediatorOptions): FlatMutationMediator<I>
+  static of<P, C> (atom: Mutation<P, C>, options?: FlatMediatorOptions): FlatMutationMediator<P, C>
   static of<I extends FlatMediatorUnion> (atom: I): I
   static of<I extends Mutation<any, any> | FlatMediatorUnion> (
     atom: I, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS
@@ -201,7 +205,7 @@ export class FlatMutationMediator<I extends Mutation<any, any>> extends Mutation
   }
 
   connect (): void {
-    const tempData = Data.empty()
+    const tempData = Data.empty<C>()
     this._subscription = tempData.subscribe(({ value }: (typeof tempData)['datar']) => {
       this.disconnect()
       if (isData(value)) {
@@ -216,7 +220,7 @@ export class FlatMutationMediator<I extends Mutation<any, any>> extends Mutation
         }
       } else if (isMutation(value)) {
         // Mutation -> tempData -> extract value(Mutation) -> tempData2 -> newMutation(this._atom)
-        const tempData2 = Data.empty()
+        const tempData2 = Data.empty<P>()
         const subscription3 = this._atom.observe(tempData2)
         const subscription2 = tempData2.observe(value)
         const subscription1 = tempData.observe(this._originAtom)
@@ -263,8 +267,8 @@ export class FlatMediator {
 
   get isFlatMediator (): true { return true }
 
-  static of<I extends Data<any>> (atom: I, options?: FlatMediatorOptions): FlatDataMediator<I>
-  static of<I extends Mutation<any, any>> (atom: I, options?: FlatMediatorOptions): FlatMutationMediator<I>
+  static of<V> (atom: Data<V>, options?: FlatMediatorOptions): FlatDataMediator<V>
+  static of<P, C> (atom: Mutation<P, C>, options?: FlatMediatorOptions): FlatMutationMediator<P, C>
   static of<I extends FlatMediatorUnion> (atom: I, options?: FlatMediatorOptions): I
   static of<I extends Data<any> | Mutation<any, any> | FlatMediatorUnion> (
     atom: I, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS
@@ -293,8 +297,8 @@ export class FlatMediator {
 }
 
 interface IWithValueFlatted {
-  <I extends Data<any>> (atom: I, options?: FlatMediatorOptions): FlatDataMediator<I>
-  <I extends Mutation<any, any>> (atom: I, options?: FlatMediatorOptions): FlatMutationMediator<I>
+  <V> (atom: Data<V>, options?: FlatMediatorOptions): FlatDataMediator<V>
+  <P, C> (atom: Mutation<P, C>, options?: FlatMediatorOptions): FlatMutationMediator<P, C>
   <I extends FlatMediatorUnion> (atom: I, options?: FlatMediatorOptions): I
 }
 /**

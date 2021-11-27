@@ -6,6 +6,7 @@ import {
   FlatMediator
 } from '../mediators'
 
+import type { MutatorTransformation } from '../particles'
 import type { Trigger, TriggerController } from '../atoms'
 import type {
   TriggerMediatorOptions, ReplayMediatorOptions, FlatMediatorOptions,
@@ -15,24 +16,24 @@ import type {
 } from '../mediators'
 
 interface IWithMediator {
-  <I extends Data<any>>(
-    atom: I, mediatorRepresentative: typeof TriggerMediator, options?: TriggerMediatorOptions
-  ): [I, TriggerDataMediator<I>]
-  <I extends Mutation<any, any>>(
-    atom: I, mediatorRepresentative: typeof TriggerMediator, options?: TriggerMediatorOptions
-  ): [I, TriggerMutationMediator<I>]
-  <I extends Data<any>>(
-    atom: I, mediatorRepresentative: typeof ReplayMediator, options?: ReplayMediatorOptions
-  ): [I, ReplayDataMediator<I>]
-  <I extends Mutation<any, any>>(
-    atom: I, mediatorRepresentative: typeof ReplayMediator, options?: ReplayMediatorOptions
-  ): [I, ReplayMutationMediator<I>]
-  <I extends Data<any>>(
-    atom: I, mediatorRepresentative: typeof FlatMediator, options?: FlatMediatorOptions
-  ): [I, FlatDataMediator<I>]
-  <I extends Mutation<any, any>>(
-    atom: I, mediatorRepresentative: typeof FlatMediator, options?: FlatMediatorOptions
-  ): [I, FlatMutationMediator<I>]
+  <V>(
+    atom: Data<V>, mediatorRepresentative: typeof TriggerMediator, options?: TriggerMediatorOptions
+  ): [Data<V>, TriggerDataMediator<V>]
+  <P, C>(
+    atom: Mutation<P, C>, mediatorRepresentative: typeof TriggerMediator, options?: TriggerMediatorOptions
+  ): [Mutation<P, C>, TriggerMutationMediator<P, C>]
+  <V>(
+    atom: Data<V>, mediatorRepresentative: typeof ReplayMediator, options?: ReplayMediatorOptions
+  ): [Data<V>, ReplayDataMediator<V>]
+  <P, C>(
+    atom: Mutation<P, C>, mediatorRepresentative: typeof ReplayMediator, options?: ReplayMediatorOptions
+  ): [Mutation<P, C>, ReplayMutationMediator<P, C>]
+  <V>(
+    atom: Data<V>, mediatorRepresentative: typeof FlatMediator, options?: FlatMediatorOptions
+  ): [Data<V>, FlatDataMediator<V>]
+  <P, C>(
+    atom: Mutation<P, C>, mediatorRepresentative: typeof FlatMediator, options?: FlatMediatorOptions
+  ): [Mutation<P, C>, FlatMutationMediator<P, C>]
 }
 /**
  * Create mediator of given atom, then return tuple of given atom & created mediator.
@@ -48,8 +49,8 @@ export const withMediator: IWithMediator = (atom: any, mediatorRepresentative: a
 export const withMediator_ = looseCurryN(2, withMediator)
 
 interface IWithTriggerMediator {
-  <I extends Data<any>>(atom: I, options?: TriggerMediatorOptions): [I, TriggerDataMediator<I>]
-  <I extends Mutation<any, any>>(atom: I, options?: TriggerMediatorOptions): [I, TriggerMutationMediator<I>]
+  <V>(atom: Data<V>, options?: TriggerMediatorOptions): [Data<V>, TriggerDataMediator<V>]
+  <P, C>(atom: Mutation<P, C>, options?: TriggerMediatorOptions): [Mutation<P, C>, TriggerMutationMediator<P, C>]
 }
 /**
  * Create trigger mediator of given atom, then return tuple of given atom & created mediator.
@@ -61,8 +62,8 @@ export const withTriggerMediator: IWithTriggerMediator = (atom: any, options: an
 export const withTriggerMediator_ = looseCurryN(1, withTriggerMediator)
 
 interface IWithReplayMediator {
-  <I extends Data<any>>(atom: I, options?: ReplayMediatorOptions): [I, ReplayDataMediator<I>]
-  <I extends Mutation<any, any>>(atom: I, options?: ReplayMediatorOptions): [I, ReplayMutationMediator<I>]
+  <V>(atom: Data<V>, options?: ReplayMediatorOptions): [Data<V>, ReplayDataMediator<V>]
+  <P, C>(atom: Mutation<P, C>, options?: ReplayMediatorOptions): [Mutation<P, C>, ReplayMutationMediator<P, C>]
 }
 /**
  * Create replay mediator of given atom, then return tuple of given atom & created mediator.
@@ -74,8 +75,8 @@ export const withReplayMediator: IWithReplayMediator = (atom: any, options: any 
 export const withReplayMediator_ = looseCurryN(1, withReplayMediator)
 
 interface IWithFlatMediator {
-  <I extends Data<any>>(atom: I, options?: FlatMediatorOptions): [I, FlatDataMediator<I>]
-  <I extends Mutation<any, any>>(atom: I, options?: FlatMediatorOptions): [I, FlatMutationMediator<I>]
+  <V>(atom: Data<V>, options?: FlatMediatorOptions): [Data<V>, FlatDataMediator<V>]
+  <P, C>(atom: Mutation<P, C>, options?: FlatMediatorOptions): [Mutation<P, C>, FlatMutationMediator<P, C>]
 }
 /**
  * Create flat mediator of given atom, then return tuple of given atom & created mediator.
@@ -89,46 +90,47 @@ export const withFlatMediator_ = looseCurryN(1, withFlatMediator)
 /**
  *
  */
-export const createDataWithTriggerMediator = (
+export const createDataWithTriggerMediator = <V = any>(
   options: TriggerMediatorOptions = {}
-): [Data<any>, TriggerDataMediator<Data<any>>] => withTriggerMediator(Data.empty(), options)
+): [Data<V>, TriggerDataMediator<V>] => withTriggerMediator<V>(Data.empty(), options)
 export const createDataWithTriggerMediator_ = looseCurryN(0, createDataWithTriggerMediator)
+
 /**
  *
  */
-export const createMutationWithTriggerMediator = (
+export const createMutationWithTriggerMediator = <P = any, C = any>(
   options: TriggerMediatorOptions = {}
-): [Mutation<any, any>, TriggerMutationMediator<Mutation<any, any>>] => withTriggerMediator(Mutation.empty(), options)
+): [Mutation<P, C>, TriggerMutationMediator<P, C>] => withTriggerMediator<P, C>(Mutation.empty(), options)
 export const createMutationWithTriggerMediator_ = looseCurryN(0, createMutationWithTriggerMediator)
 
 /**
  *
  */
-export const createDataWithReplayMediator = (
+export const createDataWithReplayMediator = <V = any>(
   options: ReplayMediatorOptions = {}
-): [Data<any>, ReplayDataMediator<Data<any>>] => withReplayMediator(Data.empty(), options)
+): [Data<V>, ReplayDataMediator<V>] => withReplayMediator<V>(Data.empty(), options)
 export const createDataWithReplayMediator_ = looseCurryN(0, createDataWithReplayMediator)
 /**
  *
  */
-export const createMutationWithReplayMediator = (
+export const createMutationWithReplayMediator = <P = any, C = any>(
   options: ReplayMediatorOptions = {}
-): [Mutation<any, any>, ReplayMutationMediator<Mutation<any, any>>] => withReplayMediator(Mutation.empty(), options)
+): [Mutation<P, C>, ReplayMutationMediator<P, C>] => withReplayMediator<P, C>(Mutation.empty(), options)
 export const createMutationWithReplayMediator_ = looseCurryN(0, createMutationWithReplayMediator)
 
 /**
  *
  */
-export const createDataWithFlatMediator = (
+export const createDataWithFlatMediator = <V = any>(
   options: FlatMediatorOptions = {}
-): [Data<any>, FlatDataMediator<Data<any>>] => withFlatMediator(Data.empty(), options)
+): [Data<V>, FlatDataMediator<V>] => withFlatMediator<V>(Data.empty(), options)
 export const createDataWithFlatMediator_ = looseCurryN(0, createDataWithFlatMediator)
 /**
  *
  */
-export const createMutationWithFlatMediator = (
+export const createMutationWithFlatMediator = <P = any, C = any>(
   options: FlatMediatorOptions = {}
-): [Mutation<any, any>, FlatMutationMediator<Mutation<any, any>>] => withFlatMediator(Mutation.empty(), options)
+): [Mutation<P, C>, FlatMutationMediator<P, C>] => withFlatMediator<P, C>(Mutation.empty<C>(), options)
 export const createMutationWithFlatMediator_ = looseCurryN(0, createMutationWithFlatMediator)
 
 /**
@@ -137,8 +139,8 @@ export const createMutationWithFlatMediator_ = looseCurryN(0, createMutationWith
 export const createDataWithTrigger = <V = any>(
   trigger: Trigger<V>,
   options: TriggerMediatorOptions = {}
-): [Data<V>, TriggerDataMediator<Data<V>>, typeof options, typeof trigger, TriggerController] => {
-  const [data, mediator] = createDataWithTriggerMediator(options)
+): [Data<V>, TriggerDataMediator<V>, typeof options, typeof trigger, TriggerController] => {
+  const [data, mediator] = createDataWithTriggerMediator<V>(options)
   const controller = mediator.register(trigger)
   return [data, mediator, options, trigger, controller]
 }
@@ -146,33 +148,33 @@ export const createDataWithTrigger_ = looseCurryN(1, createDataWithTrigger)
 /**
  *
  */
-export const createMutationWithTrigger = (
-  trigger: Trigger<any>,
+export const createMutationWithTrigger = <P = any, C = any>(
+  trigger: Trigger<MutatorTransformation<P, C>>,
   options: TriggerMediatorOptions = {}
-): [Mutation<any, any>, TriggerMutationMediator<Mutation<any, any>>, typeof options, typeof trigger, TriggerController] => {
-  const [data, mediator] = createMutationWithTriggerMediator(options)
+): [Mutation<P, C>, TriggerMutationMediator<P, C>, typeof options, typeof trigger, TriggerController] => {
+  const [mutation, mediator] = createMutationWithTriggerMediator<P, C>(options)
   const controller = mediator.register(trigger)
-  return [data, mediator, options, trigger, controller]
+  return [mutation, mediator, options, trigger, controller]
 }
 export const createMutationWithTrigger_ = looseCurryN(1, createMutationWithTrigger)
 
 /**
  *
  */
-export const createDataWithReplay = (
+export const createDataWithReplay = <V = any>(
   options: ReplayMediatorOptions = {}
-): [Data<any>, ReplayDataMediator<Data<any>>, typeof options] => {
-  const [data, mediator] = createDataWithReplayMediator(options)
+): [Data<V>, ReplayDataMediator<V>, typeof options] => {
+  const [data, mediator] = createDataWithReplayMediator<V>(options)
   return [data, mediator, options]
 }
 export const createDataWithReplay_ = looseCurryN(0, createDataWithReplay)
 /**
  *
  */
-export const createMutationWithReplay = (
+export const createMutationWithReplay = <P = any, C = any>(
   options: ReplayMediatorOptions = {}
-): [Mutation<any, any>, ReplayMutationMediator<Mutation<any, any>>, typeof options] => {
-  const [mutation, mediator] = createMutationWithReplayMediator(options)
+): [Mutation<P, C>, ReplayMutationMediator<P, C>, typeof options] => {
+  const [mutation, mediator] = createMutationWithReplayMediator<P, C>(options)
   return [mutation, mediator, options]
 }
 export const createMutationWithReplay_ = looseCurryN(0, createMutationWithReplay)
@@ -180,20 +182,20 @@ export const createMutationWithReplay_ = looseCurryN(0, createMutationWithReplay
 /**
  *
  */
-export const createDataWithFlat = (
+export const createDataWithFlat = <V = any>(
   options: FlatMediatorOptions = {}
-): [Data<any>, FlatDataMediator<Data<any>>, typeof options] => {
-  const [data, mediator] = createDataWithFlatMediator(options)
+): [Data<V>, FlatDataMediator<V>, typeof options] => {
+  const [data, mediator] = createDataWithFlatMediator<V>(options)
   return [data, mediator, options]
 }
 export const createDataWithFlat_ = looseCurryN(0, createDataWithFlat)
 /**
  *
  */
-export const createMutationWithFlat = (
+export const createMutationWithFlat = <P = any, C = any>(
   options: FlatMediatorOptions = {}
-): [Mutation<any, any>, FlatMutationMediator<Mutation<any, any>>, typeof options] => {
-  const [mutation, mediator] = createMutationWithFlatMediator(options)
+): [Mutation<P, C>, FlatMutationMediator<P, C>, typeof options] => {
+  const [mutation, mediator] = createMutationWithFlatMediator<P, C>(options)
   return [mutation, mediator, options]
 }
 export const createMutationWithFlat_ = looseCurryN(0, createMutationWithFlat)

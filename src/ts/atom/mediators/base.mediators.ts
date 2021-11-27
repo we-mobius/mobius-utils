@@ -2,9 +2,20 @@ import { isObject, isEmpty } from '../../internal/base'
 import { pipe, compose } from '../../functional'
 
 import { Vain } from '../vain'
-import { isAtom, isData, isMutation, GC_DATA, GC_MUTATION } from '../atoms'
+import {
+  isAtom, DEFAULT_ATOM_TRIGGER_REGISTER_OPTIONS,
+  isData, isMutation,
+  DEFAULT_SUBSCRIBE_OPTIONS,
+  GC_DATA, GC_MUTATION
+} from '../atoms'
 
-import type { AtomLike, BaseAtom, Data, Mutation } from '../atoms'
+import type { Datar, Mutator, MutatorTransformation } from '../particles'
+import type {
+  Trigger, AtomTriggerRegisterOptions, TriggerController,
+  AtomLike, BaseAtom, Data, Mutation, SubscribeOptions,
+  ValueConsumer, DataConsumer, DataSubscription,
+  TransformationConsumer, MutationConsumer, MutationSubscription
+} from '../atoms'
 
 type AnyFunction = (...args: any[]) => any
 
@@ -26,6 +37,10 @@ export const isMediator = <A extends BaseAtom>(tar: any): tar is BaseMediator<A>
  *
  ******************************************************************************************************/
 
+/**
+ *
+ */
+type Unary<I, O> = (input: I) => O
 /**
  *
  */
@@ -79,16 +94,48 @@ export abstract class BaseMediator<BA extends BaseAtom> extends Vain {
 
   get isEmpty (): boolean { return isEmpty(this._atom) }
 
-  pipe (...args: Parameters<BA['pipe']>): ReturnType<BA['pipe']> {
+  pipe (): this
+  pipe<A> (fn1: Unary<this, A>): A
+  pipe<A, B> (fn1: Unary<this, A>, fn2: Unary<A, B>): B
+  pipe<A, B, C> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>): C
+  pipe<A, B, C, D> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>): D
+  pipe<A, B, C, D, E> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>): E
+  pipe<A, B, C, D, E, F> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>): F
+  // eslint-disable-next-line max-len
+  pipe<A, B, C, D, E, F, G> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>): G
+  // eslint-disable-next-line max-len
+  pipe<A, B, C, D, E, F, G, H> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>, fn8: Unary<G, H>): H
+  // eslint-disable-next-line max-len
+  pipe<A, B, C, D, E, F, G, H, I> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>, fn8: Unary<G, H>, fn9: Unary<H, I>): I
+  // eslint-disable-next-line max-len
+  pipe<A, B, C, D, E, F, G, H, I, J> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>, fn8: Unary<G, H>, fn9: Unary<H, I>, fn10: Unary<I, J>): J
+  // eslint-disable-next-line max-len
+  pipe<A, B, C, D, E, F, G, H, I, J> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>, fn8: Unary<G, H>, fn9: Unary<H, I>, fn10: Unary<I, J>, ...fns: Array<Unary<any, any>>): any
+  pipe (...args: any[]): any {
     // ! do not use:
     // ! return this._atom.pipe(...args)
-    return (pipe(...args) as AnyFunction)(this)
+    return pipe(...args)(this)
   }
 
-  compose (...args: Parameters<BA['compose']>): ReturnType<BA['compose']> {
+  compose (): this
+  compose<A> (fn1: Unary<this, A>): A
+  compose<A, B> (fn2: Unary<A, B>, fn1: Unary<this, A>): B
+  compose<A, B, C> (fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): C
+  compose<A, B, C, D> (fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): D
+  compose<A, B, C, D, E> (fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): E
+  // eslint-disable-next-line max-len
+  compose<A, B, C, D, E, F> (fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): F
+  // eslint-disable-next-line max-len
+  compose<A, B, C, D, E, F, G> (fn7: Unary<F, G>, fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): G
+  // eslint-disable-next-line max-len
+  compose<A, B, C, D, E, F, G, H> (fn8: Unary<G, H>, fn7: Unary<F, G>, fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): H
+  // eslint-disable-next-line max-len
+  compose<A, B, C, D, E, F, G, H, I> (fn9: Unary<H, I>, fn8: Unary<G, H>, fn7: Unary<F, G>, fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): I
+  // eslint-disable-next-line max-len
+  compose<A, B, C, D, E, F, G, H, I, J> (fn10: Unary<I, J>, fn9: Unary<H, I>, fn8: Unary<G, H>, fn7: Unary<F, G>, fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): J
+  compose (...args: any[]): any {
     // ! do not use:
     // ! return this._atom.compose(...args)
-
     return compose(...args)(this)
   }
 
@@ -112,61 +159,59 @@ export abstract class BaseMediator<BA extends BaseAtom> extends Vain {
 /**
  *
  */
-export abstract class DataMediator<I extends Data<any>, V> extends BaseMediator<Data<V>> implements AtomLike {
-  get datar (): Data<V>['datar'] {
+export abstract class DataMediator<V> extends BaseMediator<Data<V>> implements AtomLike {
+  get datar (): Datar<V> {
     return this._atom.datar
   }
 
-  get value (): Data<V>['value'] {
+  get value (): V {
     return this._atom.value
   }
 
-  subscribe (...args: Parameters<I['subscribe']>): ReturnType<I['subscribe']> {
-    // return this._atom.subscribe(...args) as ReturnType<I['subscribe']>
-    // NOTE: for type support
-    return this._atom.subscribe(args[0], args[1]) as ReturnType<I['subscribe']>
+  subscribe (
+    consumer: DataConsumer<V>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS
+  ): DataSubscription<V> {
+    return this._atom.subscribe(consumer, options)
   }
 
-  subscribeValue (...args: Parameters<I['subscribeValue']>): ReturnType<I['subscribeValue']> {
-    // return this._atom.subscribeValue(...args) as ReturnType<I['subscribeValue']>
-    // NOTE: for type support
-    return this._atom.subscribeValue(args[0], args[1]) as ReturnType<I['subscribeValue']>
+  subscribeValue (
+    consumer: ValueConsumer<V>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS
+  ): DataSubscription<V> {
+    return this._atom.subscribeValue(consumer, options)
   }
 
-  trigger (...args: Parameters<I['trigger']>): ReturnType<I['trigger']> {
-    return this._atom.trigger(...args) as ReturnType<I['trigger']>
+  trigger (datar?: Datar<V>): void {
+    return this._atom.trigger(datar)
   }
 
-  triggerValue (...args: Parameters<I['triggerValue']>): ReturnType<I['triggerValue']> {
-    return this._atom.triggerValue(...args) as ReturnType<I['triggerValue']>
+  triggerValue (value?: Datar<V>['value']): void {
+    return this._atom.triggerValue(value)
   }
 
-  observe (...args: Parameters<I['observe']>): ReturnType<I['observe']> {
-    // return this._atom.observe(...args) as ReturnType<I['observe']>
-    // NOTE: for type support
-    return this._atom.observe(args[0]) as ReturnType<I['observe']>
+  observe (mutation: Mutation<any, V>): ReturnType<(typeof mutation)['subscribe']> {
+    return this._atom.observe(mutation)
   }
 
-  beObservedBy (...args: Parameters<I['beObservedBy']>): ReturnType<I['beObservedBy']> {
-    // return this._atom.beObservedBy(...args) as ReturnType<I['beObservedBy']>
-    // NOTE: for type support
-    return this._atom.beObservedBy(args[0]) as ReturnType<I['beObservedBy']>
+  beObservedBy (mutation: Mutation<V, any>): DataSubscription<V> {
+    return this._atom.beObservedBy(mutation)
   }
 
-  mutate (...args: Parameters<I['mutate']>): ReturnType<I['mutate']> {
-    // return this._atom.mutate(...args) as ReturnType<I['mutate']>
-    // NOTE: for type support
-    return this._atom.mutate(args[0], args[1]) as ReturnType<I['mutate']>
+  mutate <P>(
+    mutator: Mutator<P, V> | Mutation<P, V> | MutatorTransformation<P, V> | ((...args: any[]) => V),
+    mutation?: Mutation<P, V>
+  ): this {
+    this._atom.mutate(mutator, mutation)
+    return this
   }
 
-  registerTrigger (...args: Parameters<I['registerTrigger']>): ReturnType<I['registerTrigger']> {
-    // return this._atom.registerTrigger(...args) as ReturnType<I['registerTrigger']>
-    // NOTE: for type support
-    return this._atom.registerTrigger(args[0], args[1]) as ReturnType<I['registerTrigger']>
+  registerTrigger (
+    trigger: Trigger<V | Datar<V>>, options: AtomTriggerRegisterOptions = DEFAULT_ATOM_TRIGGER_REGISTER_OPTIONS
+  ): TriggerController {
+    return this._atom.registerTrigger(trigger, options)
   }
 
   release (): void {
-    this._atom = GC_DATA as I
+    this._atom = GC_DATA as Data<any>
   }
 }
 
@@ -179,60 +224,58 @@ export abstract class DataMediator<I extends Data<any>, V> extends BaseMediator<
 /**
  *
  */
-export abstract class MutationMediator<I extends Mutation<any, any>> extends BaseMediator<I> implements AtomLike {
-  get mutator (): I['mutator'] {
+export abstract class MutationMediator<P, C> extends BaseMediator<Mutation<P, C>> implements AtomLike {
+  get mutator (): Mutator<P, C> {
     return this._atom.mutator
   }
 
-  get transformation (): I['transformation'] {
+  get transformation (): MutatorTransformation<P, C> {
     return this._atom.transformation
   }
 
-  subscribe (...args: Parameters<I['subscribe']>): ReturnType<I['subscribe']> {
-    // return this._atom.subscribe(...args) as ReturnType<I['subscribe']>
-    // NOTE: for type support
-    return this._atom.subscribe(args[0], args[1]) as ReturnType<I['subscribe']>
+  subscribe (
+    consumer: MutationConsumer<P, C>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS
+  ): MutationSubscription<P, C> {
+    return this._atom.subscribe(consumer, options)
   }
 
-  subscribeTransformation (...args: Parameters<I['subscribeTransformation']>): ReturnType<I['subscribeTransformation']> {
-    // return this._atom.subscribeTransformation(...args) as ReturnType<I['subscribeTransformation']>
-    // NOTE: for type support
-    return this._atom.subscribeTransformation(args[0], args[1]) as ReturnType<I['subscribeTransformation']>
+  subscribeTransformation (
+    consumer: TransformationConsumer<P, C>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS
+  ): MutationSubscription<P, C> {
+    return this._atom.subscribeTransformation(consumer, options)
   }
 
-  trigger (...args: Parameters<I['trigger']>): ReturnType<I['trigger']> {
-    return this._atom.trigger(...args) as ReturnType<I['trigger']>
+  trigger (mutator?: Mutator<P, C>): void {
+    return this._atom.trigger(mutator)
   }
 
-  triggerTransformation (...args: Parameters<I['triggerTransformation']>): ReturnType<I['triggerTransformation']> {
-    return this._atom.triggerTransformation(...args) as ReturnType<I['triggerTransformation']>
+  triggerTransformation (transformation?: Mutator<P, C>['transformation']): void {
+    return this._atom.triggerTransformation(transformation)
   }
 
-  observe (...args: Parameters<I['observe']>): ReturnType<I['observe']> {
-    // return this._atom.observe(...args) as ReturnType<I['observe']>
-    // NOTE: for type support
-    return this._atom.observe(args[0]) as ReturnType<I['observe']>
+  observe (data: Data<P>): ReturnType<(typeof data)['subscribe']> {
+    return this._atom.observe(data)
   }
 
-  beObservedBy (...args: Parameters<I['beObservedBy']>): ReturnType<I['beObservedBy']> {
+  beObservedBy (data: Data<C>): MutationSubscription<P, C> {
     // return this._atom.beObservedBy(...args) as ReturnType<I['beObservedBy']>
     // NOTE: for type support
-    return this._atom.beObservedBy(args[0]) as ReturnType<I['beObservedBy']>
+    return this._atom.beObservedBy(data)
   }
 
-  mutate (...args: Parameters<I['mutate']>): ReturnType<I['mutate']> {
-    // return this._atom.mutate(...args) as ReturnType<I['mutate']>
-    // NOTE: for type support
-    return this._atom.mutate(args[0], args[1]) as ReturnType<I['mutate']>
+  mutate (datar: Data<P> | Datar<P> | P, data?: Data<P>): this {
+    this._atom.mutate(datar, data)
+    return this
   }
 
-  registerTrigger (...args: Parameters<I['registerTrigger']>): ReturnType<I['registerTrigger']> {
-    // return this._atom.registerTrigger(...args) as ReturnType<I['registerTrigger']>
-    // NOTE: for type support
-    return this._atom.registerTrigger(args[0], args[1]) as ReturnType<I['registerTrigger']>
+  registerTrigger (
+    trigger: Trigger<Mutator<P, C> | ((...args: any[]) => C) | C>,
+    options: AtomTriggerRegisterOptions = DEFAULT_ATOM_TRIGGER_REGISTER_OPTIONS
+  ): TriggerController {
+    return this._atom.registerTrigger(trigger, options)
   }
 
   release (): void {
-    this._atom = GC_MUTATION as I
+    this._atom = GC_MUTATION as Mutation<any, any>
   }
 }

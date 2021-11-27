@@ -508,43 +508,46 @@ export const pipeL = composeL
 export const pipeR = composeR
 
 type NAryF<S extends any[], R> = (...args: S) => R
-type UnAryF<I, O> = (input: I) => O
+type UnaryF<I, O> = (input: I) => O
 interface HPPipe {
-  <A extends any[], B>(fn1: NAryF<A, B>): NAryF<A, B>
-  <A extends any[], B, C>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>): NAryF<A, C>
-  <A extends any[], B, C, D>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>): NAryF<A, D>
-  <A extends any[], B, C, D, E>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>): NAryF<A, E>
+  (): typeof asIs
+  <A extends any[], B>(fn1?: NAryF<A, B>): NAryF<A, B>
+  <A extends any[], B, C>(fn1?: NAryF<A, B>, fn2?: UnaryF<B, C>): NAryF<A, C>
+  <A extends any[], B, C, D>(fn1?: NAryF<A, B>, fn2?: UnaryF<B, C>, fn3?: UnaryF<C, D>): NAryF<A, D>
+  <A extends any[], B, C, D, E>(fn1?: NAryF<A, B>, fn2?: UnaryF<B, C>, fn3?: UnaryF<C, D>, fn4?: UnaryF<D, E>): NAryF<A, E>
   // eslint-disable-next-line max-len
-  <A extends any[], B, C, D, E, F>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>, fn5: UnAryF<E, F>): NAryF<A, F>
+  <A extends any[], B, C, D, E, F>(fn1?: NAryF<A, B>, fn2?: UnaryF<B, C>, fn3?: UnaryF<C, D>, fn4?: UnaryF<D, E>, fn5?: UnaryF<E, F>): NAryF<A, F>
   // eslint-disable-next-line max-len
-  <A extends any[], B, C, D, E, F, G>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>, fn5: UnAryF<E, F>, fn6: UnAryF<F, G>): NAryF<A, G>
+  <A extends any[], B, C, D, E, F, G>(fn1?: NAryF<A, B>, fn2?: UnaryF<B, C>, fn3?: UnaryF<C, D>, fn4?: UnaryF<D, E>, fn5?: UnaryF<E, F>, fn6?: UnaryF<F, G>): NAryF<A, G>
   // eslint-disable-next-line max-len
-  <A extends any[], B, C, D, E, F, G, H>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>, fn5: UnAryF<E, F>, fn6: UnAryF<F, G>, fn7: UnAryF<G, H>): NAryF<A, H>
+  <A extends any[], B, C, D, E, F, G, H>(fn1?: NAryF<A, B>, fn2?: UnaryF<B, C>, fn3?: UnaryF<C, D>, fn4?: UnaryF<D, E>, fn5?: UnaryF<E, F>, fn6?: UnaryF<F, G>, fn7?: UnaryF<G, H>): NAryF<A, H>
   // eslint-disable-next-line max-len
-  <A extends any[], B, C, D, E, F, G, H, I>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>, fn5: UnAryF<E, F>, fn6: UnAryF<F, G>, fn7: UnAryF<G, H>, fn8: UnAryF<H, I>): NAryF<A, I>
+  <A extends any[], B, C, D, E, F, G, H, I>(fn1?: NAryF<A, B>, fn2?: UnaryF<B, C>, fn3?: UnaryF<C, D>, fn4?: UnaryF<D, E>, fn5?: UnaryF<E, F>, fn6?: UnaryF<F, G>, fn7?: UnaryF<G, H>, fn8?: UnaryF<H, I>): NAryF<A, I>
   // eslint-disable-next-line max-len
-  <A extends any[], B, C, D, E, F, G, H, I, J>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>, fn5: UnAryF<E, F>, fn6: UnAryF<F, G>, fn7: UnAryF<G, H>, fn8: UnAryF<H, I>, fn9: UnAryF<I, J>): NAryF<A, J>
+  <A extends any[], B, C, D, E, F, G, H, I, J>(fn1?: NAryF<A, B>, fn2?: UnaryF<B, C>, fn3?: UnaryF<C, D>, fn4?: UnaryF<D, E>, fn5?: UnaryF<E, F>, fn6?: UnaryF<F, G>, fn7?: UnaryF<G, H>, fn8?: UnaryF<H, I>, fn9?: UnaryF<I, J>): NAryF<A, J>
   // eslint-disable-next-line max-len
-  <A extends any[], B, C, D, E, F, G, H, I, J, K>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>, fn5: UnAryF<E, F>, fn6: UnAryF<F, G>, fn7: UnAryF<G, H>, fn8: UnAryF<H, I>, fn9: UnAryF<I, J>, fn10: UnAryF<J, K>): NAryF<A, K>
+  <A extends any[], B, C, D, E, F, G, H, I, J, K>(fn1?: NAryF<A, B>, fn2?: UnaryF<B, C>, fn3?: UnaryF<C, D>, fn4?: UnaryF<D, E>, fn5?: UnaryF<E, F>, fn6?: UnaryF<F, G>, fn7?: UnaryF<G, H>, fn8?: UnaryF<H, I>, fn9?: UnaryF<I, J>, fn10?: UnaryF<J, K>): NAryF<A, K>
   // eslint-disable-next-line max-len
-  <A extends any[], B, C, D, E, F, G, H, I, J, K>(fn1: NAryF<A, B>, fn2: UnAryF<B, C>, fn3: UnAryF<C, D>, fn4: UnAryF<D, E>, fn5: UnAryF<E, F>, fn6: UnAryF<F, G>, fn7: UnAryF<G, H>, fn8: UnAryF<H, I>, fn9: UnAryF<I, J>, fn10: UnAryF<J, K>, ...fns: Array<UnAryF<any, any>>): NAryF<A, any>
+  <A extends any[], B, C, D, E, F, G, H, I, J, K>(fn1?: NAryF<A, B>, fn2?: UnaryF<B, C>, fn3?: UnaryF<C, D>, fn4?: UnaryF<D, E>, fn5?: UnaryF<E, F>, fn6?: UnaryF<F, G>, fn7?: UnaryF<G, H>, fn8?: UnaryF<H, I>, fn9?: UnaryF<I, J>, fn10?: UnaryF<J, K>, ...fns: Array<UnaryF<any, any>>): NAryF<A, any>
 }
 interface HPCompose {
-  <A extends any[], B>(fn: NAryF<A, B>): NAryF<A, B>
-  <A extends any[], B, C>(fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, C>
-  <A extends any[], B, C, D>(fn3: UnAryF<C, D>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, D>
-  <A extends any[], B, C, D, E>(fn4: UnAryF<D, E>, fn3: UnAryF<C, D>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, E>
-  <A extends any[], B, C, D, E, F>(fn5: UnAryF<D, E>, fn4: UnAryF<C, D>, fn3: UnAryF<B, C>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, F>
+  (): typeof asIs
+  <A extends any[], B>(fn1?: NAryF<A, B>): NAryF<A, B>
+  <A extends any[], B, C>(fn2?: UnaryF<B, C>, fn1?: NAryF<A, B>): NAryF<A, C>
+  <A extends any[], B, C, D>(fn3?: UnaryF<C, D>, fn2?: UnaryF<B, C>, fn1?: NAryF<A, B>): NAryF<A, D>
+  <A extends any[], B, C, D, E>(fn4?: UnaryF<D, E>, fn3?: UnaryF<C, D>, fn2?: UnaryF<B, C>, fn1?: NAryF<A, B>): NAryF<A, E>
   // eslint-disable-next-line max-len
-  <A extends any[], B, C, D, E, F, G>(fn6: UnAryF<E, F>, fn5: UnAryF<D, E>, fn4: UnAryF<C, D>, fn3: UnAryF<B, C>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, G>
+  <A extends any[], B, C, D, E, F>(fn5?: UnaryF<D, E>, fn4?: UnaryF<C, D>, fn3?: UnaryF<B, C>, fn2?: UnaryF<B, C>, fn1?: NAryF<A, B>): NAryF<A, F>
   // eslint-disable-next-line max-len
-  <A extends any[], B, C, D, E, F, G, H>(fn7: UnAryF<F, G>, fn6: UnAryF<E, F>, fn5: UnAryF<D, E>, fn4: UnAryF<C, D>, fn3: UnAryF<B, C>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, H>
+  <A extends any[], B, C, D, E, F, G>(fn6?: UnaryF<E, F>, fn5?: UnaryF<D, E>, fn4?: UnaryF<C, D>, fn3?: UnaryF<B, C>, fn2?: UnaryF<B, C>, fn1?: NAryF<A, B>): NAryF<A, G>
   // eslint-disable-next-line max-len
-  <A extends any[], B, C, D, E, F, G, H, I>(fn8: UnAryF<G, H>, fn7: UnAryF<F, G>, fn6: UnAryF<E, F>, fn5: UnAryF<D, E>, fn4: UnAryF<C, D>, fn3: UnAryF<B, C>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, I>
+  <A extends any[], B, C, D, E, F, G, H>(fn7?: UnaryF<F, G>, fn6?: UnaryF<E, F>, fn5?: UnaryF<D, E>, fn4?: UnaryF<C, D>, fn3?: UnaryF<B, C>, fn2?: UnaryF<B, C>, fn1?: NAryF<A, B>): NAryF<A, H>
   // eslint-disable-next-line max-len
-  <A extends any[], B, C, D, E, F, G, H, I, J>(fn9: UnAryF<H, I>, fn8: UnAryF<G, H>, fn7: UnAryF<F, G>, fn6: UnAryF<E, F>, fn5: UnAryF<D, E>, fn4: UnAryF<C, D>, fn3: UnAryF<B, C>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, J>
+  <A extends any[], B, C, D, E, F, G, H, I>(fn8?: UnaryF<G, H>, fn7?: UnaryF<F, G>, fn6?: UnaryF<E, F>, fn5?: UnaryF<D, E>, fn4?: UnaryF<C, D>, fn3?: UnaryF<B, C>, fn2?: UnaryF<B, C>, fn1?: NAryF<A, B>): NAryF<A, I>
   // eslint-disable-next-line max-len
-  <A extends any[], B, C, D, E, F, G, H, I, J, K>(fn10: UnAryF<I, J>, fn9: UnAryF<H, I>, fn8: UnAryF<G, H>, fn7: UnAryF<F, G>, fn6: UnAryF<E, F>, fn5: UnAryF<D, E>, fn4: UnAryF<C, D>, fn3: UnAryF<B, C>, fn2: UnAryF<B, C>, fn: NAryF<A, B>): NAryF<A, K>
+  <A extends any[], B, C, D, E, F, G, H, I, J>(fn9?: UnaryF<H, I>, fn8?: UnaryF<G, H>, fn7?: UnaryF<F, G>, fn6?: UnaryF<E, F>, fn5?: UnaryF<D, E>, fn4?: UnaryF<C, D>, fn3?: UnaryF<B, C>, fn2?: UnaryF<B, C>, fn1?: NAryF<A, B>): NAryF<A, J>
+  // eslint-disable-next-line max-len
+  <A extends any[], B, C, D, E, F, G, H, I, J, K>(fn10?: UnaryF<I, J>, fn9?: UnaryF<H, I>, fn8?: UnaryF<G, H>, fn7?: UnaryF<F, G>, fn6?: UnaryF<E, F>, fn5?: UnaryF<D, E>, fn4?: UnaryF<C, D>, fn3?: UnaryF<B, C>, fn2?: UnaryF<B, C>, fn1?: NAryF<A, B>): NAryF<A, K>
 }
 export const compose: HPCompose = composeR
 export const pipe: HPPipe = pipeL

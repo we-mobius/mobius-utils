@@ -1,10 +1,11 @@
-import { isArray, isPlainObject, isFunction } from '../../internal'
+import { isArray, isPlainObject, isFunction } from '../../internal/base'
 import { looseCurryN } from '../../functional'
 import { isMutator } from '../particles'
 import { Data, Mutation, isData, isMutation, isAtom } from '../atoms'
 import { mutationToDataS, dataToMutationS } from './transform.helpers'
 
 import type { Mutator } from '../particles'
+import type { DataLike, MutationLike } from '../atoms'
 import type { ReplayDataMediator, ReplayMutationMediator } from '../mediators'
 
 interface BatchCreateOptions {
@@ -21,9 +22,9 @@ const forceWrapToData = <V>(item: V): Data<V> => Data.of(item)
 
 interface IWrapToData {
   <V>(item: Data<V>): Data<V>
-  <V>(item: ReplayDataMediator<Data<V>>): ReplayDataMediator<Data<V>>
+  <V>(item: ReplayDataMediator<V>): ReplayDataMediator<V>
   <P, C>(item: Mutation<P, C>): Data<C>
-  <P, C>(item: ReplayMutationMediator<Mutation<P, C>>): ReplayDataMediator<Data<C>>
+  <P, C>(item: ReplayMutationMediator<P, C>): ReplayDataMediator<C>
   <V>(item: V): Data<V>
 }
 /**
@@ -38,7 +39,7 @@ const wrapToData: IWrapToData = (item: any): any => isData(item) ? item : (isMut
  */
 export const createDataInArray = <V>(
   arr: V[], options: BatchCreateOptions = DEFAULT_BATCH_CREATE_OPTIONS
-): Array<Data<any> | ReplayDataMediator<Data<any>>> => {
+): Array<DataLike<any>> => {
   if (!isArray(arr)) {
     throw new TypeError('"arr" is expected to be type of "Array".')
   }
@@ -57,7 +58,7 @@ export const createDataInArray_ = looseCurryN(1, createDataInArray)
  */
 export const createDataInObject = <V>(
   obj: Record<string, V>, options: BatchCreateOptions = DEFAULT_BATCH_CREATE_OPTIONS
-): Record<string, Data<any> | ReplayDataMediator<Data<any>>> => {
+): Record<string, DataLike<any>> => {
   if (!isPlainObject(obj)) {
     throw new TypeError('"obj" is expected to be type of "PlainObjcet".')
   }
@@ -82,9 +83,9 @@ const forceWrapToMutation = <V>(item: V): Mutation<any, V> => Mutation.of(() => 
 
 interface IWrapToMutation {
   <V>(item: Data<V>): Mutation<any, V>
-  <V>(item: ReplayDataMediator<Data<V>>): ReplayMutationMediator<Mutation<any, V>>
+  <V>(item: ReplayDataMediator<V>): ReplayMutationMediator<any, V>
   <P, C>(item: Mutation<P, C>): Mutation<P, C>
-  <P, C>(item: ReplayMutationMediator<Mutation<P, C>>): ReplayMutationMediator<Mutation<P, C>>
+  <P, C>(item: ReplayMutationMediator<P, C>): ReplayMutationMediator<P, C>
   <P, C>(item: Mutator<P, C>): Mutation<P, C>
   <P, C>(item: (prev?: P, cur?: C, ...args: any[]) => C): Mutation<P, C>
   <V>(item: V): Mutation<any, V>
@@ -113,7 +114,7 @@ const wrapToMutation: IWrapToMutation = (item: any): any => {
  */
 export const createMutationInArray = <V>(
   arr: V[], options: BatchCreateOptions = DEFAULT_BATCH_CREATE_OPTIONS
-): Array<Mutation<any, any> | ReplayMutationMediator<Mutation<any, any>>> => {
+): Array<MutationLike<any, any>> => {
   if (!isArray(arr)) {
     throw new TypeError('"arr" is expected to be type of "Array".')
   }
@@ -131,7 +132,7 @@ export const createMutationInArray_ = looseCurryN(1, createMutationInArray)
  */
 export const createMutationInObject = <V>(
   obj: Record<string, V>, options: BatchCreateOptions = DEFAULT_BATCH_CREATE_OPTIONS
-): Record<string, Mutation<any, any> | ReplayMutationMediator<Mutation<any, any>>> => {
+): Record<string, MutationLike<any, any>> => {
   if (!isPlainObject(obj)) {
     throw new TypeError('"obj" is expected to be type of "PlainObjcet"')
   }
@@ -156,9 +157,9 @@ const forceWrapToAtom = forceWrapToData
 
 interface IWrapToAtom {
   <V>(item: V): Data<V>
-  <V>(item: ReplayDataMediator<Data<V>>): ReplayDataMediator<Data<V>>
+  <V>(item: ReplayDataMediator<V>): ReplayDataMediator<V>
   <P, C>(item: Mutation<P, C>): Mutation<P, C>
-  <P, C>(item: ReplayMutationMediator<Mutation<P, C>>): ReplayMutationMediator<Mutation<P, C>>
+  <P, C>(item: ReplayMutationMediator<P, C>): ReplayMutationMediator<P, C>
   <P, C>(item: Mutator<P, C>): Mutation<P, C>
   <P, C>(item: (prev?: P, cur?: C, ...args: any[]) => C): Mutation<P, C>
   <V>(item: V): Data<V>
@@ -185,7 +186,7 @@ const wrapToAtom: IWrapToAtom = (item: any): any => {
  */
 export const createAtomInArray = <V>(
   arr: V[], options: BatchCreateOptions = DEFAULT_BATCH_CREATE_OPTIONS
-): Array<Data<any> | ReplayDataMediator<Data<any>> | Mutation<any, any> | ReplayMutationMediator<Mutation<any, any>>> => {
+): Array<DataLike<any> | MutationLike<any, any>> => {
   if (!isArray(arr)) {
     throw new TypeError('"arr" is expected to be type of "Array".')
   }
@@ -204,7 +205,7 @@ export const createAtomInArray_ = looseCurryN(1, createAtomInArray)
  */
 export const createAtomInObject = <V>(
   obj: Record<string, V>, options: BatchCreateOptions = DEFAULT_BATCH_CREATE_OPTIONS
-): Record<string, Data<any> | ReplayDataMediator<Data<any>> | Mutation<any, any> | ReplayMutationMediator<Mutation<any, any>>> => {
+): Record<string, DataLike<any> | MutationLike<any, any>> => {
   if (!isPlainObject(obj)) {
     throw new TypeError('"obj" is expected to be type of "PlainObject".')
   }

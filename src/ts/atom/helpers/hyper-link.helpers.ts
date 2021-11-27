@@ -3,60 +3,64 @@ import { pipeAtom, composeAtom } from './normal-link.helpers'
 import { tweenAtoms } from './tween-link.helpers'
 import { liftAtom } from './lift-link.helpers'
 
-import type { Data, Mutation } from '../atoms'
-import type { DataMediator, MutationMediator } from '../mediators'
+import type { AtomLike } from '../atoms'
 
-type ValidAtom = Data<any> | Mutation<any, any> | DataMediator<Data<any>> | MutationMediator<Mutation<any, any>>
-
-interface IHyperPipeAtom {
-  (...atoms: ValidAtom[]): typeof atoms
-  (...atoms: [ValidAtom[]]): typeof atoms[0]
-}
-
-export const binaryHyperPipeAtom: IHyperPipeAtom = (...args: any[]): any => {
-  if (args.length === 1 && isArray(args[0])) {
-    args = args[0]
+export const binaryHyperPipeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
+  let _atoms: AtomLike[]
+  if (args.length === 1 && isArray<AtomLike>(args[0])) {
+    _atoms = args[0]
+  } else {
+    _atoms = args as AtomLike[]
   }
+
   // 只取前两项
-  let atoms = args.slice(0, 2).map(liftAtom) as any[]
+  let atoms = _atoms.slice(0, 2).map<AtomLike>(liftAtom)
   atoms = tweenAtoms(atoms)
   pipeAtom(atoms)
-  return atoms
+  return atoms as T
 }
 
-interface IHyperComposeAtom {
-  (...atoms: ValidAtom[]): typeof atoms
-  (...atoms: [ValidAtom[]]): typeof atoms[0]
-}
-export const binaryHyperComposeAtom: IHyperComposeAtom = (...args: any[]): any => {
-  if (args.length === 1 && isArray(args[0])) {
-    args = args[0]
+export const binaryHyperComposeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
+  let _atoms: AtomLike[]
+  if (args.length === 1 && isArray<AtomLike>(args[0])) {
+    _atoms = args[0]
+  } else {
+    _atoms = args as AtomLike[]
   }
+
   // 只取最后两项
-  let atoms = args.slice(-2).map(liftAtom) as any[]
+  let atoms = _atoms.slice(-2).map<AtomLike>(liftAtom)
   atoms = tweenAtoms(atoms)
   composeAtom(atoms)
-  return atoms
+  return atoms as T
 }
 
-export const nAryHyperPipeAtom: IHyperPipeAtom = (...args: any[]): any => {
-  if (args.length === 1 && isArray(args[0])) {
-    args = args[0]
+export const nAryHyperPipeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
+  let _atoms: AtomLike[]
+  if (args.length === 1 && isArray<AtomLike>(args[0])) {
+    _atoms = args[0]
+  } else {
+    _atoms = args as AtomLike[]
   }
-  let atoms = args.map(liftAtom) as any[]
+
+  let atoms = _atoms.map<AtomLike>(liftAtom)
   atoms = tweenAtoms(atoms)
   pipeAtom(atoms)
-  return atoms
+  return atoms as T
 }
 export const hyperPipeAtom = nAryHyperPipeAtom
 
-export const nAryHyperComposeAtom: IHyperComposeAtom = (...args: any[]): any => {
-  if (args.length === 1 && isArray(args[0])) {
-    args = args[0]
+export const nAryHyperComposeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
+  let _atoms: AtomLike[]
+  if (args.length === 1 && isArray<AtomLike>(args[0])) {
+    _atoms = args[0]
+  } else {
+    _atoms = args as AtomLike[]
   }
-  let atoms = args.map(liftAtom) as any[]
+
+  let atoms = _atoms.map<AtomLike>(liftAtom)
   atoms = tweenAtoms(atoms)
   composeAtom(atoms)
-  return atoms
+  return atoms as T
 }
 export const hyperComposeAtom = nAryHyperComposeAtom

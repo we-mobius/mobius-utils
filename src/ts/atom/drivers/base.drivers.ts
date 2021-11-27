@@ -4,8 +4,8 @@ import { isAtom, Data } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { binaryTweenPipeAtom } from '../helpers'
 
-import type { Mutation } from '../atoms'
-import type { DataMediator, MutationMediator, ReplayDataMediator, ReplayMutationMediator } from '../mediators'
+import type { AtomLike, Mutation } from '../atoms'
+import type { ReplayDataMediator, ReplayMutationMediator } from '../mediators'
 
 export interface DriverOptions {
   [key: string]: any
@@ -141,10 +141,9 @@ const formatDriverInterfaces = (driverInterfaces: DriverInterfaces): DriverInter
   return { inputs: { ...inputs }, outputs: { ...outputs } }
 }
 
-type ValidAtom = Data<any> | Mutation<any, any> | DataMediator<Data<any>> | MutationMediator<Mutation<any, any>>
 interface IConnectDriverInterfaces {
-  (up: ValidAtom, down: any): void
-  (up: any, down: ValidAtom): void
+  (up: AtomLike, down: any): void
+  (up: any, down: AtomLike): void
   (up: Record<string, any>, down: Record<string, any>): void
   (up: any[], down: any[]): void
 }
@@ -165,7 +164,7 @@ export const connectDriverInterfaces: IConnectDriverInterfaces = (up: any, down:
     if (isArray(down)) {
       down.forEach(i => {
         if (isAtom(i)) {
-          binaryTweenPipeAtom(normalize(up), i as ValidAtom)
+          binaryTweenPipeAtom(normalize(up), i as AtomLike)
         } else {
           // do nothing
         }
@@ -175,9 +174,9 @@ export const connectDriverInterfaces: IConnectDriverInterfaces = (up: any, down:
     }
   } else if (isAtom(up) && isAtom(down)) {
     // downstream atom do not need to be replayable
-    binaryTweenPipeAtom(normalize(up), down as ValidAtom)
+    binaryTweenPipeAtom(normalize(up), down as AtomLike)
   } else if (!isAtom(up) && isAtom(down)) {
-    binaryTweenPipeAtom(normalize(up), down as ValidAtom)
+    binaryTweenPipeAtom(normalize(up), down as AtomLike)
   } else if (isPlainObject(up) && isPlainObject(down)) {
     Object.entries(up).forEach(([key, value]) => {
       if (!isNil(down[key])) {

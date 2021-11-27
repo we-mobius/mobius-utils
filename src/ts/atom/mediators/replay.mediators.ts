@@ -1,12 +1,21 @@
 import { isObject, isNumber } from '../../internal/base'
 import { curry } from '../../functional'
 
-import { isAtom, Data, isData, Mutation, isMutation, Subscription } from '../atoms'
+import {
+  isAtom, Data, isData, Mutation, isMutation, Subscription,
+  DEFAULT_SUBSCRIBE_OPTIONS
+} from '../atoms'
 import {
   isMediator,
   DataMediator, MutationMediator
 } from './base.mediators'
 
+import type { Datar, Mutator } from '../particles'
+import type {
+  SubscribeOptions,
+  ValueConsumer, DatarConsumer, DataConsumer, DataSubscription,
+  TransformationConsumer, MutatorConsumer, MutationConsumer, MutationSubscription
+} from '../atoms'
 import type { MediatorTypeMaker, MediatorType } from './base.mediators'
 
 /******************************************************************************************************
@@ -43,11 +52,8 @@ export const DEFAULT_REPLAY_MEDIATOR_OPTIONS: Required<ReplayMediatorOptions> = 
 }
 
 export type ReplayMediatorUnion
-  = ReplayDataMediator<Data<any>>
-  | ReplayMutationMediator<Mutation<any, any>>
-
-type SetItem<S extends Set<any>> = S extends Set<infer T> ? T : never
-type ConsumerTypeOf<D extends Data<any> | Mutation<any, any>> = SetItem<D['consumers']>
+  = ReplayDataMediator<any>
+  | ReplayMutationMediator<any, any>
 
 /******************************************************************************************************
  *
@@ -58,13 +64,15 @@ type ConsumerTypeOf<D extends Data<any> | Mutation<any, any>> = SetItem<D['consu
 /**
  *
  */
-export class ReplayDataMediator<I extends Data<any>> extends DataMediator<I> {
-  private _history: Array<I['datar']>
-  private readonly _consumers: I['consumers']
+export class ReplayDataMediator<V> extends DataMediator<V> {
+  private _history: Array<Datar<V>>
+  private readonly _consumers: Set<DatarConsumer<V>>
   private readonly _subscription: Subscription
   private _options: Required<ReplayMediatorOptions>
 
-  constructor (atom: I, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS) {
+  constructor (
+    atom: Data<V>, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS
+  ) {
     super(atom)
 
     this._options = { ...DEFAULT_REPLAY_MEDIATOR_OPTIONS, ...options }
@@ -74,7 +82,7 @@ export class ReplayDataMediator<I extends Data<any>> extends DataMediator<I> {
     const { replayTime } = this._options
 
     this.setReplayTime(replayTime)
-    this._subscription = atom.subscribe((val: I['datar']) => {
+    this._subscription = atom.subscribe((val: Datar<V>) => {
       this._history.push(val)
       this._setHistory()
     })
@@ -85,7 +93,7 @@ export class ReplayDataMediator<I extends Data<any>> extends DataMediator<I> {
 
   get isReplayMediator (): true { return true }
 
-  static of<I extends Data<any>>(atom: I, options?: ReplayMediatorOptions): ReplayDataMediator<I>
+  static of<V>(atom: Data<V>, options?: ReplayMediatorOptions): ReplayDataMediator<V>
   static of<I extends ReplayMediatorUnion>(atom: I, options?: ReplayMediatorOptions): I
   static of<I extends Data<any> | ReplayMediatorUnion> (
     atom: I, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS
@@ -132,7 +140,7 @@ export class ReplayDataMediator<I extends Data<any>> extends DataMediator<I> {
     this._setHistory()
   }
 
-  replayTo (consumer: ConsumerTypeOf<I>): void {
+  replayTo (consumer: DatarConsumer<V>): void {
     this._history.forEach(val => {
       consumer(val, this._atom)
     })
@@ -140,32 +148,33 @@ export class ReplayDataMediator<I extends Data<any>> extends DataMediator<I> {
 
   replay (): void {
     this._consumers.forEach((consumer) => {
-      this.replayTo(consumer as ConsumerTypeOf<I>)
+      this.replayTo(consumer)
     })
   }
 
-  subscribe (...args: Parameters<I['subscribe']>): ReturnType<I['subscribe']> {
-    const [consumer, options] = args
+  subscribe (
+    consumer: DataConsumer<V>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS
+  ): DataSubscription<V> {
     const subscription = this._atom.subscribe(consumer, options)
     const { proxyConsumer } = subscription
     this._consumers.add(proxyConsumer)
-    this.replayTo(proxyConsumer as ConsumerTypeOf<I>)
-    return subscription as ReturnType<I['subscribe']>
+    this.replayTo(proxyConsumer)
+    return subscription
   }
 
-  subscribeValue (...args: Parameters<I['subscribeValue']>): ReturnType<I['subscribeValue']> {
-    const [consumer, options] = args
+  subscribeValue (
+    consumer: ValueConsumer<V>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS
+  ): DataSubscription<V> {
     const subscription = this._atom.subscribeValue(consumer, options)
     const { proxyConsumer } = subscription
     this._consumers.add(proxyConsumer)
-    this.replayTo(proxyConsumer as ConsumerTypeOf<I>)
-    return subscription as ReturnType<I['subscribeValue']>
+    this.replayTo(proxyConsumer)
+    return subscription
   }
 
   // !!! important
-  beObservedBy (...args: Parameters<I['beObservedBy']>): ReturnType<I['beObservedBy']> {
-    const [mutation] = args
-    return mutation.observe(this as unknown as Data<any>) as ReturnType<I['beObservedBy']>
+  beObservedBy (mutation: Mutation<V, any>): DataSubscription<V> {
+    return mutation.observe(this as unknown as Data<any>)
   }
 
   release (): void {
@@ -183,13 +192,15 @@ export class ReplayDataMediator<I extends Data<any>> extends DataMediator<I> {
 /**
  *
  */
-export class ReplayMutationMediator<I extends Mutation<any, any>> extends MutationMediator<I> {
-  private _history: Array<I['mutator']>
-  private readonly _consumers: I['consumers']
+export class ReplayMutationMediator<P, C> extends MutationMediator<P, C> {
+  private _history: Array<Mutator<P, C>>
+  private readonly _consumers: Set<MutatorConsumer<P, C>>
   private readonly _subscription: Subscription
   private _options: Required<ReplayMediatorOptions>
 
-  constructor (atom: I, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS) {
+  constructor (
+    atom: Mutation<P, C>, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS
+  ) {
     super(atom)
 
     this._options = { ...DEFAULT_REPLAY_MEDIATOR_OPTIONS, ...options }
@@ -199,7 +210,7 @@ export class ReplayMutationMediator<I extends Mutation<any, any>> extends Mutati
     const { replayTime } = this._options
 
     this.setReplayTime(replayTime)
-    this._subscription = atom.subscribe((val: I['mutator']) => {
+    this._subscription = atom.subscribe((val: Mutator<P, C>) => {
       this._history.push(val)
       this._setHistory()
     })
@@ -210,7 +221,7 @@ export class ReplayMutationMediator<I extends Mutation<any, any>> extends Mutati
 
   get isReplayMediator (): true { return true }
 
-  static of<I extends Mutation<any, any>>(atom: I, options?: ReplayMediatorOptions): ReplayMutationMediator<I>
+  static of<P, C>(atom: Mutation<P, C>, options?: ReplayMediatorOptions): ReplayMutationMediator<P, C>
   static of<I extends ReplayMediatorUnion>(atom: I, options?: ReplayMediatorOptions): I
   static of<I extends Mutation<any, any> | ReplayMediatorUnion> (
     atom: I, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS
@@ -257,7 +268,7 @@ export class ReplayMutationMediator<I extends Mutation<any, any>> extends Mutati
     this._setHistory()
   }
 
-  replayTo (consumer: ConsumerTypeOf<I>): void {
+  replayTo (consumer: MutatorConsumer<P, C>): void {
     this._history.forEach((val) => {
       consumer(val, this._atom)
     })
@@ -265,32 +276,33 @@ export class ReplayMutationMediator<I extends Mutation<any, any>> extends Mutati
 
   replay (): void {
     this._consumers.forEach((consumer) => {
-      this.replayTo(consumer as ConsumerTypeOf<I>)
+      this.replayTo(consumer)
     })
   }
 
-  subscribe (...args: Parameters<I['subscribe']>): ReturnType<I['subscribe']> {
-    const [consumer, options] = args
+  subscribe (
+    consumer: MutationConsumer<P, C>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS
+  ): MutationSubscription<P, C> {
     const subscription = this._atom.subscribe(consumer, options)
     const { proxyConsumer } = subscription
     this._consumers.add(proxyConsumer)
-    this.replayTo(proxyConsumer as ConsumerTypeOf<I>)
-    return subscription as ReturnType<I['subscribe']>
+    this.replayTo(proxyConsumer)
+    return subscription
   }
 
-  subscribeTransformation (...args: Parameters<I['subscribeTransformation']>): ReturnType<I['subscribeTransformation']> {
-    const [consumer, options] = args
+  subscribeTransformation (
+    consumer: TransformationConsumer<P, C>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS
+  ): MutationSubscription<P, C> {
     const subscription = this._atom.subscribeTransformation(consumer, options)
     const { proxyConsumer } = subscription
     this._consumers.add(proxyConsumer)
-    this.replayTo(proxyConsumer as ConsumerTypeOf<I>)
-    return subscription as ReturnType<I['subscribeTransformation']>
+    this.replayTo(proxyConsumer)
+    return subscription
   }
 
   // !!! important
-  beObservedBy (...args: Parameters<I['beObservedBy']>): ReturnType<I['beObservedBy']> {
-    const [mutation] = args
-    return mutation.observe(this as unknown as Mutation<any, any>) as ReturnType<I['beObservedBy']>
+  beObservedBy (data: Data<C>): MutationSubscription<P, C> {
+    return data.observe(this as unknown as Mutation<any, any>)
   }
 
   release (): void {
@@ -318,8 +330,8 @@ export class ReplayMediator {
 
   get isReplayMediator (): true { return true }
 
-  static of<I extends Data<any>> (atom: I, options?: ReplayMediatorOptions): ReplayDataMediator<I>
-  static of<I extends Mutation<any, any>> (atom: I, options?: ReplayMediatorOptions): ReplayMutationMediator<I>
+  static of<V> (atom: Data<V>, options?: ReplayMediatorOptions): ReplayDataMediator<V>
+  static of<P, C> (atom: Mutation<P, C>, options?: ReplayMediatorOptions): ReplayMutationMediator<P, C>
   static of<I extends ReplayMediatorUnion> (atom: I, options?: ReplayMediatorOptions): I
   static of<I extends Data<any> | Mutation<any, any> | ReplayMediatorUnion> (
     atom: I, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS
@@ -348,14 +360,14 @@ export class ReplayMediator {
 }
 
 interface IReplayLatestPartial {
-  <I extends Data<any>>(atom: I): ReplayDataMediator<I>
-  <I extends Mutation<any, any>>(atom: I): ReplayMutationMediator<I>
+  <V>(atom: Data<V>): ReplayDataMediator<V>
+  <P, C>(atom: Mutation<P, C>): ReplayMutationMediator<P, C>
   <I extends ReplayMediatorUnion>(atom: I): I
 }
 interface IReplayLatest {
   (replayTime: number): IReplayLatestPartial
-  <I extends Data<any>>(replayTime: number, atom: I): ReplayDataMediator<I>
-  <I extends Mutation<any, any>>(replayTime: number, atom: I): ReplayMutationMediator<I>
+  <V>(replayTime: number, atom: Data<V>): ReplayDataMediator<V>
+  <P, C>(replayTime: number, atom: Mutation<P, C>): ReplayMutationMediator<P, C>
   <I extends ReplayMediatorUnion> (replayTime: number, atom: I): I
 }
 /**

@@ -1,6 +1,6 @@
 import { isFunction, isPlainObject } from '../../internal'
 import { looseCurryN } from '../../functional'
-import { Mutation, isMutation, Data, isData, isAtom } from '../atoms'
+import { Mutation, isMutation, Data, isData, isAtomLike } from '../atoms'
 import { isReplayMediator, replayWithLatest } from '../mediators'
 
 import type { MutatorTransformation, LiftBothTransformation, LiftLeftTransformation, LiftRightTransformation } from '../particles'
@@ -9,7 +9,7 @@ import type { ReplayDataMediator, ReplayMutationMediator } from '../mediators'
 
 interface IMutationToDataS {
   <P, C>(mutation: Mutation<P, C>, options?: DataOptions): Data<C>
-  <P, C>(mutation: ReplayMutationMediator<Mutation<P, C>>, options?: DataOptions): ReplayDataMediator<Data<C>>
+  <P, C>(mutation: ReplayMutationMediator<P, C>, options?: DataOptions): ReplayDataMediator<C>
 }
 /**
  * @param mutation Mutation
@@ -49,17 +49,17 @@ interface IMutationToData {
     transformation: LiftRightTransformation<C, C2>, mutation: Mutation<P, C>, options?: MutationOptions<P, C>
   ): Data<C2>
   <P, C, C2>(
-    transformation: MutatorTransformation<C, C2>, mutation: ReplayMutationMediator<Mutation<P, C>>, options?: MutationOptions<P, C>
-  ): ReplayDataMediator<Data<C2>>
+    transformation: MutatorTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<P, C>
+  ): ReplayDataMediator<C2>
   <P, C, C2>(
-    transformation: LiftBothTransformation<C, C2>, mutation: ReplayMutationMediator<Mutation<P, C>>, options?: MutationOptions<P, C>
-  ): ReplayDataMediator<Data<C2>>
+    transformation: LiftBothTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<P, C>
+  ): ReplayDataMediator<C2>
   <P, C, C2>(
-    transformation: LiftLeftTransformation<C, C2>, mutation: ReplayMutationMediator<Mutation<P, C>>, options?: MutationOptions<P, C>
-  ): ReplayDataMediator<Data<C2>>
+    transformation: LiftLeftTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<P, C>
+  ): ReplayDataMediator<C2>
   <P, C, C2>(
-    transformation: LiftRightTransformation<C, C2>, mutation: ReplayMutationMediator<Mutation<P, C>>, options?: MutationOptions<P, C>
-  ): ReplayDataMediator<Data<C2>>
+    transformation: LiftRightTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<P, C>
+  ): ReplayDataMediator<C2>
 }
 /**
  * @param transform Function
@@ -78,9 +78,9 @@ export const mutationToData: IMutationToData = (transformation: any, mutation: a
     throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
 
-  const _data = Data.empty()
-  const _mutation = Mutation.ofLift(transformation, options)
-  const _data2 = Data.empty()
+  const _data = Data.empty<any>()
+  const _mutation = Mutation.ofLift<any, any>(transformation, options)
+  const _data2 = Data.empty<any>()
 
   // mutation -> _data -> _mutation -> _data2
   _data2.observe(_mutation)
@@ -109,17 +109,17 @@ interface IDataToData {
     transformation: LiftRightTransformation<V1, V2>, data: Data<V1>, options?: MutationOptions<V1, V2>
   ): Data<V2>
   <V1, V2>(
-    transformation: MutatorTransformation<V1, V2>, data: ReplayDataMediator<Data<V1>>, options?: MutationOptions<V1, V2>
-  ): ReplayDataMediator<Data<V2>>
+    transformation: MutatorTransformation<V1, V2>, data: ReplayDataMediator<V1>, options?: MutationOptions<V1, V2>
+  ): ReplayDataMediator<V2>
   <V1, V2>(
-    transformation: LiftBothTransformation<V1, V2>, data: ReplayDataMediator<Data<V1>>, options?: MutationOptions<V1, V2>
-  ): ReplayDataMediator<Data<V2>>
+    transformation: LiftBothTransformation<V1, V2>, data: ReplayDataMediator<V1>, options?: MutationOptions<V1, V2>
+  ): ReplayDataMediator<V2>
   <V1, V2>(
-    transformation: LiftLeftTransformation<V1, V2>, data: ReplayDataMediator<Data<V1>>, options?: MutationOptions<V1, V2>
-  ): ReplayDataMediator<Data<V2>>
+    transformation: LiftLeftTransformation<V1, V2>, data: ReplayDataMediator<V1>, options?: MutationOptions<V1, V2>
+  ): ReplayDataMediator<V2>
   <V1, V2>(
-    transformation: LiftRightTransformation<V1, V2>, data: ReplayDataMediator<Data<V1>>, options?: MutationOptions<V1, V2>
-  ): ReplayDataMediator<Data<V2>>
+    transformation: LiftRightTransformation<V1, V2>, data: ReplayDataMediator<V1>, options?: MutationOptions<V1, V2>
+  ): ReplayDataMediator<V2>
 }
 /**
  * @param transform Function
@@ -138,8 +138,8 @@ export const dataToData: IDataToData = (transformation: any, data: any, options:
     throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
 
-  const _mutation = Mutation.ofLift(transformation, options)
-  const _data = Data.empty()
+  const _mutation = Mutation.ofLift<any, any>(transformation, options)
+  const _data = Data.empty<any>()
 
   // data -> _mutation -> _data
   _data.observe(_mutation)
@@ -164,8 +164,8 @@ export const atomToData: IAtomToData = (transformation: any, atom: any, options:
   if (!isFunction(transformation)) {
     throw (new TypeError('"transform" is expected to be type of "Function".'))
   }
-  if (!isAtom(atom)) {
-    throw (new TypeError('"atom" is expected to be type of "Mutation" | "Data".'))
+  if (!isAtomLike(atom)) {
+    throw (new TypeError('"atom" is expected to be type of "AtomLike".'))
   }
 
   if (isMutation(atom)) {
@@ -180,7 +180,7 @@ export const atomToData_ = looseCurryN(2, atomToData)
 
 interface IDataToMutationS {
   <V>(data: Data<V>, options?: MutationOptions<V, V>): Mutation<V, V>
-  <V>(data: ReplayDataMediator<Data<V>>, options?: MutationOptions<V, V>): ReplayMutationMediator<Mutation<V, V>>
+  <V>(data: ReplayDataMediator<V>, options?: MutationOptions<V, V>): ReplayMutationMediator<V, V>
 }
 /**
  * @param data Data
@@ -214,17 +214,17 @@ interface IDataToMutation {
   <V, V2>(transformation: LiftLeftTransformation<V, V2>, data: Data<V>, options?: MutationOptions<V, V2>): Mutation<V, V2>
   <V, V2>(transformation: LiftRightTransformation<V, V2>, data: Data<V>, options?: MutationOptions<V, V2>): Mutation<V, V2>
   <V, V2>(
-    transformation: MutatorTransformation<V, V2>, data: ReplayDataMediator<Data<V>>, options?: MutationOptions<V, V2>
-  ): ReplayMutationMediator<Mutation<V, V2>>
+    transformation: MutatorTransformation<V, V2>, data: ReplayDataMediator<V>, options?: MutationOptions<V, V2>
+  ): ReplayMutationMediator<V, V2>
   <V, V2>(
-    transformation: LiftBothTransformation<V, V2>, data: ReplayDataMediator<Data<V>>, options?: MutationOptions<V, V2>
-  ): ReplayMutationMediator<Mutation<V, V2>>
+    transformation: LiftBothTransformation<V, V2>, data: ReplayDataMediator<V>, options?: MutationOptions<V, V2>
+  ): ReplayMutationMediator<V, V2>
   <V, V2>(
-    transformation: LiftLeftTransformation<V, V2>, data: ReplayDataMediator<Data<V>>, options?: MutationOptions<V, V2>
-  ): ReplayMutationMediator<Mutation<V, V2>>
+    transformation: LiftLeftTransformation<V, V2>, data: ReplayDataMediator<V>, options?: MutationOptions<V, V2>
+  ): ReplayMutationMediator<V, V2>
   <V, V2>(
-    transformation: LiftRightTransformation<V, V2>, data: ReplayDataMediator<Data<V>>, options?: MutationOptions<V, V2>
-  ): ReplayMutationMediator<Mutation<V, V2>>
+    transformation: LiftRightTransformation<V, V2>, data: ReplayDataMediator<V>, options?: MutationOptions<V, V2>
+  ): ReplayMutationMediator<V, V2>
 }
 /**
  * @param transformation Function
@@ -263,17 +263,17 @@ interface IMutationToMutation {
   <P, C, C2>(transformation: LiftRightTransformation<C, C2>, mutation: Mutation<P, C>, options?: MutationOptions<C, C2>): Mutation<C, C2>
 
   <P, C, C2>(
-    transformation: MutatorTransformation<C, C2>, mutation: ReplayMutationMediator<Mutation<P, C>>, options?: MutationOptions<C, C2>
-  ): ReplayMutationMediator<Mutation<C, C2>>
+    transformation: MutatorTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<C, C2>
+  ): ReplayMutationMediator<C, C2>
   <P, C, C2>(
-    transformation: LiftBothTransformation<C, C2>, mutation: ReplayMutationMediator<Mutation<P, C>>, options?: MutationOptions<C, C2>
-  ): ReplayMutationMediator<Mutation<C, C2>>
+    transformation: LiftBothTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<C, C2>
+  ): ReplayMutationMediator<C, C2>
   <P, C, C2>(
-    transformation: LiftLeftTransformation<C, C2>, mutation: ReplayMutationMediator<Mutation<P, C>>, options?: MutationOptions<C, C2>
-  ): ReplayMutationMediator<Mutation<C, C2>>
+    transformation: LiftLeftTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<C, C2>
+  ): ReplayMutationMediator<C, C2>
   <P, C, C2>(
-    transformation: LiftRightTransformation<C, C2>, mutation: ReplayMutationMediator<Mutation<P, C>>, options?: MutationOptions<C, C2>
-  ): ReplayMutationMediator<Mutation<C, C2>>
+    transformation: LiftRightTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<C, C2>
+  ): ReplayMutationMediator<C, C2>
 }
 /**
  * @param transformation Function
@@ -292,8 +292,8 @@ export const mutationToMutation: IMutationToMutation = (transformation: any, mut
     throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
 
-  const _data = Data.empty()
-  const _mutation = Mutation.ofLift(transformation, options)
+  const _data = Data.empty<any>()
+  const _mutation = Mutation.ofLift<any, any>(transformation, options)
 
   // mutation -> _data -> _mutation
   _mutation.observe(_data)
@@ -318,8 +318,8 @@ export const atomToMutation: IAtomToMutation = (transform: any, atom: any, optio
   if (!isFunction(transform)) {
     throw (new TypeError('"transform" is expected to be type of "Function".'))
   }
-  if (!isAtom(atom)) {
-    throw (new TypeError('"atom" is expected to be type of "Mutation" | "Data".'))
+  if (!isAtomLike(atom)) {
+    throw (new TypeError('"atom" is expected to be type of "AtomLike".'))
   }
 
   if (isMutation(atom)) {

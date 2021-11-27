@@ -1,7 +1,7 @@
 import { isString, isNumber, isArray, isPlainObject, isFunction } from '../../internal/base'
 import { looseCurryN } from '../../functional'
 import { TERMINATOR } from '../metas'
-import { Data, Mutation, isAtom, DEFAULT_MUTATION_OPTIONS } from '../atoms'
+import { Data, Mutation, isAtomLike, DEFAULT_MUTATION_OPTIONS } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 import { replayWithLatest } from '../mediators'
 
@@ -9,8 +9,7 @@ import type { Vacuo, Terminator } from '../metas'
 import type {
   MutatorOriginTransformationUnion
 } from '../particles'
-import type { MutationOptions } from '../atoms'
-import type { DataMediator, MutationMediator } from '../mediators'
+import type { MutationOptions, AtomLikeOfAny, AtomLikeOfOutput } from '../atoms'
 
 // S -> Single, M -> Multi
 
@@ -33,31 +32,39 @@ interface TacheLevelContexts {
 const DEFAULT_TACHE_OPTIONS: TacheOptions = {}
 const DEFAULT_TACHE_LEVEL_CONTEXTS: TacheLevelContexts = {}
 
-type PrepareOptions = (options: TacheOptions) => TacheOptions
-type PrepareTacheLevelContexts = () => TacheLevelContexts
-type PrepareInput = (tacheOptions: TacheOptions, tacheLevelContexts: TacheLevelContexts, sources: any) => any
-type PrepareMidpiece = (tacheOptions: TacheOptions, tacheLevelContexts: TacheLevelContexts, inputs: ReturnType<PrepareInput>) => any
-type PrepareOutput = (tacheOptions: TacheOptions, tacheLevelContexts: TacheLevelContexts, midpiece: ReturnType<PrepareMidpiece>) => any
-type connect = (tacheOptions: TacheOptions, tacheLevelContexts: TacheLevelContexts, pieces: [ReturnType<PrepareInput>, ReturnType<PrepareMidpiece>, ReturnType<PrepareOutput>]) => void
+type PrepareOptions<O extends TacheOptions = TacheOptions>
+  = (options: O) => O
+type PrepareTacheLevelContexts<TLC extends TacheLevelContexts = TacheLevelContexts>
+  = () => TLC
+type PrepareInput<O extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts, In = any>
+  = (tacheOptions: O, tacheLevelContexts: TLC, sources: any) => In
+type PrepareMidpiece<O extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts, In = any, Mid = any>
+  = (tacheOptions: O, tacheLevelContexts: TLC, inputs: In) => Mid
+type PrepareOutput<O extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts, Mid = any, Out = any>
+  = (tacheOptions: O, tacheLevelContexts: TLC, midpiece: Mid) => Out
+type connect<O extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts, In = any, Mid = any, Out = any>
+  = (tacheOptions: O, tacheLevelContexts: TLC, pieces: [In, Mid, Out]) => void
 
 const DEFAULT_PREPARE_OPTIONS: PrepareOptions = () => DEFAULT_TACHE_OPTIONS
 const DEFAULT_PREPARE_TACHE_LEVEL_CONTEXTS: PrepareTacheLevelContexts = () => DEFAULT_TACHE_LEVEL_CONTEXTS
 const DEFAULT_PREPARE_INPUT: PrepareInput = (tacheOptions, tacheLevelContexts, sources) => sources
-const DEFAULT_PREPARE_MIDPIECE: PrepareMidpiece = (tacheOptions, tacheLevelContexts, inputs) => Mutation.ofLiftBoth(any => any)
-const DEFAULT_PREPARE_OUTPUT: PrepareOutput = (tacheOptions, tacheLevelContexts, midpiece) => Data.empty()
+const DEFAULT_PREPARE_MIDPIECE: PrepareMidpiece = (tacheOptions, tacheLevelContexts, inputs) => Mutation.ofLiftBoth<any, any>(any => any)
+const DEFAULT_PREPARE_OUTPUT: PrepareOutput = (tacheOptions, tacheLevelContexts, midpiece) => Data.empty<any>()
 const DEFAULT_CONNET: connect = (tacheOptions, tacheLevelContexts, pieces) => {
   const [inputs, midpieces, outputs] = pieces
   pipeAtom(midpieces, outputs)
   binaryTweenPipeAtom(inputs, midpieces)
 }
 
-interface GeneralTacheCreateOptions {
-  prepareOptions?: PrepareOptions
-  prepareTacheLevelContexts?: PrepareTacheLevelContexts
-  prepareInput?: PrepareInput
-  prepareMidpiece?: PrepareMidpiece
-  prepareOutput?: PrepareOutput
-  connect?: connect
+interface GeneralTacheCreateOptions<
+  O extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts, In = any, Mid = any, Out = any
+> {
+  prepareOptions?: PrepareOptions<O>
+  prepareTacheLevelContexts?: PrepareTacheLevelContexts<TLC>
+  prepareInput?: PrepareInput<O, TLC, In>
+  prepareMidpiece?: PrepareMidpiece<O, TLC, In, Mid>
+  prepareOutput?: PrepareOutput<O, TLC, Mid, Out>
+  connect?: connect<O, TLC, In, Mid, Out>
 }
 
 const DEFAULT_GENERAL_TACHE_CREATE_OPTIONS: Required<GeneralTacheCreateOptions> = {
@@ -86,16 +93,18 @@ export const createGeneralTache = (
     throw (new TypeError('"tacheOptions" is expected to be type of "PlainObject".'))
   }
 
+  let preparedCreateOptions: Required<GeneralTacheCreateOptions>
+
   if (isFunction(createOptions)) {
-    createOptions = { ...DEFAULT_GENERAL_TACHE_CREATE_OPTIONS, prepareMidpiece: createOptions }
+    preparedCreateOptions = { ...DEFAULT_GENERAL_TACHE_CREATE_OPTIONS, prepareMidpiece: createOptions }
   } else {
-    createOptions = { ...DEFAULT_GENERAL_TACHE_CREATE_OPTIONS, ...createOptions }
+    preparedCreateOptions = { ...DEFAULT_GENERAL_TACHE_CREATE_OPTIONS, ...createOptions }
   }
 
   const {
     prepareOptions, prepareTacheLevelContexts,
     prepareInput, prepareMidpiece, prepareOutput, connect
-  } = createOptions as Required<GeneralTacheCreateOptions>
+  } = preparedCreateOptions
 
   const _tacheLevelContexts = prepareTacheLevelContexts()
   if (!isPlainObject(_tacheLevelContexts)) {
@@ -140,9 +149,7 @@ export const useGeneralTache_ = looseCurryN(3, useGeneralTache)
 /**
  *
  */
-type SSTache<P, C> = (
-  source: Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>,
-) => Data<C>
+type SSTache<P, C> = (source: AtomLikeOfOutput<P>) => Data<C>
 /**
  * @param { MutatorOriginTransformationUnion<P, C> } transformation
  * @param { MutationOptions<P, C> } options same as MutationOptions
@@ -161,16 +168,16 @@ export const createSSTache = <P, C>(
   const preparedOptions = { ...DEFAULT_MUTATION_OPTIONS, ...options }
 
   /**
-   * @param { Data<P> | DataMediator<Data<P>> | Mutation<P, C> | MutationMediator<Mutation<P, C>> } source
+   * @param { AtomLike } source
    * @return { Data<C> } Data
    */
   return source => {
-    if (!isAtom(source)) {
-      throw (new TypeError('"target" is expected to be type of "Atom".'))
+    if (!isAtomLike(source)) {
+      throw (new TypeError('"target" is expected to be type of "AtomLike".'))
     }
 
-    const mutation = Mutation.ofLift(transformation, preparedOptions)
-    const outputD = Data.empty() as Data<C>
+    const mutation = Mutation.ofLift<P, C>(transformation, preparedOptions)
+    const outputD = Data.empty<C>()
 
     pipeAtom(mutation, outputD)
     binaryTweenPipeAtom(source, mutation)
@@ -192,9 +199,7 @@ interface ArraySMTacheConfig<P> {
   transformation: MutatorOriginTransformationUnion<P, any>
   options?: MutationOptions<P, any>
 }
-type ArraySMTache<P> = (
-  source: Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>
-) => Array<Data<any>>
+type ArraySMTache<P> = (source: AtomLikeOfOutput<P>) => Array<Data<any>>
 /**
  * @param { ArraySMTacheConfig<P>[] } configArr `[{ transformation, options }, ...]`
  * @return { ArraySMTache<P> } ArraySSTache :: `(source) => Array<Data<any>>`
@@ -214,18 +219,18 @@ export const createArraySMTache = <P>(configArr: Array<ArraySMTacheConfig<P>>): 
   })
 
   /**
-   * @param { Atom } source Atom
-   * @return Array of Data
+   * @param { AtomLike } source Atom
+   * @return { Data<any> } Array of Data
    */
   return source => {
-    if (!isAtom(source)) {
-      throw (new TypeError('"source" is expected to be type of "Atom".'))
+    if (!isAtomLike(source)) {
+      throw (new TypeError('"source" is expected to be type of "AtomLike".'))
     }
 
     const mutations = configArr.map(({ transformation, options }) => {
       return Mutation.ofLift(transformation, options)
     })
-    const outputs = Array.from({ length: configArr.length }).map(() => Data.empty())
+    const outputs = Array.from({ length: configArr.length }).map(() => Data.empty<any>())
 
     outputs.forEach((output, index) => {
       pipeAtom(mutations[index], output)
@@ -240,9 +245,7 @@ interface ObjectSMTacheConfig<P> {
   transformation: MutatorOriginTransformationUnion<P, any>
   options?: MutationOptions<P, any>
 }
-type ObjectSMTache<P> = (
-  source: Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>
-) => Record<string, Data<any>>
+type ObjectSMTache<P> = (source: AtomLikeOfOutput<P>) => Record<string, Data<any>>
 /**
  * @param { ObjectSMTacheConfig<P> } configObj `{ [key: string]: { transformation, options? } }`
  * @return { ObjectSMTache<P> } ObjectSSTache :: `(source) => Record<string, Data<any>>`
@@ -270,11 +273,11 @@ export const createObjectSMTache = <P>(configObj: Record<string, ObjectSMTacheCo
    * @return Object of Data
    */
   return source => {
-    if (!isAtom(source)) {
-      throw (new TypeError('"source" is expected to be type of "Atom".'))
+    if (!isAtomLike(source)) {
+      throw (new TypeError('"source" is expected to be type of "AtomLike".'))
     }
 
-    const mutations = Object.entries(configObj).reduce<Record<string, Mutation<any, P>>>(
+    const mutations = Object.entries(configObj).reduce<Record<string, Mutation<P, any>>>(
       (acc, [name, { transformation, options }]) => {
         acc[name] = acc[name] ?? Mutation.ofLift(transformation, options)
         return acc
@@ -346,8 +349,8 @@ interface ArrayMSTacheConfig<P, C> extends MSTacheConfig<P, C> {
   sourcesType: 'array'
 }
 interface ArrayMSTache<P, C> {
-  (sources: Array<Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>>): Data<C>
-  (...sources: Array<Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>>): Data<C>
+  (sources: Array<AtomLikeOfOutput<P>>): Data<C>
+  (...sources: Array<AtomLikeOfOutput<P>>): Data<C>
 }
 /**
  * @param { ArrayMSTacheConfig<C> } config
@@ -377,7 +380,7 @@ export const createArrayMSTache = <P, C>(
     throw (new TypeError('"transformation" is expected to be type of "Function".'))
   }
 
-  type ValidSource = Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>
+  type ValidSource = AtomLikeOfOutput<P>
   /**
    * @return Data
    */
@@ -393,14 +396,14 @@ export const createArrayMSTache = <P, C>(
 
     if (!acceptNonAtom) {
       _sources.forEach(source => {
-        if (!isAtom(source)) {
+        if (!isAtomLike(source)) {
           throw (new TypeError('"source" is expected to be type of "Atom".'))
         }
       })
       preparedSources = _sources
     } else {
       preparedSources = _sources.map<ValidSource>(source => {
-        return (isAtom(source) ? source : replayWithLatest(1, Data.of(source))) as ValidSource
+        return (isAtomLike(source) ? source : replayWithLatest(1, Data.of(source))) as ValidSource
       })
     }
 
@@ -410,12 +413,12 @@ export const createArrayMSTache = <P, C>(
       id: number
       value: P | Vacuo
     }
-    const wrapMutations = Array.from({ length }).map((_, idx) =>
-      Mutation.ofLiftLeft<P, WrappedData<P>>(prev => ({ id: idx, value: prev }))
+    const wrapMutations: Array<Mutation<P, WrappedData<P>>> = Array.from({ length }).map((_, idx) =>
+      Mutation.ofLiftLeft(prev => ({ id: idx, value: prev }))
     )
     const wrappedDatas: Array<Data<WrappedData<P>>> = Array.from({ length }).map(() => Data.empty())
 
-    const trunkM = Mutation.ofLift((() => {
+    const trunkM = Mutation.ofLift<P, C>((() => {
       const baseContexts: ArrayMSTacheTrunkContexts = { arity: length, TERMINATOR }
 
       if (customizeType === 'fully') {
@@ -444,7 +447,7 @@ export const createArrayMSTache = <P, C>(
       }
     })() as MutatorOriginTransformationUnion<P, C>, options)
 
-    const output = Data.empty()
+    const output = Data.empty<C>()
 
     pipeAtom(trunkM, output)
     wrappedDatas.forEach(data => {
@@ -477,7 +480,7 @@ interface ObjectMSTacheConfig<P, C> extends MSTacheConfig<P, C> {
   sourcesType: 'object'
 }
 type ObjectMSTache<P, C> = (
-  sources: Record<string, Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>>
+  sources: Record<string, AtomLikeOfOutput<P>>
 ) => Data<C>
 /**
  * @param { ObjectMSTacheConfig<C> } config
@@ -507,7 +510,7 @@ export const createObjectMSTache = <P, C>(
     throw (new TypeError('"transformation" is expected to be type of "Function".'))
   }
 
-  type ValidSource = Data<P> | DataMediator<Data<P>> | Mutation<any, P> | MutationMediator<Mutation<any, P>>
+  type ValidSource = AtomLikeOfOutput<P>
   /**
    * @param sources Object
    * @accept ({ name: Atom | Any, ...})
@@ -522,7 +525,7 @@ export const createObjectMSTache = <P, C>(
 
     if (!acceptNonAtom) {
       Object.values(sources).forEach(source => {
-        if (!isAtom(source)) {
+        if (!isAtomLike(source)) {
           throw (new TypeError('"source" is expected to be type of "Atom".'))
         }
       })
@@ -530,7 +533,7 @@ export const createObjectMSTache = <P, C>(
     } else {
       preparedSources = Object.entries(sources).reduce<Record<string, ValidSource>>(
         (newSources, [name, source]) => {
-          newSources[name] = newSources[name] ?? (isAtom(source) ? source : replayWithLatest(1, Data.of(source)))
+          newSources[name] = newSources[name] ?? (isAtomLike(source) ? source : replayWithLatest(1, Data.of(source)))
           return newSources
         },
         {}
@@ -546,12 +549,13 @@ export const createObjectMSTache = <P, C>(
         mutations[key] = Mutation.ofLiftLeft((prev) => ({ key: key, value: prev }))
         return mutations
       }, {})
-    const wrappedDatas = Object.entries(preparedSources).reduce<Record<string, Data<P>>>((datas, [key]) => {
-      datas[key] = Data.empty()
-      return datas
-    }, {})
+    const wrappedDatas = Object.entries(preparedSources).reduce<Record<string, Data<WrappedData<P>>>>(
+      (datas, [key]) => {
+        datas[key] = Data.empty()
+        return datas
+      }, {})
 
-    const trunkM = Mutation.ofLift((() => {
+    const trunkM = Mutation.ofLift<P, C>((() => {
       const baseContexts: ObjectMSTacheTrunkContexts = { keysOfSources: Object.keys(preparedSources), TERMINATOR }
 
       if (customizeType === 'fully') {
@@ -586,7 +590,7 @@ export const createObjectMSTache = <P, C>(
       }
     })() as MutatorOriginTransformationUnion<P, C>, options)
 
-    const output = Data.empty()
+    const output = Data.empty<C>()
 
     pipeAtom(trunkM, output)
     Object.values(wrappedDatas).forEach(data => {
@@ -624,7 +628,6 @@ export const createMSTache: ICreateMSTache = (config: any): any => {
     return createObjectMSTache(config as any)
   }
 
-  type ValidSource = Data<any> | DataMediator<Data<any>> | Mutation<any, any> | MutationMediator<Mutation<any, any>>
   /**
    * @accept ({ name: Atom | Any, ...})
    * @accept ([Atom | Any, ...])
@@ -637,7 +640,7 @@ export const createMSTache: ICreateMSTache = (config: any): any => {
     }
 
     if (sources.length === 1 && isArray(sources[0])) {
-      return createArrayMSTache(config as any)(...sources[0] as ValidSource[])
+      return createArrayMSTache(config as any)(...sources[0] as AtomLikeOfAny[])
     }
     if (sources.length > 1) {
       return createArrayMSTache(config as any)(...sources)

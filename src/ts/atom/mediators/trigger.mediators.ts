@@ -5,6 +5,7 @@ import {
   DataMediator, MutationMediator
 } from './base.mediators'
 
+import type { MutatorTransformation } from '../particles'
 import type { AtomTriggerRegisterOptions, Trigger, TriggerController } from '../atoms'
 import type { MediatorTypeMaker, MediatorType } from './base.mediators'
 
@@ -38,13 +39,13 @@ export interface TriggerMediatorOptions {}
 export const DEFAULT_TRIGGER_MEDIATOR_OPTIONS: Required<TriggerMediatorOptions> = {}
 
 export type TriggerMediatorUnion
-  = TriggerDataMediator<Data<any>>
-  | TriggerMutationMediator<Mutation<any, any>>
+  = TriggerDataMediator<any>
+  | TriggerMutationMediator<any, any>
 
-type DataTrigger<I extends Data<any>> = Trigger<I['value']>
-type MutationTrigger<I extends Mutation<any, any>> = Trigger<I['transformation']>
-type TriggerDataMediatorMap<I extends Data<any>> = Map<DataTrigger<I>, TriggerController>
-type TriggerMutationMediatorMap<I extends Mutation<any, any>> = Map<MutationTrigger<I>, TriggerController>
+type DataTrigger<V> = Trigger<V>
+type MutationTrigger<P, C> = Trigger<MutatorTransformation<P, C>>
+type TriggerDataMediatorMap<V> = Map<DataTrigger<V>, TriggerController>
+type TriggerMutationMediatorMap<P, C> = Map<MutationTrigger<P, C>, TriggerController>
 
 /******************************************************************************************************
  *
@@ -55,10 +56,10 @@ type TriggerMutationMediatorMap<I extends Mutation<any, any>> = Map<MutationTrig
 /**
  *
  */
-export class TriggerDataMediator<I extends Data<any>> extends DataMediator<I> {
-  private readonly _map: TriggerDataMediatorMap<I>
+export class TriggerDataMediator<V> extends DataMediator<V> {
+  private readonly _map: TriggerDataMediatorMap<V>
 
-  constructor (atom: I) {
+  constructor (atom: Data<V>) {
     super(atom)
     this._map = new Map()
   }
@@ -68,7 +69,7 @@ export class TriggerDataMediator<I extends Data<any>> extends DataMediator<I> {
 
   get isTriggerMediator (): true { return true }
 
-  static of<I extends Data<any>> (atom: I): TriggerDataMediator<I>
+  static of<V> (atom: Data<V>): TriggerDataMediator<V>
   static of<I extends TriggerMediatorUnion> (atom: I): I
   static of<I extends Data<any> | TriggerMediatorUnion> (
     atom: I
@@ -86,36 +87,36 @@ export class TriggerDataMediator<I extends Data<any>> extends DataMediator<I> {
     }
   }
 
-  get map (): TriggerDataMediatorMap<I> { return this._map }
+  get map (): TriggerDataMediatorMap<V> { return this._map }
 
   /**
    * @signature _add :: (Trigger, TriggerController) -> Map
    */
-  private _add (trigger: DataTrigger<I>, controller: TriggerController): TriggerDataMediatorMap<I> {
+  private _add (trigger: DataTrigger<V>, controller: TriggerController): TriggerDataMediatorMap<V> {
     return this._map.set(trigger, controller)
   }
 
   /**
    * @signature _remove :: Trigger -> Boolean
    */
-  private _remove (trigger: DataTrigger<I>): boolean {
+  private _remove (trigger: DataTrigger<V>): boolean {
     return this._map.delete(trigger)
   }
 
-  register (trigger: DataTrigger<I>, options?: AtomTriggerRegisterOptions): TriggerController {
+  register (trigger: DataTrigger<V>, options?: AtomTriggerRegisterOptions): TriggerController {
     const controller = this._atom.registerTrigger(trigger, options)
     this._add(trigger, controller)
     return controller
   }
 
-  getController (trigger: DataTrigger<I>): TriggerController | undefined {
+  getController (trigger: DataTrigger<V>): TriggerController | undefined {
     return this._map.get(trigger)
   }
 
   /**
    * @signature remove :: Trigger -> Boolean
    */
-  remove (trigger: DataTrigger<I>): boolean {
+  remove (trigger: DataTrigger<V>): boolean {
     const controller = this._map.get(trigger)
     controller?.cancel?.()
     return this._remove(trigger)
@@ -148,10 +149,10 @@ export class TriggerDataMediator<I extends Data<any>> extends DataMediator<I> {
 /**
  *
  */
-export class TriggerMutationMediator<I extends Mutation<any, any>> extends MutationMediator<I> {
-  private readonly _map: TriggerMutationMediatorMap<I>
+export class TriggerMutationMediator<P, C> extends MutationMediator<P, C> {
+  private readonly _map: TriggerMutationMediatorMap<P, C>
 
-  constructor (atom: I) {
+  constructor (atom: Mutation<P, C>) {
     super(atom)
     this._map = new Map()
   }
@@ -161,7 +162,7 @@ export class TriggerMutationMediator<I extends Mutation<any, any>> extends Mutat
 
   get isTriggerMediator (): true { return true }
 
-  static of<I extends Mutation<any, any>> (atom: I): TriggerMutationMediator<I>
+  static of<P, C> (atom: Mutation<P, C>): TriggerMutationMediator<P, C>
   static of<I extends TriggerMediatorUnion> (atom: I): I
   static of<I extends Mutation<any, any> | TriggerMediatorUnion> (
     atom: I
@@ -179,36 +180,36 @@ export class TriggerMutationMediator<I extends Mutation<any, any>> extends Mutat
     }
   }
 
-  get map (): TriggerMutationMediatorMap<I> { return this._map }
+  get map (): TriggerMutationMediatorMap<P, C> { return this._map }
 
   /**
    * @signature _add :: (Trigger, TriggerController) -> Map
    */
-  private _add (trigger: MutationTrigger<I>, controller: TriggerController): TriggerMutationMediatorMap<I> {
+  private _add (trigger: MutationTrigger<P, C>, controller: TriggerController): TriggerMutationMediatorMap<P, C> {
     return this._map.set(trigger, controller)
   }
 
   /**
    * @signature _remove :: Trigger -> Boolean
    */
-  private _remove (trigger: MutationTrigger<I>): boolean {
+  private _remove (trigger: MutationTrigger<P, C>): boolean {
     return this._map.delete(trigger)
   }
 
-  register (trigger: MutationTrigger<I>, options?: AtomTriggerRegisterOptions): TriggerController {
+  register (trigger: MutationTrigger<P, C>, options?: AtomTriggerRegisterOptions): TriggerController {
     const controller = this._atom.registerTrigger(trigger, options)
     this._add(trigger, controller)
     return controller
   }
 
-  getController (trigger: MutationTrigger<I>): TriggerController | undefined {
+  getController (trigger: MutationTrigger<P, C>): TriggerController | undefined {
     return this._map.get(trigger)
   }
 
   /**
    * @signature remove :: Trigger -> Boolean
    */
-  remove (trigger: MutationTrigger<I>): boolean {
+  remove (trigger: MutationTrigger<P, C>): boolean {
     const controller = this._map.get(trigger)
     controller?.cancel?.()
     return this._remove(trigger)
@@ -251,8 +252,8 @@ export class TriggerMediator {
 
   get isTriggerMediator (): true { return true }
 
-  static of<I extends Data<any>> (atom: I, options?: TriggerMediatorOptions): TriggerDataMediator<I>
-  static of<I extends Mutation<any, any>> (atom: I, options?: TriggerMediatorOptions): TriggerMutationMediator<I>
+  static of<V> (atom: Data<V>, options?: TriggerMediatorOptions): TriggerDataMediator<V>
+  static of<P, C> (atom: Mutation<P, C>, options?: TriggerMediatorOptions): TriggerMutationMediator<P, C>
   static of<I extends TriggerMediatorUnion> (atom: I, options?: TriggerMediatorOptions): I
   static of<I extends Data<any> | Mutation<any, any> | TriggerMediatorUnion> (
     atom: I, options: TriggerMediatorOptions = DEFAULT_TRIGGER_MEDIATOR_OPTIONS
@@ -270,9 +271,9 @@ export class TriggerMediator {
 
     // TODO: Check if this is the best way to do this.(type Predicates)
     if (isData(atom)) {
-      return TriggerDataMediator.of(atom) as unknown as TriggerMediatorUnion
+      return TriggerDataMediator.of(atom)
     } else if (isMutation(atom)) {
-      return TriggerMutationMediator.of(atom) as unknown as TriggerMediatorUnion
+      return TriggerMutationMediator.of(atom)
     } else {
       throw (new TypeError('Invalid atom type!'))
     }

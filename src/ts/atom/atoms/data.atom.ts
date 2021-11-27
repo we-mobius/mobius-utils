@@ -103,8 +103,8 @@ export class Data<V> extends BaseAtom implements AtomLike {
   /**
    * Same as `Data.of(Datar.of(VACUO, CHAOS, options))`
    */
-  static empty (options: DataOptions = DEFAULT_DATA_OPTIONS): Data<any> {
-    return new Data(Datar.empty(options), options)
+  static empty <V = Vacuo>(options: DataOptions = DEFAULT_DATA_OPTIONS): Data<V> {
+    return new Data(Datar.empty(options) as Datar<any>, options)
   }
 
   /**
