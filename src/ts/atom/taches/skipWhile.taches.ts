@@ -79,7 +79,12 @@ export const skipWhileT = <V>(
 
   return outputD
 }
+
+interface ISkipWhileT_ {
+  <V>(condition: AtomLikeOfOutput<any>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(condition: AtomLikeOfOutput<any>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link skipWhileT}
  */
-export const skipWhileT_ = curryN(2, skipWhileT)
+export const skipWhileT_: ISkipWhileT_ = curryN(2, skipWhileT)

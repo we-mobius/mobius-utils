@@ -20,10 +20,14 @@ export const emptyStartWithT = <V>(
     return staticEmptyStartWithT(start as V, target)
   }
 }
+interface IEmptyStartWithT_ {
+  <V>(start: V | AtomLikeOfOutput<V>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(start: V | AtomLikeOfOutput<V>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link emptyStartWithT}
  */
-export const emptyStartWithT_ = curryN(2, emptyStartWithT)
+export const emptyStartWithT_: IEmptyStartWithT_ = curryN(2, emptyStartWithT)
 
 /**
  * @see {@link emptyStartWithT}
@@ -106,10 +110,14 @@ export const dynamicEmptyStartWithT = <V>(
 
   return outputD
 }
+interface IDynamicEmptyStartWithT_ {
+  <V>(start: AtomLikeOfOutput<V>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(start: AtomLikeOfOutput<V>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @seee {@link dynamicEmptyStartWithT}
  */
-export const dynamicEmptyStartWithT_ = curryN(2, dynamicEmptyStartWithT)
+export const dynamicEmptyStartWithT_: IDynamicEmptyStartWithT_ = curryN(2, dynamicEmptyStartWithT)
 
 /**
  * @see {@link emptyStartWithT}
@@ -119,4 +127,11 @@ export const staticEmptyStartWithT = <V>(
 ): Data<V> => {
   return dynamicEmptyStartWithT(replayWithLatest(1, Data.of(start)), target)
 }
-export const staticEmptyStartWithT_ = curryN(2, staticEmptyStartWithT)
+interface IStaticEmptyStartWithT_ {
+  <V>(start: V, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(start: V): (target: AtomLikeOfOutput<V>) => Data<V>
+}
+/**
+ * @see {@link staticEmptyStartWithT}
+ */
+export const staticEmptyStartWithT_: IStaticEmptyStartWithT_ = curryN(2, staticEmptyStartWithT)

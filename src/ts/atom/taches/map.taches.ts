@@ -26,8 +26,8 @@ export const mapT = <T, V>(
   }
 }
 interface IMapT_ {
-  <T, V>(mapper: AtomLikeOfOutput<Mapper<T, V>> | Mapper<T, V>): (target: AtomLikeOfOutput<T>) => Data<V>
   <T, V>(mapper: AtomLikeOfOutput<Mapper<T, V>> | Mapper<T, V>, target: AtomLikeOfOutput<T>): Data<V>
+  <T, V>(mapper: AtomLikeOfOutput<Mapper<T, V>> | Mapper<T, V>): (target: AtomLikeOfOutput<T>) => Data<V>
 }
 /**
  * @see {@link mapT}
@@ -110,8 +110,8 @@ export const dynamicMapT = <T, V>(
   return outputD
 }
 interface IDynamicMapT_ {
-  <T, V>(mapper: AtomLikeOfOutput<Mapper<T, V>>): (target: AtomLikeOfOutput<T>) => Data<V>
   <T, V>(mapper: AtomLikeOfOutput<Mapper<T, V>>, target: AtomLikeOfOutput<T>): Data<V>
+  <T, V>(mapper: AtomLikeOfOutput<Mapper<T, V>>): (target: AtomLikeOfOutput<T>) => Data<V>
 }
 /**
  * @see {@link dynamicMapT}
@@ -130,8 +130,8 @@ export const staticMapT = <T, V>(
   return dynamicMapT(replayWithLatest(1, Data.of(mapper)), target)
 }
 interface IStaticMapT_ {
-  <T, V>(mapper: Mapper<T, V>): (target: AtomLikeOfOutput<T>) => Data<V>
   <T, V>(mapper: Mapper<T, V>, target: AtomLikeOfOutput<T>): Data<V>
+  <T, V>(mapper: Mapper<T, V>): (target: AtomLikeOfOutput<T>) => Data<V>
 }
 /**
  * @see {@link staticMapT}

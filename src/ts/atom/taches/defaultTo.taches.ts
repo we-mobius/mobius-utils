@@ -30,7 +30,14 @@ export const defaultToT = <V>(
     return staticDefaultToT(dft as V, target)
   }
 }
-export const defaultToT_ = curryN(2, defaultToT)
+interface IDefaultToT_ {
+  <V>(dft: V | AtomLikeOfOutput<V>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(dft: V | AtomLikeOfOutput<V>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
+/**
+ * @see {@link defaultToT}
+ */
+export const defaultToT_: IDefaultToT_ = curryN(2, defaultToT)
 
 /**
  * @see {@link defaultToT}
@@ -103,10 +110,14 @@ export const dynamicDefaultToT = <V>(
 
   return outputD
 }
+interface IDynamicDefaultToT_ {
+  <V>(dft: AtomLikeOfOutput<V>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(dft: AtomLikeOfOutput<V>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link dynamicDefaultToT}
  */
-export const dynamicDefaultToT_ = curryN(2, dynamicDefaultToT)
+export const dynamicDefaultToT_: IDynamicDefaultToT_ = curryN(2, dynamicDefaultToT)
 
 /**
  * @see {@link defaultToT}
@@ -116,7 +127,11 @@ export const staticDefaultToT = <V>(
 ): Data<V> => {
   return dynamicDefaultToT(replayWithLatest(1, Data.of(dft)), target)
 }
+interface IStaticDefaultToT_ {
+  <V>(dft: V, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(dft: V): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link staticDefaultToT}
  */
-export const staticDefaultToT_ = curryN(2, staticDefaultToT)
+export const staticDefaultToT_: IStaticDefaultToT_ = curryN(2, staticDefaultToT)

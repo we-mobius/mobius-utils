@@ -35,7 +35,7 @@ export * from './taches/case.taches'
 
 export * from './taches/combine.taches'
 export * from './taches/combineLatest.taches'
-export * from './taches/merge.taches'
+export * from './taches/converge.taches'
 export * from './taches/zipLatest.taches'
 export * from './taches/withLatestFrom.taches'
 

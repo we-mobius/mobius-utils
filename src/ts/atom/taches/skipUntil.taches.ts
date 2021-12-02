@@ -80,7 +80,11 @@ export const skipUntilT = <V>(
   return outputD
 }
 
+interface ISkipUntilT_ {
+  <V>(condition: AtomLikeOfOutput<any>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(condition: AtomLikeOfOutput<any>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link skipUntilT}
  */
-export const skipUntilT_ = curryN(2, skipUntilT)
+export const skipUntilT_: ISkipUntilT_ = curryN(2, skipUntilT)

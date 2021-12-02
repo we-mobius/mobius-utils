@@ -68,10 +68,14 @@ export const switchT = <F, T>(
     return staticSwitchT(to as T, from)
   }
 }
+interface ISwitchT_ {
+  <F, T>(to: AtomLikeOfOutput<T> | T, from: AtomLikeOfOutput<F>): Data<T>
+  <F, T>(to: AtomLikeOfOutput<T> | T): (from: AtomLikeOfOutput<F>) => Data<T>
+}
 /**
  * @see {@link switchT}
  */
-export const switchT_ = curryN(2, switchT)
+export const switchT_: ISwitchT_ = curryN(2, switchT)
 
 /**
  * @see {@link switchT}
@@ -112,6 +116,14 @@ switchTacheFactory(<F, T>(): Mutation<WrappedFrom<F> | WrappedTo<T>, T| Terminat
     }
   })())
 })
+interface IDynamicSwitchT_ {
+  <F, T>(to: AtomLikeOfOutput<T>, from: AtomLikeOfOutput<F>): Data<T>
+  <F, T>(to: AtomLikeOfOutput<T>): (from: AtomLikeOfOutput<F>) => Data<T>
+}
+/**
+ * @see {@link dynamicSwitchT}
+ */
+export const dynamicSwitchT_: IDynamicSwitchT_ = curryN(2, dynamicSwitchT)
 
 /**
  * @see {@link switchT}
@@ -121,10 +133,14 @@ export const staticSwitchT = <F, T>(
 ): Data<T> => {
   return dynamicSwitchT(replayWithLatest(1, Data.of(to)), from)
 }
+interface IStaticSwitchT_ {
+  <F, T>(to: T, from: AtomLikeOfOutput<F>): Data<T>
+  <F, T>(to: T): (from: AtomLikeOfOutput<F>) => Data<T>
+}
 /**
  * @see {@link staticSwitchT}
  */
-export const staticSwitchT_ = curryN(2, staticSwitchT)
+export const staticSwitchT_: IStaticSwitchT_ = curryN(2, staticSwitchT)
 
 /**
  * promiseSwitch Tache will emits a "to" value when "from" value comes.
@@ -192,7 +208,11 @@ switchTacheFactory(<F, T>(): Mutation<WrappedFrom<F> | WrappedTo<T>, T| Terminat
 
   return switchM as Mutation<WrappedFrom<F> | WrappedTo<T>, T | Terminator>
 })
+interface IPromiseSwitchT_ {
+  <F, T>(to: AtomLikeOfOutput<T>, from: AtomLikeOfOutput<F>): Data<T>
+  <F, T>(to: AtomLikeOfOutput<T>): (from: AtomLikeOfOutput<F>) => Data<T>
+}
 /**
  * @see {@link promiseSwitchT}
  */
-export const promiseSwitchT_ = curryN(2, promiseSwitchT)
+export const promiseSwitchT_: IPromiseSwitchT_ = curryN(2, promiseSwitchT)

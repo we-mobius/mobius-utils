@@ -29,10 +29,14 @@ export const debounceTimeT = <V>(
     throw (new TypeError('"timer" is expected to be type of "Number" or "AtomLike".'))
   }
 }
+interface IDebounceTimeT_ {
+  <V>(timer: number | AtomLikeOfOutput<number>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(timer: number | AtomLikeOfOutput<number>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link debounceTimeT}
  */
-export const deboundeTimeT_ = curryN(2, debounceTimeT)
+export const deboundeTimeT_: IDebounceTimeT_ = curryN(2, debounceTimeT)
 
 /**
  * @see {@link debounceTimeT}
@@ -115,23 +119,31 @@ export const dynamicDebounceTimeT = <V>(
 
   return outputD
 }
+interface IDynamicDebounceTimeT_ {
+  <V>(timer: AtomLikeOfOutput<number>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(timer: AtomLikeOfOutput<number>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link dynamicDebounceTimeT}
  */
-export const dynamicDebounceTimeT_ = curryN(2, dynamicDebounceTimeT)
+export const dynamicDebounceTimeT_: IDynamicDebounceTimeT_ = curryN(2, dynamicDebounceTimeT)
 
 /**
  * @see {@link debounceTimeT}
  */
 export const staticDebounceTimeT = <V>(
-  ms: number, target: AtomLikeOfOutput<V>
+  timer: number, target: AtomLikeOfOutput<V>
 ): Data<V> => {
-  if (!isNumber(ms)) {
-    throw (new TypeError('"ms" is expected to be type of "Number".'))
+  if (!isNumber(timer)) {
+    throw (new TypeError('"timer" is expected to be type of "Number".'))
   }
-  return dynamicDebounceTimeT(replayWithLatest(1, Data.of(ms)), target)
+  return dynamicDebounceTimeT(replayWithLatest(1, Data.of(timer)), target)
+}
+interface IStaticDebounceTimeT_ {
+  <V>(timer: number, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(timer: number): (target: AtomLikeOfOutput<V>) => Data<V>
 }
 /**
  * @see {@link staticDebounceTimeT}
  */
-export const staticDebounceTimeT_ = curryN(2, staticDebounceTimeT)
+export const staticDebounceTimeT_: IStaticDebounceTimeT_ = curryN(2, staticDebounceTimeT)

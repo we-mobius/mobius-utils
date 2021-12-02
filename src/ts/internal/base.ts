@@ -145,7 +145,7 @@ export const isIterator = <T, TReturn = any, TNext = undefined>(tar: any): tar i
 export const isObservable = <T>(tar: any): tar is Observable<T> =>
   isObject(tar) && (Boolean(tar.isObservable) || isFunction(tar.subscribe))
 
-export const asIs = <T>(v: T, ...args: any[]): T => v
+export const asIs = <T = any>(v: T, ...args: any[]): T => v
 export const asUndefined = (...v: any[]): undefined => undefined
 export const asNull = (...v: any[]): null => null
 export const asVoid = (...v: any[]): void => { /* do nothing */ }

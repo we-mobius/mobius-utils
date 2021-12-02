@@ -85,10 +85,14 @@ withLatestFromTacheFactory(<T, S>(): Mutation<WrappedTarget<T> | WrappedSource<S
     }
   })())
 })
+interface IWithLatestFromT_ {
+  <T, S>(target: AtomLikeOfOutput<T>, source: AtomLikeOfOutput<S>): Data<[S, T | undefined]>
+  <T, S>(target: AtomLikeOfOutput<T>): (source: AtomLikeOfOutput<S>) => Data<[S, T | undefined]>
+}
 /**
  * @see {@link withLatestFromT}
  */
-export const withLatestFromT_ = curryN(2, withLatestFromT)
+export const withLatestFromT_: IWithLatestFromT_ = curryN(2, withLatestFromT)
 
 /**
  * @see {@link withLatestFromT}
@@ -161,7 +165,11 @@ withLatestFromTacheFactory(<T, S>(): Mutation<WrappedTarget<T> | WrappedSource<S
 
   return withLatestFromM as Mutation<WrappedTarget<T> | WrappedSource<S>, [S, T | undefined] | Terminator>
 })
+interface IPromiseWithLatestFromT_ {
+  <T, S>(target: AtomLikeOfOutput<T>, source: AtomLikeOfOutput<S>): Data<[S, T | undefined]>
+  <T, S>(target: AtomLikeOfOutput<T>): (source: AtomLikeOfOutput<S>) => Data<[S, T | undefined]>
+}
 /**
  * @see {@link promiseWithLatestFromT}
  */
-export const promiseWithLatestFromT_ = curryN(2, promiseWithLatestFromT)
+export const promiseWithLatestFromT_: IPromiseWithLatestFromT_ = curryN(2, promiseWithLatestFromT)

@@ -25,7 +25,14 @@ export const filterT = <V>(
     throw (new TypeError('"predicate" is expected to be type of "Function" or "AtomLike".'))
   }
 }
-export const filterT_ = curryN(2, filterT)
+interface IFilterT_ {
+  <V>(predicate: AtomLikeOfOutput<Predicate<V>> | Predicate<V>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(predicate: AtomLikeOfOutput<Predicate<V>> | Predicate<V>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
+/**
+ * @see {@link filterT}
+ */
+export const filterT_: IFilterT_ = curryN(2, filterT)
 
 /**
  * @see {@link filterT}
@@ -100,10 +107,14 @@ export const dynamicFilterT = <V>(
 
   return outputD
 }
+interface IDynamicFilterT_ {
+  <V>(predicate: AtomLikeOfOutput<Predicate<V>>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(predicate: AtomLikeOfOutput<Predicate<V>>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link dynamicFilterT}
  */
-export const dynamicFilterT_ = curryN(2, dynamicFilterT)
+export const dynamicFilterT_: IDynamicFilterT_ = curryN(2, dynamicFilterT)
 
 /**
  * @see {@link filterT}
@@ -116,7 +127,11 @@ export const staticFilterT = <V>(
   }
   return dynamicFilterT(replayWithLatest(1, Data.of(predicate)), target)
 }
+interface IStaticFilterT_ {
+  <V>(predicate: Predicate<V>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(predicate: Predicate<V>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link staticFilterT}
  */
-export const staticFilterT_ = curryN(2, staticFilterT)
+export const staticFilterT_: IStaticFilterT_ = curryN(2, staticFilterT)

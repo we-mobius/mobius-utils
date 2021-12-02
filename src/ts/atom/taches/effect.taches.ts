@@ -47,10 +47,14 @@ export const effectT = <V, T>(
     throw (new TypeError('"effect" is expected to be type of "Function" or "AtomLike".'))
   }
 }
+interface IEffectT_ {
+  <V, T>(effect: Effect<V, T>, target: AtomLikeOfOutput<T>): Data<V>
+  <V, T>(effect: Effect<V, T>): (target: AtomLikeOfOutput<T>) => Data<V>
+}
 /**
  * @see {@link effectT}
  */
-export const effectT_ = curryN(2, effectT)
+export const effectT_: IEffectT_ = curryN(2, effectT)
 
 /**
  * @see {@link effectT}
@@ -157,10 +161,14 @@ export const dynamicEffectT = <V, T>(
 
   return outputD
 }
+interface IDynamicEffectT_ {
+  <V, T>(effect: AtomLikeOfOutput<Effect<V, T>>, target: AtomLikeOfOutput<T>): Data<V>
+  <V, T>(effect: AtomLikeOfOutput<Effect<V, T>>): (target: AtomLikeOfOutput<T>) => Data<V>
+}
 /**
  * @see {@link dynamicEffectT}
  */
-export const dynamicEffectT_ = curryN(2, dynamicEffectT)
+export const dynamicEffectT_: IDynamicEffectT_ = curryN(2, dynamicEffectT)
 
 /**
  * @see {@link effectT}
@@ -173,7 +181,11 @@ export const staticEffectT = <V, T>(
   }
   return dynamicEffectT(replayWithLatest(1, Data.of(effect)), target)
 }
+interface IStaticEffectT_ {
+  <V, T>(effect: Effect<V, T>, target: AtomLikeOfOutput<T>): Data<V>
+  <V, T>(effect: Effect<V, T>): (target: AtomLikeOfOutput<T>) => Data<V>
+}
 /**
  * @see {@link staticEffectT}
  */
-export const staticEffectT_ = curryN(2, staticEffectT)
+export const staticEffectT_: IStaticEffectT_ = curryN(2, staticEffectT)

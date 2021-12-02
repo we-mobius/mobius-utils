@@ -30,10 +30,14 @@ export const distinctEverT = <V>(
     throw (new TypeError('"compareBy" is expected to be type of "Function" or "AtomLike".'))
   }
 }
+interface IDistinctEverT_ {
+  <V>(compareBy: AtomLikeOfOutput<CompareBy<V>> | CompareBy<V>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(compareBy: AtomLikeOfOutput<CompareBy<V>> | CompareBy<V>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link distinctEverT}
  */
-export const distinctEverT_ = curryN(2, distinctEverT)
+export const distinctEverT_: IDistinctEverT_ = curryN(2, distinctEverT)
 
 /**
  * @see {@link distinctEverT}
@@ -114,10 +118,14 @@ export const dynamicDistinctEverT = <V>(
 
   return outputD
 }
+interface IDynamicDistinctEverT_ {
+  <V>(compareBy: AtomLikeOfOutput<CompareBy<V>>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(compareBy: AtomLikeOfOutput<CompareBy<V>>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link dynamicDistinctEverT}
  */
-export const dynamicDistinctEverT_ = curryN(2, dynamicDistinctEverT)
+export const dynamicDistinctEverT_: IDynamicDistinctEverT_ = curryN(2, dynamicDistinctEverT)
 
 /**
  * @see {@link distinctEverT}
@@ -130,12 +138,17 @@ export const staticDistinctEverT = <V>(
   }
   return dynamicDistinctEverT(replayWithLatest(1, Data.of(compareBy)), target)
 }
+interface IStaticDistinctEverT_ {
+  <V>(compareBy: CompareBy<V>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(compareBy: CompareBy<V>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link staticDistinctEverT}
  */
-export const staticDistinctEverT_ = curryN(2, staticDistinctEverT)
+export const staticDistinctEverT_: IStaticDistinctEverT_ = curryN(2, staticDistinctEverT)
 
+type IAsIsDistinctEverT_ = <V>(target: AtomLikeOfOutput<V>) => Data<V>
 /**
  * @see {@link distinctEverT}
  */
-export const asIsDistinctEverT = distinctEverT_(asIs)
+export const asIsDistinctEverT: IAsIsDistinctEverT_ = distinctEverT_<any>(asIs)

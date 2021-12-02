@@ -80,7 +80,11 @@ export const takeWhileT = <V>(
 
   return outputD
 }
+interface ITakeWhileT_ {
+  <V>(condition: AtomLikeOfOutput<any>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(condition: AtomLikeOfOutput<any>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link takeWhileT}
  */
-export const takeWhileT_ = curryN(2, takeWhileT)
+export const takeWhileT_: ITakeWhileT_ = curryN(2, takeWhileT)

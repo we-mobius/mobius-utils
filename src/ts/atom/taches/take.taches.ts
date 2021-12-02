@@ -26,10 +26,14 @@ export const takeT = <V>(
     throw (new TypeError('"number" is expected to be type of "Number" or "AtomLike".'))
   }
 }
+interface ITakeT_ {
+  <V>(number: AtomLikeOfOutput<number> | number, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(number: AtomLikeOfOutput<number> | number): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link takeT}
  */
-export const takeT_ = curryN(2, takeT)
+export const takeT_: ITakeT_ = curryN(2, takeT)
 
 /**
  * @see {@link takeT}
@@ -110,10 +114,14 @@ export const dynamicTakeT = <V>(
 
   return outputD
 }
+interface IDynamicTakeT_ {
+  <V>(number: AtomLikeOfOutput<number>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(number: AtomLikeOfOutput<number>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link dynamicTakeT}
  */
-export const dynamicTakeT_ = curryN(2, dynamicTakeT)
+export const dynamicTakeT_: IDynamicTakeT_ = curryN(2, dynamicTakeT)
 
 /**
  * @todo release atom when specified num of value has emited
@@ -128,7 +136,11 @@ export const staticTakeT = <V>(
   }
   return dynamicTakeT(replayWithLatest(1, Data.of(number)), target)
 }
+interface IStaticTakeT_ {
+  <V>(number: number, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(number: number): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link staticTakeT}
  */
-export const staticTakeT_ = curryN(2, staticTakeT)
+export const staticTakeT_: IStaticTakeT_ = curryN(2, staticTakeT)

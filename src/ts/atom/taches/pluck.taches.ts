@@ -27,8 +27,8 @@ export const pluckT = <T, V>(
   }
 }
 interface IPluckT_ {
-  <T, V>(selector: AtomLikeOfOutput<PropPath> | PropPath): (target: AtomLikeOfOutput<T>) => Data<V>
   <T, V>(selector: AtomLikeOfOutput<PropPath> | PropPath, target: AtomLikeOfOutput<T>): Data<V>
+  <T, V>(selector: AtomLikeOfOutput<PropPath> | PropPath): (target: AtomLikeOfOutput<T>) => Data<V>
 }
 /**
  * @see {@link pluckT}
@@ -108,8 +108,8 @@ export const dynamicPluckT = <T, V>(
   return outputD
 }
 interface IDynamicPluckT_ {
-  <T, V>(selector: AtomLikeOfOutput<PropPath>): (target: AtomLikeOfOutput<T>) => Data<V>
   <T, V>(selector: AtomLikeOfOutput<PropPath>, target: AtomLikeOfOutput<T>): Data<V>
+  <T, V>(selector: AtomLikeOfOutput<PropPath>): (target: AtomLikeOfOutput<T>) => Data<V>
 }
 /**
  * @see {@link dynamicPluckT}
@@ -128,8 +128,8 @@ export const staticPluckT = <T, V>(
   return dynamicPluckT(replayWithLatest(1, Data.of(selector)), target)
 }
 interface IStaticPluckT_ {
-  <T, V>(selector: PropPath): (target: AtomLikeOfOutput<T>) => Data<V>
   <T, V>(selector: PropPath, target: AtomLikeOfOutput<T>): Data<V>
+  <T, V>(selector: PropPath): (target: AtomLikeOfOutput<T>) => Data<V>
 }
 /**
  * @see {@link staticPluckT}

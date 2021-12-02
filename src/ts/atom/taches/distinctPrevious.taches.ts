@@ -30,10 +30,14 @@ export const distinctPreviousT = <V>(
     throw (new TypeError('"compareBy" is expected to be type of "Function" or "AtomLike".'))
   }
 }
+interface IDistinctPreviousT_ {
+  <V>(compareBy: AtomLikeOfOutput<CompareBy<V>> | CompareBy<V>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(compareBy: AtomLikeOfOutput<CompareBy<V>> | CompareBy<V>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link distinctPreviousT}
  */
-export const distinctPreviousT_ = curryN(2, distinctPreviousT)
+export const distinctPreviousT_: IDistinctPreviousT_ = curryN(2, distinctPreviousT)
 
 /**
  * @see {@link distinctPreviousT}
@@ -116,10 +120,14 @@ export const dynamicDistinctPreviousT = <V>(
 
   return outputD
 }
+interface IDynamicDistinctPreviousT_ {
+  <V>(compareBy: AtomLikeOfOutput<CompareBy<V>>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(compareBy: AtomLikeOfOutput<CompareBy<V>>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link dynamicDistinctPreviousT}
  */
-export const dynamicDistinctPreviousT_ = curryN(2, dynamicDistinctPreviousT)
+export const dynamicDistinctPreviousT_: IDynamicDistinctPreviousT_ = curryN(2, dynamicDistinctPreviousT)
 
 /**
  * @see {@link distinctPreviousT}
@@ -132,12 +140,17 @@ export const staticDistinctPreviousT = <V>(
   }
   return dynamicDistinctPreviousT(replayWithLatest(1, Data.of(compareBy)), target)
 }
+interface IStaticDistinctPreviousT_ {
+  <V>(compareBy: CompareBy<V>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(compareBy: CompareBy<V>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link staticDistinctPreviousT}
  */
-export const staticDistinctPreviousT_ = curryN(2, staticDistinctPreviousT)
+export const staticDistinctPreviousT_: IStaticDistinctPreviousT_ = curryN(2, staticDistinctPreviousT)
 
+type IAsIsDistinctPreviousT = <V>(target: AtomLikeOfOutput<V>) => Data<V>
 /**
  * @see {@link distinctPreviousT}
  */
-export const asIsDistinctPreviousT = distinctPreviousT_(asIs)
+export const asIsDistinctPreviousT: IAsIsDistinctPreviousT = distinctPreviousT_<any>(asIs)

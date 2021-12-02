@@ -26,10 +26,14 @@ export const withHistoryT = <V>(
     throw (new TypeError('"number" is expected to be type of "Number" or "AtomLike"'))
   }
 }
+interface IWithHistoryT_ {
+  <V>(number: AtomLikeOfOutput<number> | number, target: AtomLikeOfOutput<V>): Data<V[]>
+  <V>(number: AtomLikeOfOutput<number> | number): (target: AtomLikeOfOutput<V>) => Data<V[]>
+}
 /**
  * @see {@link withHistoryT}
  */
-export const withHistoryT_ = curryN(2, withHistoryT)
+export const withHistoryT_: IWithHistoryT_ = curryN(2, withHistoryT)
 
 /**
  * @see {@link withHistoryT}
@@ -107,10 +111,14 @@ export const withDynamicHistoryT = <V>(
 
   return outputD
 }
+interface IWithDynamicHistoryT_ {
+  <V>(number: AtomLikeOfOutput<number>, target: AtomLikeOfOutput<V>): Data<V[]>
+  <V>(number: AtomLikeOfOutput<number>): (target: AtomLikeOfOutput<V>) => Data<V[]>
+}
 /**
  * @see {@link withDynamicHistoryT}
  */
-export const withDynamicHistoryT_ = curryN(2, withDynamicHistoryT)
+export const withDynamicHistoryT_: IWithDynamicHistoryT_ = curryN(2, withDynamicHistoryT)
 
 /**
  * @see {@link withHistoryT}
@@ -123,18 +131,23 @@ export const withStaticHistoryT = <V>(
   }
   return withDynamicHistoryT(replayWithLatest(1, Data.of(number)), target)
 }
+interface IWithStaticHistoryT_ {
+  <V>(number: number, target: AtomLikeOfOutput<V>): Data<V[]>
+  <V>(number: number): (target: AtomLikeOfOutput<V>) => Data<V[]>
+}
 /**
  * @see {@link withStaticHistoryT}
  */
-export const withStaticHistoryT_ = curryN(2, withStaticHistoryT)
+export const withStaticHistoryT_: IWithStaticHistoryT_ = curryN(2, withStaticHistoryT)
 
+type IPairwiseT = <V>(target: AtomLikeOfOutput<V>) => Data<V[]>
 /**
  * Returned atom will emits the previous and current value of target atom as an array.
  *
  * @see {@link withHistoryT}, {@link truthyPairwiseT}
  */
-export const pairwiseT = withHistoryT_(2)
+export const pairwiseT: IPairwiseT = withHistoryT_<any>(2)
 /**
  * @see {@link pairwiseT}
  */
-export const truthyPairwiseT = pipe(pairwiseT, filterT_(v => v[0] && v[1]))
+export const truthyPairwiseT: IPairwiseT = pipe(pairwiseT, filterT_((v: any[]) => Boolean(v[0]) && Boolean(v[1])))

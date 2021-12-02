@@ -78,7 +78,11 @@ export const takeUntilT = <V>(
   return outputD
 }
 
+interface ITakeUntilT_ {
+  <V>(condition: AtomLikeOfOutput<any>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(condition: AtomLikeOfOutput<any>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link takeUntilT}
  */
-export const takeUntilT_ = curryN(2, takeUntilT)
+export const takeUntilT_: ITakeUntilT_ = curryN(2, takeUntilT)

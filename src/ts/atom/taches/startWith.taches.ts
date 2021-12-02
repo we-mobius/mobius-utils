@@ -19,10 +19,14 @@ export const startWithT = <V>(
     return staticStartWithT(start as V, target)
   }
 }
+interface IStartWithT_ {
+  <V>(start: AtomLikeOfOutput<V> | V, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(start: AtomLikeOfOutput<V> | V): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link startWithT}
  */
-export const startWithT_ = curryN(2, startWithT)
+export const startWithT_: IStartWithT_ = curryN(2, startWithT)
 
 /**
  * @see {@link startWithT}
@@ -125,10 +129,14 @@ export const dynamicStartWithT = <V>(
 
   return outputD
 }
+interface IDynamicStartWithT_ {
+  <V>(start: AtomLikeOfOutput<V>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(start: AtomLikeOfOutput<V>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link dynamicStartWithT}
  */
-export const dynamicStartWithT_ = curryN(2, dynamicStartWithT)
+export const dynamicStartWithT_: IDynamicStartWithT_ = curryN(2, dynamicStartWithT)
 
 /**
  * @see {@link startWithT}
@@ -138,7 +146,11 @@ export const staticStartWithT = <V>(
 ): Data<V> => {
   return dynamicStartWithT(replayWithLatest(1, Data.of(start)), target)
 }
+interface IStaticStartWithT_ {
+  <V>(start: V, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(start: V): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link staticStartWithT}
  */
-export const staticStartWithT_ = curryN(2, staticStartWithT)
+export const staticStartWithT_: IStaticStartWithT_ = curryN(2, staticStartWithT)

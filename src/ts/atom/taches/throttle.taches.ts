@@ -23,10 +23,14 @@ export const throttleTimeT = <V>(
     throw (new TypeError('"timer" is expected to be type of "Number" or "AtomLike".'))
   }
 }
+interface IThrottleTimeT_ {
+  <V>(timer: AtomLikeOfOutput<number> | number, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(timer: AtomLikeOfOutput<number> | number): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link throttleTimeT}
  */
-export const throttleTimeT_ = curryN(2, throttleTimeT)
+export const throttleTimeT_: IThrottleTimeT_ = curryN(2, throttleTimeT)
 
 /**
  * the value target will only triggered when timer atom has at least one value
@@ -117,10 +121,14 @@ export const dynamicThrottleTimeT = <V>(
 
   return outputD
 }
+interface IDynamicThrottleTimeT_ {
+  <V>(timer: AtomLikeOfOutput<number>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(timer: AtomLikeOfOutput<number>): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link dynamicThrottleTimeT}
  */
-export const dynamicThrottleTimeT_ = curryN(2, dynamicThrottleTimeT)
+export const dynamicThrottleTimeT_: IDynamicThrottleTimeT_ = curryN(2, dynamicThrottleTimeT)
 
 /**
  * @see {@link throttleTimeT}
@@ -133,7 +141,11 @@ export const staticThrottleTimeT = <V>(
   }
   return dynamicThrottleTimeT(replayWithLatest(1, Data.of(timer)), target)
 }
+interface IStaticThrottleTimeT_ {
+  <V>(timer: number, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(timer: number): (target: AtomLikeOfOutput<V>) => Data<V>
+}
 /**
  * @see {@link staticThrottleTimeT}
  */
-export const staticThrottleTimeT_ = curryN(2, staticThrottleTimeT)
+export const staticThrottleTimeT_: IStaticThrottleTimeT_ = curryN(2, staticThrottleTimeT)

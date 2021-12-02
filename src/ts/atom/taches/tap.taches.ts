@@ -10,10 +10,14 @@ export const tapT = <T>(effect: (target: T) => void, target: T): T => {
   effect(target)
   return target
 }
+interface ITapT_ {
+  <T>(effect: (target: T) => void, target: T): T
+  <T>(effect: (target: T) => void): (target: T) => T
+}
 /**
  * @see {@link tapT}
  */
-export const tapT_ = curryN(2, tapT)
+export const tapT_: ITapT_ = curryN(2, tapT)
 
 const levelDict = {
   LOG: 'log',
@@ -71,7 +75,11 @@ export const tapValueT = <V extends AtomLikeOfOutput<any>>(
     })
   }, target)
 }
+interface ITapValueT_ {
+  <V extends AtomLikeOfOutput<any>>(name: string | { name?: string, level: Level }, target: V): V
+  <V extends AtomLikeOfOutput<any>>(name: string | { name?: string, level: Level}): (target: V) => V
+}
 /**
  * @see {@link tapValueT}
  */
-export const tapValueT_ = curryN(2, tapValueT)
+export const tapValueT_: ITapValueT_ = curryN(2, tapValueT)

@@ -26,8 +26,8 @@ export const skipT = <V>(
   }
 }
 interface ISkipT_ {
-  <V>(number: AtomLikeOfOutput<number> | number): (target: AtomLikeOfOutput<V>) => Data<V>
   <V>(number: AtomLikeOfOutput<number> | number, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(number: AtomLikeOfOutput<number> | number): (target: AtomLikeOfOutput<V>) => Data<V>
 }
 /**
  * @see {@link skipT}
@@ -113,8 +113,8 @@ export const dynamicSkipT = <V>(
   return outputD
 }
 interface IDynamicSkipT_ {
-  <V>(number: AtomLikeOfOutput<number>): (target: AtomLikeOfOutput<V>) => Data<V>
   <V>(number: AtomLikeOfOutput<number>, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(number: AtomLikeOfOutput<number>): (target: AtomLikeOfOutput<V>) => Data<V>
 }
 /**
  * @see {@link dynamicSkipT}
@@ -133,8 +133,8 @@ export const staticSkipT = <V>(
   return dynamicSkipT(replayWithLatest(1, Data.of<number>(number)), target)
 }
 interface IStaticSkipT_ {
-  <V>(number: number): (target: AtomLikeOfOutput<V>) => Data<V>
   <V>(number: number, target: AtomLikeOfOutput<V>): Data<V>
+  <V>(number: number): (target: AtomLikeOfOutput<V>) => Data<V>
 }
 /**
  * @see {@link staticSkipT}
