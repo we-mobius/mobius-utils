@@ -1,0 +1,10 @@
+{
+  "readme": "./README.md",
+  "entryPoints": [
+    "src/main.ts"
+  ],
+  "out": "docs/typedoc",
+  "sort": [
+    "source-order"
+  ]
+}
