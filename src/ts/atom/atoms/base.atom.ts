@@ -96,6 +96,7 @@ export abstract class BaseAtom extends Vain {
 
   get isAtom (): true { return true }
 
+  abstract get options (): Record<string, any>
   abstract get consumers (): Set<any>
 
   pipe (): this

@@ -1,88 +1,137 @@
 import { isString, isArray, isNumber, getPropByPath } from '../../internal'
 import { curryN } from '../../functional'
-import { TERMINATOR } from '../metas'
-import { Data, Mutation, isAtom } from '../atoms'
+
+import { TERMINATOR, isVacuo } from '../metas'
+import { Data, Mutation, isAtomLike } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
+import type { PropPath } from '../../internal'
+import type { Vacuo, Terminator } from '../metas'
+import type { AtomLikeOfOutput } from '../atoms'
+
 /**
- * @param selector String | Array | Number | Atom
- * @param target Atom
- * @return atom Data
+ * @param { PropPath } selector
+ *
+ * @see {@link dynamicPluckT}, {@link staticPluckT}
  */
-export const pluckT = curryN(2, (selector, target) => {
+export const pluckT = <T, V>(
+  selector: AtomLikeOfOutput<PropPath> | PropPath, target: AtomLikeOfOutput<T>
+): Data<V> => {
   if (isString(selector) || isArray(selector) || isNumber(selector)) {
     return staticPluckT(selector, target)
-  } else if (isAtom(selector)) {
+  } else if (isAtomLike(selector)) {
     return dynamicPluckT(selector, target)
   } else {
-    throw (new TypeError('"selector" argument of pluckT is expected to be type of "String" | "Array" | "Number" | "Atom".'))
+    throw (new TypeError('"selector" is expected to be type of "String" | "Array" | "Number" | "AtomLike".'))
   }
-})
+}
+interface IPluckT_ {
+  <T, V>(selector: AtomLikeOfOutput<PropPath> | PropPath): (target: AtomLikeOfOutput<T>) => Data<V>
+  <T, V>(selector: AtomLikeOfOutput<PropPath> | PropPath, target: AtomLikeOfOutput<T>): Data<V>
+}
+/**
+ * @see {@link pluckT}
+ */
+export const pluckT_: IPluckT_ = curryN(2, pluckT)
 
 /**
- * @param selector Atom
- * @param target Atom
- * @return atom Data
+ * @see {@link pluckT}
  */
-export const dynamicPluckT = curryN(2, (selector, target) => {
-  if (!isAtom(selector)) {
-    throw (new TypeError('"selector" argument of dynamicPluckT is expected to be type of "Atom".'))
+export const dynamicPluckT = <T, V>(
+  selector: AtomLikeOfOutput<PropPath>, target: AtomLikeOfOutput<T>
+): Data<V> => {
+  if (!isAtomLike(selector)) {
+    throw (new TypeError('"selector" is expected to be type of "AtomLike".'))
   }
-  if (!isAtom(target)) {
-    throw (new TypeError('"selector" argument of dynamicPluckT is expected to be type of "Atom".'))
+  if (!isAtomLike(target)) {
+    throw (new TypeError('"selector" is expected to be type of "AtomLike".'))
   }
 
-  const wrapSelectorM = Mutation.ofLiftLeft(prev => ({ type: 'selector', value: prev }))
-  const wrappedSelectorD = Data.empty()
+  interface WrappedSelector {
+    type: 'selector'
+    value: Vacuo | PropPath
+  }
+  const wrapSelectorM = Mutation.ofLiftLeft<PropPath, WrappedSelector>(prev => ({ type: 'selector', value: prev }))
+  const wrappedSelectorD = Data.empty<WrappedSelector>()
   pipeAtom(wrapSelectorM, wrappedSelectorD)
-  const wrapTargetM = Mutation.ofLiftLeft(prev => ({ type: 'target', value: prev }))
-  const wrappedTargetD = Data.empty()
+
+  interface WrappedTarget {
+    type: 'target'
+    value: Vacuo | T
+  }
+  const wrapTargetM = Mutation.ofLiftLeft<T, WrappedTarget>(prev => ({ type: 'target', value: prev }))
+  const wrappedTargetD = Data.empty<WrappedTarget>()
   pipeAtom(wrapTargetM, wrappedTargetD)
 
   const pluckM = Mutation.ofLiftLeft((() => {
-    const _internalStates = { selector: false, target: false }
-    const _internalValues = { selector: undefined, target: undefined }
+    const _internalStates: {
+      selector: boolean
+      target: boolean
+    } = { selector: false, target: false }
+    const _internalValues: {
+      selector: PropPath | undefined
+      target: T | undefined
+    } = { selector: undefined, target: undefined }
 
-    return prev => {
-      const { type, value } = prev
-      if (type !== 'selector' && type !== 'target') {
-        throw (new TypeError(`Unexpected type of wrapped Data received in pluckM, expected to be "selector" | "target", but received "${type}".`))
-      }
+    return (prev: Vacuo | WrappedSelector | WrappedTarget): V | Terminator => {
+      if (isVacuo(prev)) return TERMINATOR
+      if (isVacuo(prev.value)) return TERMINATOR
+
+      const { type } = prev
+
       _internalStates[type] = true
-      _internalValues[type] = value
+      _internalValues[type] = prev.value as any
+
       if (!_internalStates.selector || !_internalStates.target) {
         return TERMINATOR
       }
       if (type === 'selector') {
         return TERMINATOR
       }
-      // redundant conditional judgement
       if (type === 'target') {
         return getPropByPath(_internalValues.selector, _internalValues.target)
       }
+
+      throw (new TypeError('Unexpected "type".'))
     }
   })())
   pipeAtom(wrappedSelectorD, pluckM)
   pipeAtom(wrappedTargetD, pluckM)
 
-  const outputD = Data.empty()
+  const outputD = Data.empty<V>()
   pipeAtom(pluckM, outputD)
 
   binaryTweenPipeAtom(selector, wrapSelectorM)
   binaryTweenPipeAtom(target, wrapTargetM)
 
   return outputD
-})
+}
+interface IDynamicPluckT_ {
+  <T, V>(selector: AtomLikeOfOutput<PropPath>): (target: AtomLikeOfOutput<T>) => Data<V>
+  <T, V>(selector: AtomLikeOfOutput<PropPath>, target: AtomLikeOfOutput<T>): Data<V>
+}
+/**
+ * @see {@link dynamicPluckT}
+ */
+export const dynamicPluckT_: IDynamicPluckT_ = curryN(2, dynamicPluckT)
 
 /**
- * @param selector String | Array
- * @param target Atom
- * @return atom Data
+ * @see {@link pluckT}
  */
-export const staticPluckT = curryN(2, (selector, target) => {
+export const staticPluckT = <T, V>(
+  selector: PropPath, target: AtomLikeOfOutput<T>
+): Data<V> => {
   if (!isString(selector) && !isArray(selector) && !isNumber(selector)) {
-    throw (new TypeError('"selector" argument of staticPluckT is expected to be type of "String" | "Array" | "Number".'))
+    throw (new TypeError('"selector" is expected to be type of "String" | "Array" | "Number".'))
   }
   return dynamicPluckT(replayWithLatest(1, Data.of(selector)), target)
-})
+}
+interface IStaticPluckT_ {
+  <T, V>(selector: PropPath): (target: AtomLikeOfOutput<T>) => Data<V>
+  <T, V>(selector: PropPath, target: AtomLikeOfOutput<T>): Data<V>
+}
+/**
+ * @see {@link staticPluckT}
+ */
+export const staticPluckT_: IStaticPluckT_ = curryN(2, staticPluckT)

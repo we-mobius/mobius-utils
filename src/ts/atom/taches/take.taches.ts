@@ -1,91 +1,134 @@
-import { isNumber } from '../../internal'
+import { isNumber } from '../../internal/base'
 import { curryN } from '../../functional'
-import { TERMINATOR } from '../metas'
-import { Data, Mutation, isAtom } from '../atoms'
+
+import { TERMINATOR, isVacuo } from '../metas'
+import { Data, Mutation, isAtomLike } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
+import type { Vacuo, Terminator } from '../metas'
+import type { AtomLikeOfOutput } from '../atoms'
+
 /**
- * @param n Number | Atom
- * @param target Atom
- * @return atom Data
+ * Take sepcified number of values from the target atom.
+ * Default to take 0.
+ *
+ * @see {@link dynamicTakeT}, {@link staticTakeT}
  */
-export const takeT = curryN(2, (n, target) => {
-  if (isNumber(n)) {
-    return staticTakeT(n, target)
-  } else if (isAtom(n)) {
-    return dynamicTakeT(n, target)
+export const takeT = <V>(
+  number: AtomLikeOfOutput<number> | number, target: AtomLikeOfOutput<V>
+): Data<V> => {
+  if (isNumber(number)) {
+    return staticTakeT(number, target)
+  } else if (isAtomLike(number)) {
+    return dynamicTakeT(number, target)
   } else {
-    throw (new TypeError('"n" argument of takeT is expected to be type of "Number" or "Atom".'))
+    throw (new TypeError('"number" is expected to be type of "Number" or "AtomLike".'))
   }
-})
+}
+/**
+ * @see {@link takeT}
+ */
+export const takeT_ = curryN(2, takeT)
 
 /**
- * @param n Atom
- * @param target Atom
- * @return atom Data
+ * @see {@link takeT}
  */
-export const dynamicTakeT = curryN(2, (n, target) => {
-  if (!isAtom(n)) {
-    throw (new TypeError('"n" argument of dynamicTakeT is expected to be type of "Atom".'))
+export const dynamicTakeT = <V>(
+  number: AtomLikeOfOutput<number>, target: AtomLikeOfOutput<V>
+): Data<V> => {
+  if (!isAtomLike(number)) {
+    throw (new TypeError('"number" is expected to be type of "AtomLike".'))
   }
-  if (!isAtom(target)) {
-    throw (new TypeError('"target" argument of dynamicTakeT is expected to be type of "Atom".'))
+  if (!isAtomLike(target)) {
+    throw (new TypeError('"target" is expected to be type of "AtomLike".'))
   }
 
-  const wrapNumM = Mutation.ofLiftLeft(prev => ({ type: 'n', value: parseInt(prev) }))
-  const wrappedNumD = Data.empty()
-  pipeAtom(wrapNumM, wrappedNumD)
-  const wrapTargetM = Mutation.ofLiftLeft(prev => ({ type: 'target', value: prev }))
-  const wrappedTargetD = Data.empty()
+  interface WrappedNumber {
+    type: 'number'
+    value: Vacuo | number
+  }
+  const wrapNumberM = Mutation.ofLiftLeft<number, WrappedNumber>(prev => ({ type: 'number', value: parseInt(prev as any) }))
+  const wrappedNumberD = Data.empty<WrappedNumber>()
+  pipeAtom(wrapNumberM, wrappedNumberD)
+
+  interface WrappedTarget {
+    type: 'target'
+    value: Vacuo | V
+  }
+  const wrapTargetM = Mutation.ofLiftLeft<V, WrappedTarget>(prev => ({ type: 'target', value: prev }))
+  const wrappedTargetD = Data.empty<WrappedTarget>()
   pipeAtom(wrapTargetM, wrappedTargetD)
 
   const takeM = Mutation.ofLiftLeft((() => {
-    const _internalStates = { n: false, target: false, taked: 0 }
-    const _internalValues = { n: undefined, target: undefined }
-    return prev => {
-      const { type, value } = prev
-      if (type !== 'n' && type !== 'target') {
-        throw (new TypeError(`Unexpected type of wrapped Data received, expected to be "n" | "target", but received "${type}".`))
-      }
+    const _internalStates: {
+      number: boolean
+      target: boolean
+      taked: number
+    } = { number: false, target: false, taked: 0 }
+    const _internalValues: {
+      number: number
+      target: V | undefined
+    } = { number: 0, target: undefined }
+
+    return (prev: Vacuo | WrappedNumber | WrappedTarget): V | Terminator => {
+      if (isVacuo(prev)) return TERMINATOR
+      if (isVacuo(prev.value)) return TERMINATOR
+
+      const { type } = prev
+
       _internalStates[type] = true
-      _internalValues[type] = value
-      if (!_internalStates.n || !_internalStates.target) {
+      _internalValues[type] = prev.value as any
+
+      if (!_internalStates.number || !_internalStates.target) {
         return TERMINATOR
       }
-      if (type === 'n') {
+      if (type === 'number') {
         return TERMINATOR
       }
-      // redundant conditional judgement
+
       if (type === 'target') {
-        if (_internalStates.taked < _internalStates.n) {
+        if (_internalStates.taked < _internalValues.number) {
           _internalStates.taked = _internalStates.taked + 1
-          return _internalValues.target
+          return _internalValues.target!
         } else {
           return TERMINATOR
         }
       }
+
+      throw (new TypeError('Unexpected "type".'))
     }
   })())
-  pipeAtom(wrappedNumD, takeM)
+  pipeAtom(wrappedNumberD, takeM)
   pipeAtom(wrappedTargetD, takeM)
 
-  const outputD = Data.empty()
+  const outputD = Data.empty<V>()
   pipeAtom(takeM, outputD)
 
-  binaryTweenPipeAtom(n, wrapNumM)
+  binaryTweenPipeAtom(number, wrapNumberM)
   binaryTweenPipeAtom(target, wrapTargetM)
 
   return outputD
-})
+}
+/**
+ * @see {@link dynamicTakeT}
+ */
+export const dynamicTakeT_ = curryN(2, dynamicTakeT)
 
 /**
  * @todo release atom when specified num of value has emited
  *
- * @param n Number
- * @param target Atom
- * @return atom Data
+ * @see {@link takeT}
  */
-export const staticTakeT = curryN(2, (n, target) => {
-  return dynamicTakeT(replayWithLatest(1, Data.of(n)), target)
-})
+export const staticTakeT = <V>(
+  number: number, target: AtomLikeOfOutput<V>
+): Data<V> => {
+  if (!isNumber(number)) {
+    throw (new TypeError('"number" is expected to be type of "Number".'))
+  }
+  return dynamicTakeT(replayWithLatest(1, Data.of(number)), target)
+}
+/**
+ * @see {@link staticTakeT}
+ */
+export const staticTakeT_ = curryN(2, staticTakeT)

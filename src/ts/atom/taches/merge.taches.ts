@@ -1,31 +1,45 @@
-import { isArray } from '../../internal'
-import { Data, Mutation, isAtom } from '../atoms'
+import { isArray } from '../../internal/base'
+
+import { TERMINATOR, isVacuo } from '../metas'
+import { Data, Mutation, isAtomLike } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
+import type { Terminator, Vacuo } from '../metas'
+import type { AtomLikeOfOutput } from '../atoms'
+
 /**
- * @param argument Atom | [Atom]
- * @return atom Data
+ * Converge source atoms to a single Data.
  */
-export const mergeT = (...args) => {
-  let atoms = args[0]
-  if (!isArray(atoms)) {
-    atoms = args
+export const convergeT = <V>(
+  ...sources: Array<AtomLikeOfOutput<V>> | [Array<AtomLikeOfOutput<V>>]
+): Data<V> => {
+  let preparedSources: Array<AtomLikeOfOutput<V>> = []
+
+  if (sources.length === 1 && isArray(sources[0])) {
+    preparedSources = sources[0]
+  } else {
+    preparedSources = sources as Array<AtomLikeOfOutput<V>>
   }
 
-  const inputAtoms = atoms.map(atom => {
-    if (!isAtom(atom)) {
-      throw (new TypeError('Arguments of mergeT are expected to be type of "Atom".'))
+  const inputAtoms = preparedSources.map(source => {
+    if (!isAtomLike(source)) {
+      throw (new TypeError('"sources" are expected to be type of "AtomLike".'))
     }
-    return atom
+    return source
   })
 
-  const mergeM = Mutation.ofLiftLeft(prev => prev)
+  const convergeM = Mutation.ofLiftLeft(
+    (prev: V | Vacuo): V | Terminator => {
+      if (isVacuo(prev)) return TERMINATOR
+      return prev
+    }
+  )
 
-  const outputD = Data.empty()
-  pipeAtom(mergeM, outputD)
+  const outputD = Data.empty<V>()
+  pipeAtom(convergeM, outputD)
 
   inputAtoms.forEach(atom => {
-    binaryTweenPipeAtom(atom, mergeM)
+    binaryTweenPipeAtom(atom, convergeM)
   })
 
   return outputD

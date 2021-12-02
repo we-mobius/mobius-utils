@@ -79,6 +79,7 @@ export class Data<V> extends BaseAtom implements AtomLike {
   get metaName (): string { return 'value' }
   get meta (): Datar<V>['value'] { return this._datar.value }
 
+  get options (): Required<DataOptions> { return this._options }
   get consumers (): Set<DatarConsumer<V>> { return this._consumers }
 
   /**

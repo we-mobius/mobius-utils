@@ -1,100 +1,179 @@
-import { isFunction } from '../../internal'
+import { isFunction } from '../../internal/base'
 import { curryN } from '../../functional'
-import { TERMINATOR } from '../metas'
-import { Data, Mutation, isAtom } from '../atoms'
+
+import { TERMINATOR, isVacuo } from '../metas'
+import { Data, Mutation, isAtomLike } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
+import type { Vacuo, Terminator } from '../metas'
+import type { AtomLikeOfOutput } from '../atoms'
+
+interface Effect<V, T> {
+  (
+    emit: (value: V) => void,
+    target: T,
+    immediateReturn: (value: V) => void
+  ): V | Terminator
+  (
+    emit: (value: V) => void,
+    target: T,
+    immediateReturn: (value: V) => void
+  ): void
+}
+
 /**
- * @param effect Function | Atom, takes a effect function that takes
- *               an emit function, a target value, and a instantly emit value set function.
+ * `effectT` transfer the value's emittion authority to the `effect` function,
+ *   so developer can control whether, when and what value will be emitted.
+ *
+ * @param effect A function that controls the value's emittion.
+ *               When there is a target value received, the effect function will be invoked.
+ *               It takes an emit function as first argument, invoke it with the value to emit it.
+ *                 And takes the target value as second argument, an value set function
+ *                 whose value will be emitted just after effect function's execution.
  * @param target Atom
- * @return atom Data
+ * @return Data<V>
+ *
+ * @see {@link dynamicEffectT}, {@link staticEffectT}
  */
-export const effectT = curryN(2, (effect, target) => {
+export const effectT = <V, T>(
+  effect: Effect<V, T>, target: AtomLikeOfOutput<T>
+): Data<V> => {
   if (isFunction(effect)) {
     return staticEffectT(effect, target)
-  } else if (isAtom(effect)) {
+  } else if (isAtomLike(effect)) {
     return dynamicEffectT(effect, target)
   } else {
-    throw (new TypeError('"effect" argument of effectT is expected to be type of "Function" or "Atom"'))
+    throw (new TypeError('"effect" is expected to be type of "Function" or "AtomLike".'))
   }
-})
+}
+/**
+ * @see {@link effectT}
+ */
+export const effectT_ = curryN(2, effectT)
 
 /**
- * @param effect Atom
- * @param target Atom
- * @return atom Data
+ * @see {@link effectT}
  */
-export const dynamicEffectT = curryN(2, (effect, target) => {
-  if (!isAtom(effect)) {
-    throw (new TypeError('"effect" argument of dynamicEffectT is expected to be type of "Atom".'))
+export const dynamicEffectT = <V, T>(
+  effect: AtomLikeOfOutput<Effect<V, T>>, target: AtomLikeOfOutput<T>
+): Data<V> => {
+  if (!isAtomLike(effect)) {
+    throw (new TypeError('"effect" is expected to be type of "AtomLike".'))
   }
-  if (!isAtom(target)) {
-    throw (new TypeError('"target" argument of dynamicEffectT is expected to be type of "Atom".'))
+  if (!isAtomLike(target)) {
+    throw (new TypeError('"target" is expected to be type of "AtomLike".'))
   }
 
-  const wrapEffectM = Mutation.ofLiftLeft(prev => ({ type: 'effect', value: prev }))
-  const wrappedEffectD = Data.empty()
+  interface WrappedEffect {
+    type: 'effect'
+    value: Vacuo | Effect<V, T>
+  }
+  const wrapEffectM = Mutation.ofLiftLeft<Effect<V, T>, WrappedEffect>(prev => ({ type: 'effect', value: prev }))
+  const wrappedEffectD = Data.empty<WrappedEffect>()
   pipeAtom(wrapEffectM, wrappedEffectD)
-  const wrapTargetM = Mutation.ofLiftLeft(prev => ({ type: 'target', value: prev }))
-  const wrappedTargetD = Data.empty()
+
+  interface WrappedTarget {
+    type: 'target'
+    value: Vacuo | T
+  }
+  const wrapTargetM = Mutation.ofLiftLeft<T, WrappedTarget>(prev => ({ type: 'target', value: prev }))
+  const wrappedTargetD = Data.empty<WrappedTarget>()
   pipeAtom(wrapTargetM, wrappedTargetD)
 
+  interface PrivateData {
+    type: symbol
+    value: V
+  }
+  const privateDataType = Symbol('privateData')
+
   const effectM = Mutation.ofLiftLeft((() => {
-    const _internalStates = { effect: false, target: false }
-    const _internalValues = { effect: undefined, target: undefined }
-    return prev => {
-      const { type, value } = prev
-      if (type !== 'effect' && type !== 'target') {
-        throw (new TypeError(`Unexpected type of wrapped Data received in effectM, expected to be "effect" | "target", but received "${type}".`))
+    const _internalStates: {
+      effect: boolean
+      target: boolean
+    } = { effect: false, target: false }
+    const _internalValues: {
+      effect: Effect<V, T> | undefined
+      target: T | undefined
+    } = { effect: undefined, target: undefined }
+
+    return (prev: Vacuo | WrappedEffect | WrappedTarget | PrivateData): V | Terminator => {
+      if (isVacuo(prev)) return TERMINATOR
+      if (isVacuo(prev.value)) return TERMINATOR
+
+      const { type } = prev
+
+      if (type === 'effect') {
+        _internalStates[type] = true
+        if (!isFunction(prev.value)) {
+          throw (new TypeError('"effect" is expected to be type of "Function".'))
+        }
+        _internalValues[type] = prev.value
+      } else if (type === 'target') {
+        _internalStates[type] = true
+        _internalValues[type] = prev.value
+      } else if (type === privateDataType) {
+        return prev.value
+      } else {
+        throw (new TypeError('Unexpected "type".'))
       }
-      _internalStates[type] = true
-      _internalValues[type] = value
+
       if (!_internalStates.effect || !_internalStates.target) {
         return TERMINATOR
       }
       if (type === 'effect') {
         return TERMINATOR
-      }
-      // redundant conditional judgement
-      if (type === 'target') {
+      } else if (type === 'target') {
         let hasSetReturned = false
-        let _returned
-        const result = _internalValues.effect(
-          value => {
-            effectM.triggerTransformation(() => value)
+        let _returned: V | Terminator = TERMINATOR
+        const result = _internalValues.effect!(
+          (value) => {
+            // Using "mutate" instead of "triggerTransformation" so that the "effectMutation" can update it's datar.
+
+            // effectM.triggerTransformation(() => value)
+            effectM.mutate(Data.of<WrappedEffect | WrappedTarget | PrivateData>({ type: privateDataType, value }))
           },
-          _internalValues.target,
-          returned => {
+          _internalValues.target!,
+          (returned) => {
             hasSetReturned = true
             _returned = returned
           }
         )
-        return hasSetReturned ? _returned : (result || TERMINATOR)
+
+        return hasSetReturned ? _returned : (result ?? TERMINATOR)
+      } else {
+        throw (new TypeError('Unexpected "type".'))
       }
     }
   })())
   pipeAtom(wrappedEffectD, effectM)
   pipeAtom(wrappedTargetD, effectM)
 
-  const outputD = Data.empty()
+  const outputD = Data.empty<V>()
   pipeAtom(effectM, outputD)
 
   binaryTweenPipeAtom(effect, wrapEffectM)
   binaryTweenPipeAtom(target, wrapTargetM)
 
   return outputD
-})
+}
+/**
+ * @see {@link dynamicEffectT}
+ */
+export const dynamicEffectT_ = curryN(2, dynamicEffectT)
 
 /**
- * @param effect Function
- * @param target Atom
- * @return atom Data
+ * @see {@link effectT}
  */
-export const staticEffectT = curryN(2, (effect, target) => {
+export const staticEffectT = <V, T>(
+  effect: Effect<V, T>, target: AtomLikeOfOutput<T>
+): Data<V> => {
   if (!isFunction(effect)) {
-    throw (new TypeError('"effect" argument of staticEffectT is expected to be type of "Function".'))
+    throw (new TypeError('"effect" is expected to be type of "Function".'))
   }
   return dynamicEffectT(replayWithLatest(1, Data.of(effect)), target)
-})
+}
+/**
+ * @see {@link staticEffectT}
+ */
+export const staticEffectT_ = curryN(2, staticEffectT)

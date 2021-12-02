@@ -1,7 +1,7 @@
 import {
   Mutation, Data, isMutation, isData, isAtom,
   pipeAtom, dataToData, mutationToDataS, dataToMutationS, atomToMutation,
-  filterT,
+  filterT_,
   createDataFromFunction, createDataFromEvent
 } from '../atom'
 import { completeStateRD } from './event'
@@ -98,16 +98,16 @@ export const makeElementBasedMessageProxy = (id, type, name) => {
       this.onymousSender = onymousSendM
       this.anonymousSender = onymousSendM
       this.sendedD = sendedD
-      const namedReceiver = filterT(prev => prev.detail.to === name, data)
+      const namedReceiver = filterT_(prev => prev.detail.to === name, data)
       this.receiver = namedReceiver
       this.broadReceiver = data
       this.namedReceiver = namedReceiver
-      this.anonymousReceiver = filterT(prev => prev.detail.from === undefined, data)
+      this.anonymousReceiver = filterT_(prev => prev.detail.from === undefined, data)
     }
 
     customizeReveiver (cond) {
       if (isFunction(cond)) {
-        return filterT(cond, this.broadReceiver)
+        return filterT_(cond, this.broadReceiver)
       } else if (isObject(cond)) {
         // TODO
         console.warn("TODO: Object type of cond as customizeReveiver's argument, you got a broadReceiver instead.")

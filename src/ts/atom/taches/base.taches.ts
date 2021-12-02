@@ -1,5 +1,6 @@
 import { isString, isNumber, isArray, isPlainObject, isFunction } from '../../internal/base'
 import { looseCurryN } from '../../functional'
+
 import { TERMINATOR } from '../metas'
 import { Data, Mutation, isAtomLike, DEFAULT_MUTATION_OPTIONS } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
@@ -397,7 +398,7 @@ export const createArrayMSTache = <P, C>(
     if (!acceptNonAtom) {
       _sources.forEach(source => {
         if (!isAtomLike(source)) {
-          throw (new TypeError('"source" is expected to be type of "Atom".'))
+          throw (new TypeError('"source" is expected to be type of "AtomLike".'))
         }
       })
       preparedSources = _sources
@@ -526,7 +527,7 @@ export const createObjectMSTache = <P, C>(
     if (!acceptNonAtom) {
       Object.values(sources).forEach(source => {
         if (!isAtomLike(source)) {
-          throw (new TypeError('"source" is expected to be type of "Atom".'))
+          throw (new TypeError('"source" is expected to be type of "AtomLike".'))
         }
       })
       preparedSources = sources

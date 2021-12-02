@@ -33,13 +33,20 @@ export const isNull = (tar: any): tar is null =>
   Object.prototype.toString.call((tar)) === '[object Null]'
 
 /**
- * 使用 instanceof 判断是否为对象
+ * Predicate whether the target is a Object, use `instanceof` operator to check.
+ *
+ * @see {@link isGeneralObject}, {@link isPlainObject}
  */
 export const isObject = (tar: any): tar is Object =>
   tar instanceof Object
 /**
- * 使用 typeof 判断是否为对象，非 null、非 Function、非原始类型的值都是对象，
- * 比如 Array、Map、Set 等
+ * Predicate whether the target is a general object, use `typeof` operator to check.
+ *
+ * A general object is an object that is not null, not a function, not a primitive.
+ *   Any other object is a general object, an array is a general object, a Map
+ *   is a general object, a Set is a general object, etc.
+ *
+ * @see {@link isObject}, {@link isPlainObject}
  */
 export const isGeneralObject = (tar: any): tar is Object =>
   tar !== null && typeof tar === 'object'
@@ -50,7 +57,14 @@ export interface PlainObject {
   [key: symbol]: any
 }
 /**
- * 判断是否为简单对象
+ * Predicate whether the target is a plain object.
+ *
+ * A plain object is an object that is not null, not a function, not a primitive type,
+ *   not an array, not a RegExp, not a Date, not a Map, not a Set, not a WeakMap,
+ *   not window, not a DOM element, not an Error,
+ *   not any other customize object type.
+ *
+ * @see {@link isObject}, {@link isGeneralObject}
  */
 export const isPlainObject = (tar: any): tar is PlainObject => {
   // 非 null、非 Function、非原始类型

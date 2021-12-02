@@ -1,52 +1,55 @@
 import { curryN } from '../../functional'
-import { TERMINATOR } from '../metas'
-import { Data, Mutation, isAtom } from '../atoms'
+
+import { TERMINATOR, isVacuo } from '../metas'
+import { Data, Mutation, isAtomLike } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
-const switchTacheFactory = mutationFactory => {
-  return curryN(2, (to, from) => {
-    if (!isAtom(to)) {
-      throw (new TypeError('"to" argument of switchT is expected to be type of "Atom".'))
+import type { Vacuo, Terminator } from '../metas'
+import type { AtomLikeOfOutput } from '../atoms'
+
+interface WrappedTo<T> {
+  type: 'to'
+  value: Vacuo | T
+}
+interface WrappedFrom<F> {
+  type: 'from'
+  value: Vacuo | F
+}
+
+const switchTacheFactory = <F, T>(
+  mutationFactory: <iF, iT>() => Mutation<WrappedFrom<iF> | WrappedTo<iT>, iT | Terminator>
+) => {
+  return (to: AtomLikeOfOutput<T>, from: AtomLikeOfOutput<F>): Data<T> => {
+    if (!isAtomLike(to)) {
+      throw (new TypeError('"to" is expected to be type of "AtomLike".'))
     }
-    if (!isAtom(from)) {
-      throw (new TypeError('"from" argument of switchT is expected to be type of "Atom".'))
+    if (!isAtomLike(from)) {
+      throw (new TypeError('"from" is expected to be type of "AtomLike".'))
     }
 
-    const wrapToM = Mutation.ofLiftLeft(prev => ({ type: 'to', value: prev }))
-    const wrappedToD = Data.empty()
+    const wrapToM = Mutation.ofLiftLeft<T, WrappedTo<T>>(prev => ({ type: 'to', value: prev }))
+    const wrappedToD = Data.empty<WrappedTo<T>>()
     pipeAtom(wrapToM, wrappedToD)
-    const wrapFromM = Mutation.ofLiftLeft(prev => ({ type: 'from', value: prev }))
-    const wrappedFromD = Data.empty()
+
+    const wrapFromM = Mutation.ofLiftLeft<F, WrappedFrom<F>>(prev => ({ type: 'from', value: prev }))
+    const wrappedFromD = Data.empty<WrappedFrom<F>>()
     pipeAtom(wrapFromM, wrappedFromD)
 
     // const switchM = Mutation.ofLiftLeft(operation)
-    const switchM = mutationFactory()
+    const switchM = mutationFactory<F, T>()
     pipeAtom(wrappedToD, switchM)
     pipeAtom(wrappedFromD, switchM)
 
-    const outputD = Data.empty()
+    const outputD = Data.empty<T>()
     pipeAtom(switchM, outputD)
 
     binaryTweenPipeAtom(to, wrapToM)
     binaryTweenPipeAtom(from, wrapFromM)
 
     return outputD
-  })
-}
-
-/**
- * @param to Atom | Any
- * @param from Atom
- * @return atom Data
- */
-export const switchT = curryN(2, (to, from) => {
-  if (isAtom(to)) {
-    return dynamicSwitchT(to, from)
-  } else {
-    return staticSwitchT(to, from)
   }
-})
+}
 
 /**
  * switch Tache will emits a "to" value when "from" value comes.
@@ -54,81 +57,142 @@ export const switchT = curryN(2, (to, from) => {
  * If there is not "to" value to emit when "from" value comes,
  * it will emit a TERMINATOR which will stop the stream.
  *
- * @param to Atom
- * @param from Atom
- * @return atom Data
+ * @see {@link dynamicSwitchT}, {@link staticSwitchT}, {@link promiseSwitchT}
  */
-export const dynamicSwitchT = switchTacheFactory(() => {
+export const switchT = <F, T>(
+  to: AtomLikeOfOutput<T> | T, from: AtomLikeOfOutput<F>
+): Data<T> => {
+  if (isAtomLike(to)) {
+    return dynamicSwitchT(to as AtomLikeOfOutput<T>, from)
+  } else {
+    return staticSwitchT(to as T, from)
+  }
+}
+/**
+ * @see {@link switchT}
+ */
+export const switchT_ = curryN(2, switchT)
+
+/**
+ * @see {@link switchT}
+ */
+export const dynamicSwitchT: <F, T>(to: AtomLikeOfOutput<T>, from: AtomLikeOfOutput<F>) => Data<T> =
+switchTacheFactory(<F, T>(): Mutation<WrappedFrom<F> | WrappedTo<T>, T| Terminator> => {
   return Mutation.ofLiftLeft((() => {
-    const _internalStates = { from: false, to: false }
-    const _internalValues = { from: undefined, to: undefined }
-    return prev => {
-      const { type, value } = prev
-      if (type !== 'from' && type !== 'to') {
-        throw (new TypeError(`Unexpected type of wrapped Data received in switchM, expected to be "from" | "to", but received "${type}"`))
-      }
+    const _internalStates: {
+      from: boolean
+      to: boolean
+    } = { from: false, to: false }
+    const _internalValues: {
+      from: F | undefined
+      to: T | undefined
+    } = { from: undefined, to: undefined }
+
+    return (prev: Vacuo | WrappedFrom<F> | WrappedTo<T>): T | Terminator => {
+      if (isVacuo(prev)) return TERMINATOR
+      if (isVacuo(prev.value)) return TERMINATOR
+
+      const { type } = prev
+
       _internalStates[type] = true
-      _internalValues[type] = value
+      _internalValues[type] = prev.value as any
+
       if (!_internalStates.from || !_internalStates.to) {
         return TERMINATOR
       }
       if (type === 'to') {
         return TERMINATOR
       }
-      // redundant conditional judgement
+
       if (type === 'from') {
-        return _internalValues.to
+        return _internalValues.to!
       }
+
+      throw (new TypeError('Unexpected "type".'))
     }
   })())
 })
 
 /**
- * @param to Any
- * @param from Atom
- * @return atom Data
+ * @see {@link switchT}
  */
-export const staticSwitchT = curryN(2, (to, from) => {
+export const staticSwitchT = <F, T>(
+  to: T, from: AtomLikeOfOutput<F>
+): Data<T> => {
   return dynamicSwitchT(replayWithLatest(1, Data.of(to)), from)
-})
+}
+/**
+ * @see {@link staticSwitchT}
+ */
+export const staticSwitchT_ = curryN(2, staticSwitchT)
 
 /**
  * promiseSwitch Tache will emits a "to" value when "from" value comes.
  *
  * If there is no "to" value to emit when "from" value comes,
- * it will make a promise that to emit "to" value when it comes sooner.
+ *   it will make a promise that to emit "to" value when it comes later.
  *
- * @param to Atom
- * @param from Atom
- * @return atom Data
+ * @see {@link switchT}
  */
-export const promiseSwitchT = switchTacheFactory(() => {
-  return Mutation.ofLiftLeft((() => {
-    const _internalStates = { from: false, to: false, promise: false }
-    const _internalValues = { from: undefined, to: undefined }
-    return (prev, _, mutation) => {
-      const { type, value } = prev
-      if (type !== 'from' && type !== 'to') {
-        throw (new TypeError(`Unexpected type of wrapped Data received in switchM, expected to be "from" | "to", but received "${type}"`))
+export const promiseSwitchT: <F, T>(to: AtomLikeOfOutput<T>, from: AtomLikeOfOutput<F>) => Data<T> =
+switchTacheFactory(<F, T>(): Mutation<WrappedFrom<F> | WrappedTo<T>, T| Terminator> => {
+  interface PrivateData {
+    type: symbol
+    value: T
+  }
+  const privateDataType = Symbol('privateData')
+
+  const switchM: Mutation<WrappedFrom<F> | WrappedTo<T> | PrivateData, T | Terminator> = Mutation.ofLiftLeft((() => {
+    const _internalStates: {
+      from: boolean
+      to: boolean
+      promise: boolean
+    } = { from: false, to: false, promise: false }
+    const _internalValues: {
+      from: F | undefined
+      to: T | undefined
+    } = { from: undefined, to: undefined }
+
+    return (prev: Vacuo | WrappedFrom<F> | WrappedTo<T> | PrivateData, cur: any, mutation?: typeof switchM): T | Terminator => {
+      if (isVacuo(prev)) return TERMINATOR
+      if (isVacuo(prev.value)) return TERMINATOR
+
+      const { type } = prev
+
+      if (type === 'from' || type === 'to') {
+        _internalStates[type] = true
+        _internalValues[type] = prev.value as any
       }
-      _internalStates[type] = true
-      _internalValues[type] = value
+
+      if (type === privateDataType) {
+        return prev.value
+      }
+
       if (type === 'to') {
         if (_internalStates.promise) {
-          mutation.triggerTransformation(() => _internalValues.to)
+          // mutation.triggerTransformation(() => _internalValues.to)
+          mutation!.mutate(Data.of<WrappedFrom<F> | WrappedTo<T> | PrivateData>({ type: privateDataType, value: prev.value }))
           _internalStates.promise = false
         }
         return TERMINATOR
       }
-      // redundant conditional judgement
+
       if (type === 'from') {
         if (_internalStates.to) {
-          return _internalValues.to
+          return _internalValues.to!
         } else {
           _internalStates.promise = true
           return TERMINATOR
         }
       }
+
+      throw (new TypeError('Unexpected "type".'))
     }
   })())
+
+  return switchM as Mutation<WrappedFrom<F> | WrappedTo<T>, T | Terminator>
 })
+/**
+ * @see {@link promiseSwitchT}
+ */
+export const promiseSwitchT_ = curryN(2, promiseSwitchT)

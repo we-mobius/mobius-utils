@@ -17,8 +17,6 @@ import type {
   TransformationConsumer, MutationConsumer, MutationSubscription
 } from '../atoms'
 
-type AnyFunction = (...args: any[]) => any
-
 /******************************************************************************************************
  *
  *                                           Mediator Predicatess
@@ -84,6 +82,7 @@ export abstract class BaseMediator<BA extends BaseAtom> extends Vain {
   get metaName (): BA['metaName'] { return this._atom.metaName }
   get meta (): BA['meta'] { return this._atom.meta }
 
+  get options (): BA['options'] { return this._atom.options }
   get consumers (): BA['consumers'] { return this._atom.consumers }
 
   get isAtom (): boolean { return isAtom(this._atom) }

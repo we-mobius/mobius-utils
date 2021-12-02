@@ -31,11 +31,11 @@ export const hasOwnProperty = curry((key, obj) => Object.prototype.hasOwnPropert
 export const assign = curry((source, target) => Object.assign(target, source))
 export const assignTo = looseCurry((target, source, ...sources) => Object.assign(target, source, ...sources))
 
-type Path = number | string | Array<number | string>
+export type PropPath = number | string | Array<number | string>
 /**
  * @param { Array<number | string> | string | number } path Can be 'a.b,c/e/"f".["g.h"]\\i\\j'
  */
-export const getPropByPath = curry((path: Path, obj) => {
+export const getPropByPath = curry((path: PropPath, obj) => {
   if (!isArray(path) && !isString(path) && !isNumber(path)) {
     throw (new TypeError(`"path" is expected to be type of "Array" | "String" | "Number", but received "${typeof path}".`))
   }
@@ -54,7 +54,7 @@ export const getPropByPath = curry((path: Path, obj) => {
 /**
  * @param { Array<number | string> | string | number } path Can be 'a.b,c/e/"f".["g.h"]\\i\\j'
  */
-export const setPropByPath = curry((path: Path, value, obj) => {
+export const setPropByPath = curry((path: PropPath, value, obj) => {
   if (!isArray(path) && !isString(path) && !isNumber(path)) {
     throw (new TypeError(`"path" is expected to be type of "Array" | "String" | "Number", but received "${typeof path}".`))
   }

@@ -1,95 +1,137 @@
-import { isNumber } from '../../internal'
+import { isNumber } from '../../internal/base'
 import { curryN } from '../../functional'
-import { TERMINATOR } from '../metas'
-import { Data, Mutation, isAtom } from '../atoms'
+
+import { TERMINATOR, isVacuo } from '../metas'
+import { Data, Mutation, isAtomLike } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 import { replayWithLatest } from '../mediators'
 
+import type { Vacuo, Terminator } from '../metas'
+import type { AtomLikeOfOutput } from '../atoms'
+
 /**
- * @param timer Number | Atom
- * @param target Atom
- * @return atom Data
+ * The value emitted by target atom will only be triggered when timer atom has at least one value.
+ *
+ * @param timer which value is used as debounce time(in milliseconds)
+ * @param target which value will be debounced with specified time
+ * @return Data<V>
+ *
+ * @see {@link dynamicDebounceTimeT}, {@link staticDebounceTimeT}
  */
-export const debounceTimeT = curryN(2, (timer, target) => {
+export const debounceTimeT = <V>(
+  timer: number | AtomLikeOfOutput<number>, target: AtomLikeOfOutput<V>
+): Data<V> => {
   if (isNumber(timer)) {
     return staticDebounceTimeT(timer, target)
-  } else if (isAtom(timer)) {
+  } else if (isAtomLike(timer)) {
     return dynamicDebounceTimeT(timer, target)
   } else {
-    throw (new TypeError('"timer" argument of debounceTimeT is expected to be type of "Number" or "Atom".'))
+    throw (new TypeError('"timer" is expected to be type of "Number" or "AtomLike".'))
   }
-})
+}
+/**
+ * @see {@link debounceTimeT}
+ */
+export const deboundeTimeT_ = curryN(2, debounceTimeT)
 
 /**
- * the value target will only triggered when timer atom has at least one value
- *
- * @param timer Atom, which value is used as debounce time(in milliseconds)
- * @param target Atom, which value will be debounced with specified time
- * @return atom Data
+ * @see {@link debounceTimeT}
  */
-export const dynamicDebounceTimeT = curryN(2, (timer, target) => {
-  if (!isAtom(timer)) {
-    throw (new TypeError('"timer" argument of dynamicDebounceTimeT is expected to be type of "Atom".'))
+export const dynamicDebounceTimeT = <V>(
+  timer: AtomLikeOfOutput<number>, target: AtomLikeOfOutput<V>
+): Data<V> => {
+  if (!isAtomLike(timer)) {
+    throw (new TypeError('"timer" is expected to be type of "AtomLike".'))
   }
-  if (!isAtom(target)) {
-    throw (new TypeError('"target" argument of dynamicDebounceTimeT is expected to be type of "Atom".'))
+  if (!isAtomLike(target)) {
+    throw (new TypeError('"target" is expected to be type of "AtomLike".'))
   }
 
-  const wrapTimerM = Mutation.ofLiftLeft(prev => ({ type: 'timer', value: prev }))
-  const wrappedTimerD = Data.empty()
+  interface WrappedTimer {
+    type: 'timer'
+    value: Vacuo | number
+  }
+  const wrapTimerM = Mutation.ofLiftLeft<number, WrappedTimer>(prev => ({ type: 'timer', value: prev }))
+  const wrappedTimerD = Data.empty<WrappedTimer>()
   pipeAtom(wrapTimerM, wrappedTimerD)
-  const wrapTargetM = Mutation.ofLiftLeft(prev => ({ type: 'target', value: prev }))
-  const wrappedTargetD = Data.empty()
+
+  interface WrappedTarget {
+    type: 'target'
+    value: Vacuo | V
+  }
+  const wrapTargetM = Mutation.ofLiftLeft<V, WrappedTarget>(prev => ({ type: 'target', value: prev }))
+  const wrappedTargetD = Data.empty<WrappedTarget>()
   pipeAtom(wrapTargetM, wrappedTargetD)
 
   const debounceM = Mutation.ofLiftLeft((() => {
     // use closure to define private state for mutation's operation
-    const _internalStates = { timer: false, target: false, clock: 0 }
-    const _internalValues = { timer: undefined, target: undefined }
+    const _internalStates: {
+      timer: boolean
+      target: boolean
+      clock: NodeJS.Timeout | null
+    } = { timer: false, target: false, clock: null }
+    const _internalValues: {
+      timer: number | undefined
+      target: V | undefined
+    } = { timer: undefined, target: undefined }
+
     // actual mutation operation function
-    return prev => {
-      const { type, value } = prev
-      if (type !== 'timer' && type !== 'target') {
-        throw (new TypeError(`Unexpected type of wrapped Data received in debounceM, expected to be "timer" | "target", but received "${type}".`))
-      }
+    return (prev: Vacuo | WrappedTimer | WrappedTarget): V | Terminator => {
+      if (isVacuo(prev)) return TERMINATOR
+      if (isVacuo(prev.value)) return TERMINATOR
+
+      const { type } = prev
+
       _internalStates[type] = true
-      _internalValues[type] = value
+      _internalValues[type] = prev.value as any
+
       if (!_internalStates.timer || !_internalStates.target) {
         return TERMINATOR
       }
       if (type === 'timer') {
         return TERMINATOR
-      }
-      // redundant conditional judgement
-      if (type === 'target') {
-        clearTimeout(_internalStates.clock)
+      } else if (type === 'target') {
+        if (_internalStates.clock !== null) {
+          clearTimeout(_internalStates.clock)
+        }
         _internalStates.clock = setTimeout(() => {
-          debounceM.triggerTransformation(() => _internalValues.target)
+          debounceM.triggerTransformation(() => _internalValues.target as V)
         }, _internalValues.timer)
+
         return TERMINATOR
+      } else {
+        throw (new TypeError('Unexpected "type".'))
       }
     }
   })())
   pipeAtom(wrappedTimerD, debounceM)
   pipeAtom(wrappedTargetD, debounceM)
 
-  const outputD = Data.empty()
+  const outputD = Data.empty<V>()
   pipeAtom(debounceM, outputD)
 
   binaryTweenPipeAtom(timer, wrapTimerM)
   binaryTweenPipeAtom(target, wrapTargetM)
 
   return outputD
-})
+}
+/**
+ * @see {@link dynamicDebounceTimeT}
+ */
+export const dynamicDebounceTimeT_ = curryN(2, dynamicDebounceTimeT)
 
 /**
- * @param ms Atom, which will be used as debounce time(in milliseconds)
- * @param target Atom, which value will be debounced with specified time
- * @return atom Data
+ * @see {@link debounceTimeT}
  */
-export const staticDebounceTimeT = curryN(2, (ms, target) => {
+export const staticDebounceTimeT = <V>(
+  ms: number, target: AtomLikeOfOutput<V>
+): Data<V> => {
   if (!isNumber(ms)) {
-    throw (new TypeError('"ms" argument of staticDebounceTimeT is expected to be type of "Number".'))
+    throw (new TypeError('"ms" is expected to be type of "Number".'))
   }
   return dynamicDebounceTimeT(replayWithLatest(1, Data.of(ms)), target)
-})
+}
+/**
+ * @see {@link staticDebounceTimeT}
+ */
+export const staticDebounceTimeT_ = curryN(2, staticDebounceTimeT)

@@ -1,52 +1,76 @@
-import { isArray, isObject } from '../../internal'
-import { TERMINATOR, isTerminator } from '../metas'
-import { Mutation, Data, isAtom } from '../atoms'
+import { isArray, isPlainObject } from '../../internal/base'
+
+import { TERMINATOR, isTerminator, isVacuo } from '../metas'
+import { Mutation, Data, isAtomLike } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
+import type { Vacuo, Terminator } from '../metas'
+import type { AtomLikeOfOutput } from '../atoms'
+
+type StringRecord<V> = Record<string, V>
+
+interface IZipLatestT {
+  <V>(
+    ...sources: Array<AtomLikeOfOutput<V>> | [Array<AtomLikeOfOutput<V>>]
+  ): Data<V[]>
+  <V>(
+    sources: StringRecord<AtomLikeOfOutput<V>>
+  ): Data<StringRecord<V>>
+}
 /**
- * @param argument Atom | [Atom] | { Atom }
- * @return atom Data
+ * @see {@link arrayZipLatestT}, {@link objectZipLatestT}
  */
-export const zipLatestT = (...args) => {
-  if (isAtom(args[0]) || isArray(args[0])) {
-    return arrayZipLatestT(...args)
-  } else if (isObject(args[0])) {
-    return objectZipLatestT(...args)
+export const zipLatestT: IZipLatestT = (...sources: any[]): any => {
+  if (isAtomLike(sources[0]) || isArray(sources[0])) {
+    return arrayZipLatestT(...sources)
+  } else if (isPlainObject(sources[0])) {
+    return objectZipLatestT(sources[0])
   } else {
     throw (new TypeError('Arguments of zipLatestT are expected to be type of Atom | [Atom] | { Atom }.'))
   }
 }
 
 /**
- * @param argument Atom | [Atom]
- * @return atom Data
+ * @see {@link zipLatestT}
  */
-export const arrayZipLatestT = (...args) => {
-  let atoms = args[0]
-  if (!isArray(atoms)) {
-    atoms = args
+export const arrayZipLatestT = <V>(
+  ...sources: Array<AtomLikeOfOutput<V>> | [Array<AtomLikeOfOutput<V>>]
+): Data<V[]> => {
+  let preparedSources: Array<AtomLikeOfOutput<V>>
+  if (sources.length === 1 && isArray(sources[0])) {
+    preparedSources = sources[0]
+  } else {
+    preparedSources = sources as Array<AtomLikeOfOutput<V>>
   }
 
-  const inputDatas = atoms.map(atom => {
-    if (!isAtom(atom)) {
-      throw (new TypeError('Arguments of arrayZipLatestT are expected to be type of "Atom".'))
+  const inputDatas = preparedSources.map(atom => {
+    if (!isAtomLike(atom)) {
+      throw (new TypeError('"sources" are expected to be type of "AtomLike".'))
     }
     return atom
   })
 
-  const wrapMutations = Array.from({ length: atoms.length }).map((val, idx) =>
-    Mutation.ofLiftLeft((prev) => ({ id: idx, value: prev }))
+  interface WrappedSource {
+    id: number
+    value: Vacuo | V
+  }
+  const wrapMutations = Array.from({ length: preparedSources.length }).map((val, idx) =>
+    Mutation.ofLiftLeft<V, WrappedSource>((prev) => ({ id: idx, value: prev }))
   )
-
-  const wrappedDatas = Array.from({ length: atoms.length }).map(() => Data.empty())
+  const wrappedDatas = Array.from({ length: preparedSources.length }).map(() => Data.empty<WrappedSource>())
 
   const zipM = Mutation.ofLiftLeft((() => {
-    const _internalState = Array.from({ length: atoms.length })
-    const _intervalValues = Array.from({ length: atoms.length })
-    return prev => {
-      const { id, value } = prev
+    const _internalState = Array.from<boolean>({ length: preparedSources.length })
+    const _intervalValues = Array.from<V>({ length: preparedSources.length })
+
+    return (prev: Vacuo | WrappedSource): V[] | Terminator => {
+      if (isVacuo(prev)) return TERMINATOR
+      if (isVacuo(prev.value)) return TERMINATOR
+
+      const { id } = prev
       _internalState[id] = true
-      _intervalValues[id] = value
+      _intervalValues[id] = prev.value
+
       if (_internalState.every(val => val) && _intervalValues.every(val => !isTerminator(val))) {
         _internalState.forEach((_, idx) => { _internalState[idx] = false })
         return [..._intervalValues]
@@ -56,7 +80,7 @@ export const arrayZipLatestT = (...args) => {
     }
   })())
 
-  const outputD = Data.empty()
+  const outputD = Data.empty<V[]>()
 
   pipeAtom(zipM, outputD)
   wrappedDatas.forEach(data => {
@@ -73,53 +97,64 @@ export const arrayZipLatestT = (...args) => {
 }
 
 /**
- * @param obj Object, { Atom }
- * @return atom Data
+ * @see {@link zipLatestT}
  */
-export const objectZipLatestT = (obj) => {
-  const inputDatas = Object.entries(obj).reduce((acc, [key, atom]) => {
-    if (!isAtom(atom)) {
-      throw (new TypeError('Arguments of objectZipLatestT are expected to be type of "Atom".'))
+export const objectZipLatestT = <V>(
+  sources: StringRecord<AtomLikeOfOutput<V>>
+): Data<StringRecord<V>> => {
+  const inputDatas = Object.entries(sources).reduce<StringRecord<AtomLikeOfOutput<V>>>((acc, [key, atom]) => {
+    if (!isAtomLike(atom)) {
+      throw (new TypeError('"sources" are expected to be type of "AtomLike".'))
     }
     acc[key] = atom
     return acc
   }, {})
 
-  const wrapMutations = Object.entries(obj).reduce((acc, [key]) => {
+  interface WrappedSource {
+    key: string
+    value: Vacuo | V
+  }
+  const wrapMutations = Object.entries(sources).reduce<StringRecord<Mutation<V, WrappedSource>>>((acc, [key]) => {
     acc[key] = Mutation.ofLiftLeft((prev) => ({ key: key, value: prev }))
     return acc
   }, {})
 
-  const wrappedDatas = Object.entries(obj).reduce((acc, [key]) => {
+  const wrappedDatas = Object.entries(sources).reduce<StringRecord<Data<WrappedSource>>>((acc, [key]) => {
     acc[key] = Data.empty()
     return acc
   }, {})
 
   const zipM = Mutation.ofLiftLeft((() => {
-    const _internalState = Object.keys(obj).reduce((acc, key) => {
+    const _internalState = Object.keys(sources).reduce<StringRecord<boolean>>((acc, key) => {
       acc[key] = false
       return acc
     }, {})
-    const _intervalValues = Object.keys(obj).reduce((acc, key) => {
+    const _intervalValues = Object.keys(sources).reduce<StringRecord<V | undefined>>((acc, key) => {
       acc[key] = undefined
       return acc
     }, {})
-    return prev => {
-      const { key, value } = prev
+
+    return (prev: Vacuo | WrappedSource): StringRecord<V> | Terminator => {
+      if (isVacuo(prev)) return TERMINATOR
+      if (isVacuo(prev.value)) return TERMINATOR
+
+      const { key } = prev
+
       _internalState[key] = true
-      _intervalValues[key] = value
+      _intervalValues[key] = prev.value
+
       if (Object.values(_internalState).every(val => val) && Object.values(_intervalValues).every(val => !isTerminator(val))) {
         Object.keys(_internalState).forEach(key => {
           _internalState[key] = false
         })
-        return { ..._intervalValues }
+        return { ..._intervalValues } as unknown as StringRecord<V>
       } else {
         return TERMINATOR
       }
     }
   })())
 
-  const outputD = Data.empty()
+  const outputD = Data.empty<StringRecord<V>>()
 
   pipeAtom(zipM, outputD)
   Object.values(wrappedDatas).forEach(data => {

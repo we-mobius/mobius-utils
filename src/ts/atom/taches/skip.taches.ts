@@ -1,92 +1,142 @@
-import { isNumber } from '../../internal'
+import { isNumber } from '../../internal/base'
 import { curryN } from '../../functional'
-import { TERMINATOR } from '../metas'
-import { Data, Mutation, isAtom } from '../atoms'
+
+import { TERMINATOR, isVacuo } from '../metas'
+import { Data, Mutation, isAtomLike } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
+import type { Terminator, Vacuo } from '../metas'
+import type { AtomLikeOfOutput } from '../atoms'
+
 /**
- * @param n Number | Atom
- * @param target Atom
- * @return atom Data
+ * Skip specified number of value.
+ *
+ * @see {@link dynamicSkipT}, {@link staticSkipT}
  */
-export const skipT = curryN(2, (n, target) => {
-  if (isNumber(n)) {
-    return staticSkipT(n, target)
-  } else if (isAtom(n)) {
-    return dynamicSkipT(n, target)
+export const skipT = <V>(
+  number: number, target: AtomLikeOfOutput<V>
+): Data<V> => {
+  if (isNumber(number)) {
+    return staticSkipT(number, target)
+  } else if (isAtomLike(number)) {
+    return dynamicSkipT(number, target)
   } else {
-    throw (new TypeError('"n" argument of skipT is expected to be type of "Number" or "Atom".'))
+    throw (new TypeError('"number" is expected to be type of "Number" or "AtomLike".'))
   }
-})
+}
+interface ISkipT_ {
+  <V>(number: AtomLikeOfOutput<number> | number): (target: AtomLikeOfOutput<V>) => Data<V>
+  <V>(number: AtomLikeOfOutput<number> | number, target: AtomLikeOfOutput<V>): Data<V>
+}
+/**
+ * @see {@link skipT}
+ */
+export const skipT_: ISkipT_ = curryN(2, skipT)
 
 /**
- * @param n Atom
- * @param target Atom
- * @return atom Data
+ * @see {@link skipT}
  */
-export const dynamicSkipT = curryN(2, (n, target) => {
-  if (!isAtom(n)) {
-    throw (new TypeError('"n" argument of dynamicSkipT is expected to be type of "Atom".'))
+export const dynamicSkipT = <V>(
+  number: AtomLikeOfOutput<number>, target: AtomLikeOfOutput<V>
+): Data<V> => {
+  if (!isAtomLike(number)) {
+    throw (new TypeError('"number" is expected to be type of "AtomLike".'))
   }
-  if (!isAtom(target)) {
-    throw (new TypeError('"target" argument of dynamicSkipT is expected to be type of "Atom".'))
+  if (!isAtomLike(target)) {
+    throw (new TypeError('"target" is expected to be type of "AtomLike".'))
   }
 
-  const wrapNumM = Mutation.ofLiftLeft(prev => ({ type: 'n', value: prev }))
-  const wrappedNumD = Data.empty()
-  pipeAtom(wrapNumM, wrappedNumD)
-  const wrapTargetM = Mutation.ofLiftLeft(prev => ({ type: 'target', value: prev }))
-  const wrappedTargetD = Data.empty()
+  interface WrappedNumber {
+    type: 'number'
+    value: Vacuo | number
+  }
+  const wrapNumberM = Mutation.ofLiftLeft<number, WrappedNumber>(prev => ({ type: 'number', value: prev }))
+  const wrappedNumberD = Data.empty<WrappedNumber>()
+  pipeAtom(wrapNumberM, wrappedNumberD)
+
+  interface WrappedTarget{
+    type: 'target'
+    value: Vacuo | V
+  }
+  const wrapTargetM = Mutation.ofLiftLeft<V, WrappedTarget>(prev => ({ type: 'target', value: prev }))
+  const wrappedTargetD = Data.empty<WrappedTarget>()
   pipeAtom(wrapTargetM, wrappedTargetD)
 
   const skipM = Mutation.ofLiftLeft((() => {
-    const _internalStates = { n: false, target: false, index: -1, skiped: 0 }
-    const _internalValues = { n: undefined, target: undefined }
-    return prev => {
-      const { type, value } = prev
-      if (type !== 'n' && type !== 'target') {
-        throw (new TypeError(`Unexpected type of wrapped Data received, expected to be "n" | "target", but received "${type}".`))
-      }
+    const _internalStates: {
+      number: boolean
+      target: boolean
+      skiped: number
+    } = { number: false, target: false, skiped: 0 }
+    const _internalValues: {
+      number: number
+      target: V | undefined
+    } = { number: 0, target: undefined }
+
+    return (prev: Vacuo | WrappedNumber | WrappedTarget): V | Terminator => {
+      if (isVacuo(prev)) return TERMINATOR
+      if (isVacuo(prev.value)) return TERMINATOR
+
+      const { type } = prev
+
       _internalStates[type] = true
-      _internalValues[type] = value
-      if (!_internalStates.n || !_internalStates.target) {
+      _internalValues[type] = prev.value as any
+
+      if (!_internalStates.number || !_internalStates.target) {
         return TERMINATOR
       }
-      if (type === 'n') {
+      if (type === 'number') {
         return TERMINATOR
       }
-      // redundant conditional judgement
       if (type === 'target') {
-        if (_internalStates.skiped < _internalStates.n) {
+        if (_internalStates.skiped < _internalValues.number) {
           _internalStates.skiped = _internalStates.skiped + 1
           return TERMINATOR
         } else {
-          return _internalValues.target
+          return _internalValues.target!
         }
       }
+
+      throw (new TypeError('Unexpected "type".'))
     }
   })())
-  pipeAtom(wrappedNumD, skipM)
+  pipeAtom(wrappedNumberD, skipM)
   pipeAtom(wrappedTargetD, skipM)
 
-  const outputD = Data.empty()
+  const outputD = Data.empty<V>()
   pipeAtom(skipM, outputD)
 
-  binaryTweenPipeAtom(n, wrapNumM)
+  binaryTweenPipeAtom(number, wrapNumberM)
   binaryTweenPipeAtom(target, wrapTargetM)
 
   return outputD
-})
+}
+interface IDynamicSkipT_ {
+  <V>(number: AtomLikeOfOutput<number>): (target: AtomLikeOfOutput<V>) => Data<V>
+  <V>(number: AtomLikeOfOutput<number>, target: AtomLikeOfOutput<V>): Data<V>
+}
+/**
+ * @see {@link dynamicSkipT}
+ */
+export const dynamicSkipT_: IDynamicSkipT_ = curryN(2, dynamicSkipT)
 
 /**
- * @param n Number
- * @param target Atom
- * @return atom Data
+ * @see {@link skipT}
  */
-export const staticSkipT = curryN(2, (n, target) => {
-  if (!isAtom(n)) {
-    throw (new TypeError('"n" argument of staticSkipT is expected to be type of "Number".'))
+export const staticSkipT = <V>(
+  number: number, target: AtomLikeOfOutput<V>
+): Data<V> => {
+  if (!isAtomLike(number)) {
+    throw (new TypeError('"number" is expected to be type of "Number".'))
   }
-  return dynamicSkipT(replayWithLatest(1, Data.of(n)), target)
-})
+  return dynamicSkipT(replayWithLatest(1, Data.of<number>(number)), target)
+}
+interface IStaticSkipT_ {
+  <V>(number: number): (target: AtomLikeOfOutput<V>) => Data<V>
+  <V>(number: number, target: AtomLikeOfOutput<V>): Data<V>
+}
+/**
+ * @see {@link staticSkipT}
+ */
+export const staticSkipT_: IStaticSkipT_ = curryN(2, staticSkipT)

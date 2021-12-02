@@ -1,8 +1,12 @@
 import { curryN } from '../../functional'
-import { TERMINATOR, isVoid } from '../metas'
-import { Data, Mutation, isAtom } from '../atoms'
+
+import { TERMINATOR, isVoid, isVacuo } from '../metas'
+import { Data, Mutation, isAtomLike } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
+
+import type { Vacuo, Terminator } from '../metas'
+import type { AtomLikeOfOutput } from '../atoms'
 
 /**
  * Takes a default value and a target atom as argument,
@@ -13,75 +17,106 @@ import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
  *
  * @param default Any | Atom
  * @param target Atom
- * @return atom Data
+ * @return Data<V>
+ *
+ * @see {@link dynamicDefaultToT}, {@link staticDefaultToT}
  */
-export const defaultToT = curryN(2, (dft, target) => {
-  if (isAtom(dft)) {
-    return dynamicDefautToT(dft, target)
+export const defaultToT = <V>(
+  dft: V | AtomLikeOfOutput<V>, target: AtomLikeOfOutput<V>
+): Data<V> => {
+  if (isAtomLike(dft)) {
+    return dynamicDefaultToT(dft as AtomLikeOfOutput<V>, target)
   } else {
-    return staticDefaultToT(dft, target)
+    return staticDefaultToT(dft as V, target)
   }
-})
+}
+export const defaultToT_ = curryN(2, defaultToT)
 
 /**
- * @param default Atom
- * @param target Atom
- * @return atom Data
+ * @see {@link defaultToT}
  */
-export const dynamicDefautToT = curryN(2, (dft, target) => {
-  if (!isAtom(dft)) {
-    throw (new TypeError('"dft" argument of dynamicDefautToT is expected to be type of "Atom".'))
+export const dynamicDefaultToT = <V>(
+  dft: AtomLikeOfOutput<V>, target: AtomLikeOfOutput<V>
+): Data<V> => {
+  if (!isAtomLike(dft)) {
+    throw (new TypeError('"dft" is expected to be type of "AtomLike".'))
   }
-  if (!isAtom(target)) {
-    throw (new TypeError('"target" argument of dynamicDefautToT is expected to be type of "Atom".'))
+  if (!isAtomLike(target)) {
+    throw (new TypeError('"target" is expected to be type of "AtomLike".'))
   }
 
-  const wrapDftM = Mutation.ofLiftLeft(prev => ({ type: 'dft', value: prev }))
-  const wrappedDftD = Data.empty()
+  interface WrappedDft {
+    type: 'dft'
+    value: Vacuo | V
+  }
+  const wrapDftM = Mutation.ofLiftLeft<V, WrappedDft>(prev => ({ type: 'dft', value: prev }))
+  const wrappedDftD = Data.empty<WrappedDft>()
   pipeAtom(wrapDftM, wrappedDftD)
-  const wrapTargetM = Mutation.ofLiftLeft(prev => ({ type: 'target', value: prev }))
-  const wrappedTargetD = Data.empty()
+
+  interface WrappedTarget {
+    type: 'target'
+    value: Vacuo | V
+  }
+  const wrapTargetM = Mutation.ofLiftLeft<V, WrappedTarget>(prev => ({ type: 'target', value: prev }))
+  const wrappedTargetD = Data.empty<WrappedTarget>()
   pipeAtom(wrapTargetM, wrappedTargetD)
 
   const defaultM = Mutation.ofLiftLeft((() => {
-    const _internalStates = { dft: false, target: false }
-    const _internalValues = { dft: undefined, target: undefined }
-    return prev => {
-      const { type, value } = prev
-      if (type !== 'dft' && type !== 'target') {
-        throw (new TypeError(`Unexpected type of wrapped Data received in defaultM, expected to be "dft" | "target", but received "${type}".`))
-      }
+    const _internalStates: {
+      dft: boolean
+      target: boolean
+    } = { dft: false, target: false }
+    const _internalValues: {
+      dft: V | undefined
+      target: V | undefined
+    } = { dft: undefined, target: undefined }
+
+    return (prev: Vacuo | WrappedDft | WrappedTarget): V | Terminator => {
+      if (isVacuo(prev)) return TERMINATOR
+      if (isVacuo(prev.value)) return TERMINATOR
+
+      const { type } = prev
+
       _internalStates[type] = true
-      _internalValues[type] = value
+      _internalValues[type] = prev.value
+
       if (!_internalStates.dft || !_internalStates.target) {
         return TERMINATOR
       }
       if (type === 'dft') {
         return TERMINATOR
-      }
-      // redundant conditional judgement
-      if (type === 'target') {
-        return isVoid(_internalValues.target) ? _internalValues.dft : _internalValues.target
+      } else if (type === 'target') {
+        return (isVoid(_internalValues.target) ? _internalValues.dft : _internalValues.target) as V
+      } else {
+        throw (new TypeError('Unexpected "type".'))
       }
     }
   })())
   pipeAtom(wrappedDftD, defaultM)
   pipeAtom(wrappedTargetD, defaultM)
 
-  const outputD = Data.empty()
+  const outputD = Data.empty<V>()
   pipeAtom(defaultM, outputD)
 
   binaryTweenPipeAtom(dft, wrapDftM)
   binaryTweenPipeAtom(target, wrapTargetM)
 
   return outputD
-})
+}
+/**
+ * @see {@link dynamicDefaultToT}
+ */
+export const dynamicDefaultToT_ = curryN(2, dynamicDefaultToT)
 
 /**
- * @param default Any
- * @param target Atom
- * @return atom Data
+ * @see {@link defaultToT}
  */
-export const staticDefaultToT = curryN(2, (dft, target) => {
-  return dynamicDefautToT(replayWithLatest(1, Data.of(dft)), target)
-})
+export const staticDefaultToT = <V>(
+  dft: V, target: AtomLikeOfOutput<V>
+): Data<V> => {
+  return dynamicDefaultToT(replayWithLatest(1, Data.of(dft)), target)
+}
+/**
+ * @see {@link staticDefaultToT}
+ */
+export const staticDefaultToT_ = curryN(2, staticDefaultToT)

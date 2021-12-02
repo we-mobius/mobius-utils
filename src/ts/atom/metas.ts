@@ -2,8 +2,6 @@ import { isObject, isFunction } from '../internal/base'
 
 import { Vain } from './vain'
 
-type AnyFunction = (...args: any[]) => any
-
 /******************************************************************************************************
  *                                                  Metas
  *

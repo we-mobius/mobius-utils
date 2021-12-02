@@ -1,51 +1,77 @@
-import { isArray, isObject } from '../../internal'
-import { TERMINATOR, isTerminator } from '../metas'
-import { Mutation, Data, isAtom } from '../atoms'
+import { isArray, isObject } from '../../internal/base'
+
+import { TERMINATOR, isTerminator, isVacuo } from '../metas'
+import { Mutation, Data, isAtomLike } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
+import type { Vacuo, Terminator } from '../metas'
+import type { AtomLikeOfOutput } from '../atoms'
+
+type StringRecord<V> = Record<string, V>
+
+interface ICombineLatestT {
+  <V>(
+    ...sources: Array<AtomLikeOfOutput<V>> | [Array<AtomLikeOfOutput<V>>]
+  ): Data<V[]>
+  <V>(
+    source: StringRecord<AtomLikeOfOutput<V>>
+  ): Data<StringRecord<V>>
+}
+
 /**
- * @param argument Atom | [Atom] | { Atom }
- * @return atom Data
+ * @see {@link arrayCombineLatestT} {@link objectCombineLatestT}
  */
-export const combineLatestT = (...args) => {
-  if (isAtom(args[0]) || isArray(args[0])) {
-    return arrayCombineLatestT(...args)
-  } else if (isObject(args[0])) {
-    return objectCombineLatestT(...args)
+export const combineLatestT: ICombineLatestT = (...sources: any[]): any => {
+  if (isAtomLike(sources[0]) || isArray(sources[0])) {
+    return arrayCombineLatestT(...sources)
+  } else if (isObject(sources[0])) {
+    return objectCombineLatestT(sources[0])
   } else {
-    throw (new TypeError('Arguments of combineLatestT are expected to be type of Atom | [Atom] | { Atom }.'))
+    throw (new TypeError('"sources" are expected to be type of AtomLike | AtomLike[] | Record<string, AtomLike>.'))
   }
 }
 
 /**
- * @param argument Atom | [Atom]
- * @return atom Data
+ * @see {@link combineLatestT}
  */
-export const arrayCombineLatestT = (...args) => {
-  let atoms = args[0]
-  if (!isArray(atoms)) {
-    atoms = args
+export const arrayCombineLatestT = <V>(
+  ...sources: Array<AtomLikeOfOutput<V>> | [Array<AtomLikeOfOutput<V>>]
+): Data<V[]> => {
+  let preparedSources: Array<AtomLikeOfOutput<V>> = []
+
+  if (sources.length === 1 && isArray(sources[0])) {
+    preparedSources = sources[0]
+  } else {
+    preparedSources = sources as Array<AtomLikeOfOutput<V>>
   }
 
-  const inputAtoms = atoms.map(atom => {
-    if (!isAtom(atom)) {
-      throw (new TypeError('Arguments of combineT are expected to be type of "Atom".'))
+  const inputAtoms = preparedSources.map(source => {
+    if (!isAtomLike(source)) {
+      throw (new TypeError('"sources" are expected to be type of "AtomLike".'))
     }
-    return atom
+    return source
   })
 
-  const length = atoms.length
+  const length = preparedSources.length
 
+  interface WrappedData {
+    id: number
+    value: Vacuo | V
+  }
   const wrapMutations = Array.from({ length }).map((val, idx) =>
-    Mutation.ofLiftLeft((prev) => ({ id: idx, value: prev }))
+    Mutation.ofLiftLeft<V, WrappedData>((prev) => ({ id: idx, value: prev }))
   )
 
-  const wrappedDatas = Array.from({ length }).map(() => Data.empty())
+  const wrappedDatas = Array.from({ length }).map(() => Data.empty<WrappedData>())
 
   const combineM = Mutation.ofLiftLeft((() => {
-    const _internalStates = Array.from({ length })
-    const _intervalValues = Array.from({ length })
-    return prev => {
+    const _internalStates = Array.from<boolean>({ length })
+    const _intervalValues = Array.from<V>({ length })
+
+    return (prev: WrappedData | Vacuo): V[] | Terminator => {
+      if (isVacuo(prev)) return TERMINATOR
+      if (isVacuo(prev.value)) return TERMINATOR
+
       const { id, value } = prev
 
       if (isTerminator(value)) return TERMINATOR
@@ -61,7 +87,7 @@ export const arrayCombineLatestT = (...args) => {
     }
   })())
 
-  const outputD = Data.empty()
+  const outputD = Data.empty<V[]>()
 
   pipeAtom(combineM, outputD)
   wrappedDatas.forEach(data => {
@@ -78,38 +104,55 @@ export const arrayCombineLatestT = (...args) => {
 }
 
 /**
- * @param obj Object, { Atom }
- * @return atom Data
+ * @see {@link combineLatestT}
  */
-export const objectCombineLatestT = (obj) => {
-  const inputAtoms = Object.entries(obj).reduce((acc, [key, atom]) => {
-    if (!isAtom(atom)) {
-      throw (new TypeError('Arguments of objectCombineLatestT are expected to be type of "Atom".'))
-    }
-    acc[key] = atom
-    return acc
-  }, {})
+export const objectCombineLatestT = <V>(
+  sources: StringRecord<AtomLikeOfOutput<V>>
+): Data<StringRecord<V>> => {
+  const inputAtoms = Object.entries(sources).reduce<StringRecord<AtomLikeOfOutput<V>>>(
+    (acc, [key, atom]) => {
+      if (!isAtomLike(atom)) {
+        throw (new TypeError('"sources" are expected to be type of "AtomLike".'))
+      }
+      acc[key] = atom
+      return acc
+    }, {}
+  )
 
-  const wrapMutations = Object.entries(obj).reduce((acc, [key]) => {
-    acc[key] = Mutation.ofLiftLeft((prev) => ({ key: key, value: prev }))
-    return acc
-  }, {})
+  interface WrappedData {
+    key: string
+    value: Vacuo | V
+  }
+  const wrapMutations = Object.entries(sources).reduce<StringRecord<Mutation<V, WrappedData>>>(
+    (acc, [key]) => {
+      acc[key] = Mutation.ofLiftLeft((prev) => ({ key: key, value: prev }))
+      return acc
+    }, {}
+  )
 
-  const wrappedDatas = Object.entries(obj).reduce((acc, [key]) => {
-    acc[key] = Data.empty()
-    return acc
-  }, {})
+  const wrappedDatas = Object.entries(sources).reduce<StringRecord<Data<WrappedData>>>(
+    (acc, [key]) => {
+      acc[key] = Data.empty()
+      return acc
+    }, {}
+  )
 
   const combineM = Mutation.ofLiftLeft((() => {
-    const _internalStates = Object.keys(obj).reduce((acc, key) => {
+    const _internalStates = Object.keys(sources).reduce<StringRecord<boolean>>((acc, key) => {
       acc[key] = false
       return acc
     }, {})
-    const _intervalValues = Object.keys(obj).reduce((acc, key) => {
-      acc[key] = undefined
-      return acc
-    }, {})
-    return prev => {
+    const _intervalValues = Object.keys(sources).reduce<StringRecord<V | undefined>>(
+      (acc, key) => {
+        acc[key] = undefined
+        return acc
+      }, {}
+    )
+
+    return (prev: Vacuo | WrappedData): StringRecord<V> | Terminator => {
+      if (isVacuo(prev)) return TERMINATOR
+      if (isVacuo(prev.value)) return TERMINATOR
+
       const { key, value } = prev
 
       if (isTerminator(value)) return TERMINATOR
@@ -118,14 +161,14 @@ export const objectCombineLatestT = (obj) => {
       _intervalValues[key] = value
 
       if (Object.values(_internalStates).every(val => val)) {
-        return { ..._intervalValues }
+        return { ..._intervalValues } as unknown as StringRecord<V>
       } else {
         return TERMINATOR
       }
     }
   })())
 
-  const outputD = Data.empty()
+  const outputD = Data.empty<StringRecord<V>>()
 
   pipeAtom(combineM, outputD)
   Object.values(wrappedDatas).forEach(data => {

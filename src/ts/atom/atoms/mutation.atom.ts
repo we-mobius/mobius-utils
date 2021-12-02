@@ -94,6 +94,7 @@ export class Mutation<P, C> extends BaseAtom implements AtomLike {
   get metaName (): string { return 'transformation' }
   get meta (): Mutator<P, C>['transformation'] { return this._mutator.transformation }
 
+  get options (): Required<MutationOptions<P, C>> { return this._options }
   get consumers (): Set<MutatorConsumer<P, C>> { return this._consumers }
 
   /**

@@ -1,101 +1,141 @@
-import { isFunction } from '../../internal'
+import { isFunction, asIs } from '../../internal/base'
 import { curryN } from '../../functional'
-import { TERMINATOR } from '../metas'
-import { Data, Mutation, isAtom } from '../atoms'
+
+import { TERMINATOR, isVacuo } from '../metas'
+import { Data, Mutation, isAtomLike } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
+import type { Vacuo, Terminator } from '../metas'
+import type { AtomLikeOfOutput } from '../atoms'
+
+type CompareBy<V> = (target: V) => any
+
 /**
- * @param transform Function | Atom
+ * @param compareBy transform Funtion which will be applied to target value
+ *                    before distinct comparison.
  * @param target Atom
- * @return atom Data
+ * @return Data<V>
+ *
+ * @see {@link dynamicDistinctEverT}, {@link staticDistinctEverT}
  */
-export const distinctEverT = curryN(2, (transform, target) => {
-  if (isFunction(transform)) {
-    return staticDistinctEverT(transform, target)
-  } else if (isAtom(transform)) {
-    return dynamicDistinctEverT(transform, target)
+export const distinctEverT = <V>(
+  compareBy: AtomLikeOfOutput<CompareBy<V>> | CompareBy<V>, target: AtomLikeOfOutput<V>
+): Data<V> => {
+  if (isFunction(compareBy)) {
+    return staticDistinctEverT(compareBy, target)
+  } else if (isAtomLike(compareBy)) {
+    return dynamicDistinctEverT(compareBy, target)
   } else {
-    throw (new TypeError('"transform" argument of distinctEverT is expected to be type of "Number" or "Atom".'))
+    throw (new TypeError('"compareBy" is expected to be type of "Function" or "AtomLike".'))
   }
-})
+}
+/**
+ * @see {@link distinctEverT}
+ */
+export const distinctEverT_ = curryN(2, distinctEverT)
 
 /**
- * @param transform Atom, atom of transform Funtion which will
- *                  take a value as input and return a value as distinct compare unit
- * @param target Atom
- * @return atom Data
+ * @see {@link distinctEverT}
  */
-export const dynamicDistinctEverT = curryN(2, (transform, target) => {
-  if (!isAtom(transform)) {
-    throw (new TypeError('"transform" argument of dynamicDistinctEverT is expected to be type of "Atom".'))
+export const dynamicDistinctEverT = <V>(
+  compareBy: AtomLikeOfOutput<CompareBy<V>>, target: AtomLikeOfOutput<V>
+): Data<V> => {
+  if (!isAtomLike(compareBy)) {
+    throw (new TypeError('"compareBy" is expected to be type of "AtomLike".'))
   }
-  if (!isAtom(target)) {
-    throw (new TypeError('"target" argument of dynamicDistinctEverT is expected to be type of "Atom".'))
+  if (!isAtomLike(target)) {
+    throw (new TypeError('"target" is expected to be type of "AtomLike".'))
   }
 
-  const wrapTransformM = Mutation.ofLiftLeft(prev => ({ type: 'transform', value: prev }))
-  const wrappedTransformD = Data.empty()
-  pipeAtom(wrapTransformM, wrappedTransformD)
-  const wrapTargetM = Mutation.ofLiftLeft(prev => ({ type: 'target', value: prev }))
-  const wrappedTargetD = Data.empty()
+  interface WrappedCompareBy {
+    type: 'compareBy'
+    value: Vacuo | CompareBy<V>
+  }
+  const wrapCompareByM = Mutation.ofLiftLeft<CompareBy<V>, WrappedCompareBy>(prev => ({ type: 'compareBy', value: prev }))
+  const wrappedCompareByD = Data.empty<WrappedCompareBy>()
+  pipeAtom(wrapCompareByM, wrappedCompareByD)
+
+  interface WrappedTarget {
+    type: 'target'
+    value: Vacuo | V
+  }
+  const wrapTargetM = Mutation.ofLiftLeft<V, WrappedTarget>(prev => ({ type: 'target', value: prev }))
+  const wrappedTargetD = Data.empty<WrappedTarget>()
   pipeAtom(wrapTargetM, wrappedTargetD)
 
   const distinctM = Mutation.ofLiftLeft((() => {
-    const _internalStates = { transform: false, target: false, history: [] }
-    const _internalValues = { transform: undefined, target: undefined }
-    return prev => {
-      const { type, value } = prev
-      if (type !== 'transform' && type !== 'target') {
-        throw (new TypeError(`Unexpected type of wrapped Data received in distinctM, expected to be "transform" | "target", but received "${type}".`))
-      }
+    const _internalStates: {
+      compareBy: boolean
+      target: boolean
+      history: any[]
+    } = { compareBy: false, target: false, history: [] }
+    const _internalValues: {
+      compareBy: CompareBy<V>
+      target: V | undefined
+    } = { compareBy: asIs, target: undefined }
+
+    return (prev: Vacuo | WrappedCompareBy | WrappedTarget): V | Terminator => {
+      if (isVacuo(prev)) return TERMINATOR
+      if (isVacuo(prev.value)) return TERMINATOR
+
+      const { type } = prev
+
       _internalStates[type] = true
-      _internalValues[type] = value
-      if (!_internalStates.transform || !_internalStates.target) {
+      _internalValues[type] = prev.value as any
+
+      if (!_internalStates.compareBy || !_internalStates.target) {
         return TERMINATOR
       }
-      if (type === 'transform') {
+      if (type === 'compareBy') {
         return TERMINATOR
-      }
-      // redundant conditional judgement
-      if (type === 'target') {
-        const transformed = _internalValues.transform(_internalValues.target)
+      } else if (type === 'target') {
+        const compared = _internalValues.compareBy(_internalValues.target as V)
         const history = _internalStates.history
-        if (history.includes(transformed)) {
+        if (history.includes(compared)) {
           return TERMINATOR
         } else {
-          history.push(transformed)
-          return _internalValues.target
+          history.push(compared)
+          return _internalValues.target as V
         }
+      } else {
+        throw (new TypeError('Unexpected "type".'))
       }
     }
   })())
   pipeAtom(wrappedTargetD, distinctM)
-  pipeAtom(wrappedTransformD, distinctM)
+  pipeAtom(wrappedCompareByD, distinctM)
 
-  const outputD = Data.empty()
+  const outputD = Data.empty<V>()
   pipeAtom(distinctM, outputD)
 
-  binaryTweenPipeAtom(transform, wrapTransformM)
+  binaryTweenPipeAtom(compareBy, wrapCompareByM)
   binaryTweenPipeAtom(target, wrapTargetM)
 
   return outputD
-})
+}
+/**
+ * @see {@link dynamicDistinctEverT}
+ */
+export const dynamicDistinctEverT_ = curryN(2, dynamicDistinctEverT)
 
 /**
- * @param transform Function
- * @param target Atom
- * @return atom Data
+ * @see {@link distinctEverT}
  */
-export const staticDistinctEverT = curryN(2, (transform, target) => {
-  if (!isFunction(transform)) {
-    throw (new TypeError('"transform" argument of staticDistinctEverT is expected to be type of "Function".'))
+export const staticDistinctEverT = <V>(
+  compareBy: CompareBy<V>, target: AtomLikeOfOutput<V>
+): Data<V> => {
+  if (!isFunction(compareBy)) {
+    throw (new TypeError('"compareBy" is expected to be type of "Function".'))
   }
-  return dynamicDistinctEverT(replayWithLatest(1, Data.of(transform)), target)
-})
+  return dynamicDistinctEverT(replayWithLatest(1, Data.of(compareBy)), target)
+}
+/**
+ * @see {@link staticDistinctEverT}
+ */
+export const staticDistinctEverT_ = curryN(2, staticDistinctEverT)
 
 /**
- * @param target Atom
- * @return atom Data
+ * @see {@link distinctEverT}
  */
-export const asIsDistinctEverT = distinctEverT(v => v)
+export const asIsDistinctEverT = distinctEverT_(asIs)
