@@ -117,6 +117,7 @@ export abstract class BaseAtom extends Vain {
   // eslint-disable-next-line max-len
   pipe<A, B, C, D, E, F, G, H, I, J> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>, fn8: Unary<G, H>, fn9: Unary<H, I>, fn10: Unary<I, J>, ...fns: Array<Unary<any, any>>): any
   pipe (...args: any[]): any {
+    // @ts-expect-error pass args through
     return pipe(...args)(this)
   }
 
@@ -137,6 +138,7 @@ export abstract class BaseAtom extends Vain {
   // eslint-disable-next-line max-len
   compose<A, B, C, D, E, F, G, H, I, J> (fn10: Unary<I, J>, fn9: Unary<H, I>, fn8: Unary<G, H>, fn7: Unary<F, G>, fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): J
   compose (...args: any[]): any {
+    // @ts-expect-error pass args through
     return compose(...args)(this)
   }
 }

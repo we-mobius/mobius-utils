@@ -118,6 +118,7 @@
     "@babel/plugin-transform-runtime": "^7.11.5",
     "@babel/preset-env": "^7.11.5",
     "@commitlint/cli": "^8.3.5",
+    "@types/javascript-state-machine": "^2.4.3",
     "@types/rx": "^4.1.2",
     "@types/uuid": "^8.3.1",
     "@typescript-eslint/eslint-plugin": "^4.30.0",

@@ -15,4 +15,3 @@
 - `./functional` & `./internal` 中各文件均不得引用 `./atom`;
 - `./functional` & `./internal` 中各文件均不得引用 `./external`;
 - `./atom` & `./external` 尽可能保持相对独立，互不引用;
-- `./semantic.js` 不被任何上游模块文件引用;

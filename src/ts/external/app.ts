@@ -1,160 +1,224 @@
+import { isPlainObject, isFunction } from '../internal/base'
 import {
-  Mutation, Data, isMutation, isData, isAtom,
-  pipeAtom, dataToData, mutationToDataS, dataToMutationS, atomToMutation,
-  filterT_,
-  createDataFromFunction, createDataFromEvent
+  isVacuo, TERMINATOR,
+  Mutation, Data, isAtomLike,
+  pipeAtom, dataToData,
+  filterT_, pluckT,
+  createDataFromFunction, createDataFromEvent, createFunctionTriggerAgent,
+  binaryTweenPipeAtom
 } from '../atom'
 import { completeStateRD } from './event'
-import { isObject, isFunction, hasOwnProperty } from '../internal'
 import { makeCustomEvent } from './dom'
 
+import type {
+  Terminator,
+  AtomLikeOfOutput, AtomLikeOfInput,
+  ReplayDataMediator,
+  Trigger, TriggerController,
+  TriggerDataMediator, TriggerMediatorOptions
+} from '../atom'
+
 const GLOBAL_VARS = new Map()
-export const globalVar = (key, value) => {
-  if (value) {
+/**
+ * Set or get global variable.
+ */
+export const globalVar = <V = any>(key: any, value?: V): V => {
+  if (value !== undefined) {
     GLOBAL_VARS.set(key, value)
   }
   return GLOBAL_VARS.get(key)
 }
 
-export const makeEventHandler = (handler = v => v) => {
-  let eventHandler
-  const agent = handler => {
-    eventHandler = handler
-  }
-  const [data, triggerMediator, trigger] = createDataFromFunction({ agent, handler: e => handler(e) })
+type EventHandler = (event: Event) => void
 
-  return [eventHandler, data, triggerMediator, trigger]
+/**
+ * @see {@link makeGeneralEventHandler}
+ */
+export const makeEventHandler = <R = Event>(
+  handler?: (event: Event) => R
+): [EventHandler, Data<R>, TriggerDataMediator<R>, TriggerMediatorOptions, Trigger<R>, TriggerController] => {
+  const defaultHandler = (event: Event): Event => event
+  const agent = createFunctionTriggerAgent<[event: Event], R>(handler ?? defaultHandler as any)
+  const collection = createDataFromFunction<R>({ ...agent })
+
+  return [agent.emit!, ...collection]
 }
 
-export const makeGeneralEventHandler = (handler = v => v) => {
-  const [eventHandler, data, triggerMediator, trigger] = makeEventHandler(handler)
+/**
+ * @see {@link makeEventHandler}
+ */
+export const makeGeneralEventHandler = <R = Event>(
+  handler?: (event: Event) => R
+): [ReplayDataMediator<EventHandler>, EventHandler, Data<R>, TriggerDataMediator<R>, TriggerMediatorOptions, Trigger<R>, TriggerController] => {
+  const eventHandlerCollection = makeEventHandler(handler)
+  const [eventHandler] = eventHandlerCollection
   const eventHandlerRD = dataToData(() => eventHandler, completeStateRD)
-  return [eventHandlerRD, eventHandler, data, triggerMediator, trigger]
+  return [eventHandlerRD, ...eventHandlerCollection]
 }
 
-const _elementBasedMessageProxyMap = new Map()
-globalVar('elementBasedMessageProxyMap', _elementBasedMessageProxyMap)
-export const makeElementBasedMessageProxy = (id, type, name) => {
-  const proxy = _elementBasedMessageProxyMap.get(id + type)
-  if (proxy) {
-    return proxy
-  }
+type MessageDetail = Record<string, any>
+type MessageOptions = EventInit
+interface FormattedMessage { detail: MessageDetail, options?: MessageOptions }
+type Message = FormattedMessage | MessageDetail
 
-  let ele = document.getElementById(id)
-  if (ele == null) {
-    const tempEle = document.createElement('div')
-    tempEle.id = id
-    tempEle.style.display = 'none'
-    document.body.appendChild(tempEle)
-    ele = tempEle
-  }
+type MessageType = 'Onymous' | 'Anonymous'
+interface MessageGate { type: MessageType, message: Message }
 
-  const ElementBasedMessageProxy = class {
-    constructor (ele, type, name) {
-      const [data] = createDataFromEvent({ target: ele, type })
+interface SendedMessage { type: string, detail: MessageDetail, options: EventInit }
+type ReceivedMessage = CustomEvent<MessageDetail> & { eventType: string }
 
-      const onymousInnerMessageD = Data.empty()
-      const onymousSendM = Mutation.ofLiftBoth((prev) => {
-        let detail, options
-        if (isObject(prev)) {
-          if (hasOwnProperty('detail', prev) && hasOwnProperty('options', prev)) {
-            detail = prev.detail
-            options = prev.options
-          } else {
-            detail = prev
-          }
+class ElementBasedMessageProxy {
+  element: Element
+  // proxy's default name
+  name: string
+  // proxy's default event type
+  type: string
+
+  messageGateD: Data<MessageGate>
+
+  sendedD: Data<SendedMessage>
+
+  broadReceiver: Data<ReceivedMessage>
+  onymousReceiver: Data<ReceivedMessage>
+  anonymousReceiver: Data<ReceivedMessage>
+
+  constructor (element: Element, type: string, name: string) {
+    this.element = element
+    this.type = type
+    this.name = name
+
+    const [data] = createDataFromEvent({ target: element, type })
+
+    this.messageGateD = Data.empty<MessageGate>()
+
+    const formatMessage = (message: any): Required<FormattedMessage> => {
+      if (isPlainObject(message)) {
+        const { detail, options } = message
+        if (detail !== undefined) {
+          return { detail, options: options ?? {} }
         } else {
-          detail = { data: prev }
+          return { detail: message, options: {} }
         }
+      } else {
+        return { detail: { data: message }, options: {} }
+      }
+    }
+
+    const onymousSendM = Mutation.ofLiftBoth<MessageGate, SendedMessage | Terminator>((prev) => {
+      if (isVacuo(prev)) return TERMINATOR
+
+      const { type: messageType, message } = prev
+
+      if (messageType === 'Anonymous') {
+        return TERMINATOR
+      } else {
+        const { detail, options } = formatMessage(message)
         detail.from = name
-        ele.dispatchEvent(makeCustomEvent(type, detail, options))
+        element.dispatchEvent(makeCustomEvent(type, detail, options))
         return { type, detail, options }
-      })
-      const anonymousSendM = Mutation.ofLiftBoth((prev) => {
-        let detail, options
-        if (isObject(prev)) {
-          if (hasOwnProperty('detail', prev) && hasOwnProperty('options', prev)) {
-            detail = prev.detail
-            options = prev.options
-          } else {
-            detail = prev
-          }
-        } else {
-          detail = { data: prev }
-        }
-        ele.dispatchEvent(makeCustomEvent(type, detail, options))
+      }
+    })
+    const anonymousSendM = Mutation.ofLiftBoth<MessageGate, SendedMessage | Terminator>((prev) => {
+      if (isVacuo(prev)) return TERMINATOR
+
+      const { type: messageType, message } = prev
+      if (messageType === 'Onymous') {
+        return TERMINATOR
+      } else {
+        const { detail, options } = formatMessage(message)
+        detail.from = undefined
+        element.dispatchEvent(makeCustomEvent(type, detail, options))
         return { type, detail, options }
-      })
-      const sendedD = Data.empty()
-      pipeAtom(onymousInnerMessageD, onymousSendM, sendedD)
-      pipeAtom(anonymousSendM, sendedD)
-
-      this.element = ele
-      this.type = type
-      this.name = name
-
-      this.innerMessageD = onymousInnerMessageD
-      this.sender = onymousSendM
-      this.onymousSender = onymousSendM
-      this.anonymousSender = onymousSendM
-      this.sendedD = sendedD
-      const namedReceiver = filterT_(prev => prev.detail.to === name, data)
-      this.receiver = namedReceiver
-      this.broadReceiver = data
-      this.namedReceiver = namedReceiver
-      this.anonymousReceiver = filterT_(prev => prev.detail.from === undefined, data)
-    }
-
-    customizeReveiver (cond) {
-      if (isFunction(cond)) {
-        return filterT_(cond, this.broadReceiver)
-      } else if (isObject(cond)) {
-        // TODO
-        console.warn("TODO: Object type of cond as customizeReveiver's argument, you got a broadReceiver instead.")
-        return this.broadReceiver
-      } else {
-        throw (new TypeError('"cond" is expected to be a Function or an Object'))
       }
-    }
+    })
+    const sendedD = Data.empty<SendedMessage>()
+    pipeAtom(this.messageGateD, onymousSendM, sendedD)
+    pipeAtom(this.messageGateD, anonymousSendM, sendedD)
+    this.sendedD = sendedD
 
-    send (message) {
-      if (isData(message)) {
-        return this.sender.observe(message)
-      } else if (isMutation(message)) {
-        return this.sender.observe(mutationToDataS(message))
-      } else {
-        this.innerMessageD.triggerValue(message)
-      }
-    }
+    const namedReceiver = filterT_(prev => prev.detail.to === name, data)
+    this.broadReceiver = data
+    this.onymousReceiver = namedReceiver
+    this.anonymousReceiver = filterT_(prev => prev.detail.from === undefined, data)
+  }
 
-    receive (handler) {
-      if (isMutation(handler)) {
-        return handler.observe(this.receiver)
-      } else if (isData(handler)) {
-        return dataToMutationS(handler).observe(this.receiver)
-      } else if (isFunction(handler)) {
-        return this.receiver.subscribe(({ value }) => {
-          handler(value)
-        })
-      } else {
-        throw (new TypeError('"handler" is expected to be type of Mutation | Data | Function.'))
-      }
-    }
-
-    receiveDetail (handler) {
-      if (isFunction(handler)) {
-        return this.receiver.subscribe(({ value: e }) => {
-          handler(e.detail)
-        })
-      } else if (isAtom(handler)) {
-        return atomToMutation(e => e.detail, handler).observe(this.receiver)
-      } else {
-        throw (new TypeError('"handler" is expected to be type of Mutation | Data | Function.'))
-      }
+  customizeReveiver (predicate: (target: ReceivedMessage) => boolean): Data<ReceivedMessage> {
+    if (isFunction(predicate)) {
+      return filterT_(predicate, this.broadReceiver)
+    } else if (isPlainObject(predicate)) {
+      // TODO
+      console.warn("TODO: PlainObject type of predicate as customizeReveiver's argument, you got a broadReceiver instead.")
+      return this.broadReceiver
+    } else {
+      throw (new TypeError('"predicate" is expected to be type of "Function" | "PlainObject".'))
     }
   }
 
-  const _proxy = new ElementBasedMessageProxy(ele, type, name)
-  _elementBasedMessageProxyMap.set(id + type, _proxy)
-  return _proxy
+  send (message: MessageGate | AtomLikeOfOutput<MessageGate>): void {
+    if (isAtomLike(message)) {
+      binaryTweenPipeAtom(message, this.messageGateD)
+    } else {
+      this.messageGateD.mutate(() => message as MessageGate)
+    }
+  }
+
+  // TODO: sendAnonymous
+  // TODO: sendOnymous
+
+  receive (handler: ((message: ReceivedMessage) => void) | AtomLikeOfInput<ReceivedMessage>): void {
+    if (isAtomLike(handler)) {
+      binaryTweenPipeAtom(this.broadReceiver, handler)
+    } else if (isFunction(handler)) {
+      this.broadReceiver.subscribeValue(message => {
+        handler(message)
+      })
+    }
+  }
+
+  // TODO: receiveAnonymous
+  // TODO: receiveOnymous
+
+  receiveDetail (handler: ((message: MessageDetail) => void) | AtomLikeOfInput<MessageDetail>): void {
+    if (isAtomLike(handler)) {
+      const mapped: Data<MessageDetail> = pluckT('detail', this.broadReceiver)
+      binaryTweenPipeAtom(mapped, handler)
+    } else if (isFunction(handler)) {
+      this.broadReceiver.subscribeValue(value => {
+        handler(value.detail)
+      })
+    } else {
+      throw (new TypeError('"handler" is expected to be type of "Function" | "AtomLike".'))
+    }
+  }
+}
+
+globalVar('ElementBasedMessageProxyMap', new Map())
+/**
+ * Different proxy can use same type of event on same element,
+ *   so the proxy's can live in different sandbox such as contentScript & injectScript.
+ *
+ * @param id element id
+ * @param type event type on element
+ * @param name name of proxy instance
+ * @return ElementBasedMessageProxy
+ */
+export const makeElementBasedMessageProxy = (id: string, type: string, name: string): ElementBasedMessageProxy => {
+  const existProxy = globalVar('ElementBasedMessageProxyMap').get(id)
+  if (existProxy !== undefined) {
+    return existProxy
+  }
+
+  let element = document.getElementById(id)
+  if (element == null) {
+    const tempElement = document.createElement('div')
+    tempElement.id = id
+    tempElement.style.display = 'none'
+    document.body.appendChild(tempElement)
+    element = tempElement
+  }
+
+  const newProxy = new ElementBasedMessageProxy(element, type, name)
+  globalVar('ElementBasedMessageProxyMap').set(id, newProxy)
+
+  return newProxy
 }

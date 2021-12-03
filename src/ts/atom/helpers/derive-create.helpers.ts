@@ -439,7 +439,7 @@ export const createMutationFromObservable = compose(createMutationWithTrigger, c
  */
 type emitFunction<P extends any[]> = (...args: P) => void
 interface FunctionTriggerCreateOptions<P extends any[], R> {
-  agent: (emitFunction: emitFunction<P>, ...args: any[]) => void
+  agent: (emitFunction: emitFunction<P>) => void
   autoBind?: boolean
   autoStart?: boolean
   handler?: (...args: P) => R
@@ -485,7 +485,7 @@ const DEFAULT_FUNCTION_TRIGGER_CREATE_OPTIONS: Omit<Required<FunctionTriggerCrea
  * const const trigger = createFunctionTrigger({ ...agent })
  *
  * // call the emit function hold by `agent` to trigger value
- * emit(99)
+ * agent.emit(99)
  * ```
  */
 export const createFunctionTrigger = <P extends any[] = any[], R = any>(options: FunctionTriggerCreateOptions<P, R>): Trigger<R> => {
@@ -543,13 +543,13 @@ export const createMutationFromFunction = compose(createMutationWithTrigger, cre
 interface FunctionTriggerAgent<P extends any[], R> {
   agent: (emitFunction: emitFunction<P>) => void
   handler: (...args: P) => R
-  emit: typeof asIs | emitFunction<P>
+  emit?: emitFunction<P>
   isBound: boolean
 }
 export const createFunctionTriggerAgent = <P extends any[], R>(
   handler: (...args: P) => R
 ): FunctionTriggerAgent<P, R> => {
-  let emit: emitFunction<P> | typeof asIs = asIs
+  let emit: emitFunction<P> | undefined
   let isBound = false
   const agent = (innerEmit: emitFunction<P>): void => {
     emit = innerEmit

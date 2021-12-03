@@ -2,7 +2,7 @@ import {
   isString, isPlainObject, isFunction
 } from '../internal'
 import {
-  Data, isAtom,
+  Data, isAtomLike,
   replayWithLatest,
   binaryTweenPipeAtom
 } from '../atom'
@@ -106,8 +106,8 @@ const createScopeManager = <Creator extends ScopeManagerCreator>(
 
         const promise = promiseMap.get(scope)
         if (promise !== undefined) {
-          if (isAtom(instance)) {
-            binaryTweenPipeAtom(replayWithLatest(1, instance), promise)
+          if (isAtomLike(instance)) {
+            binaryTweenPipeAtom(replayWithLatest(1, instance as any), promise)
           } else {
             binaryTweenPipeAtom(replayWithLatest(1, Data.of(instance)), promise)
           }

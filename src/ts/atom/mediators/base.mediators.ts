@@ -113,6 +113,7 @@ export abstract class BaseMediator<BA extends BaseAtom> extends Vain {
   pipe (...args: any[]): any {
     // ! do not use:
     // ! return this._atom.pipe(...args)
+    // @ts-expect-error pass args through
     return pipe(...args)(this)
   }
 
@@ -135,6 +136,7 @@ export abstract class BaseMediator<BA extends BaseAtom> extends Vain {
   compose (...args: any[]): any {
     // ! do not use:
     // ! return this._atom.compose(...args)
+    // @ts-expect-error pass args through
     return compose(...args)(this)
   }
 

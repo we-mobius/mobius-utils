@@ -1,6 +1,6 @@
 import { isPlainObject, isArray, isFunction, isEmptyObj, isNil } from '../../internal/base'
 import { looseCurryN } from '../../functional'
-import { isAtom, Data } from '../atoms'
+import { isAtomLike, Data } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { binaryTweenPipeAtom } from '../helpers'
 
@@ -149,22 +149,22 @@ interface IConnectDriverInterfaces {
 }
 export const connectDriverInterfaces: IConnectDriverInterfaces = (up: any, down: any): void => {
   interface INormalize {
-    <D extends Data<any>>(value: D): ReplayDataMediator<D>
+    <V>(value: Data<V>): ReplayDataMediator<V>
     <D extends ReplayDataMediator<Data<any>>>(value: D): D
-    <M extends Mutation<any, any>>(value: M): ReplayMutationMediator<M>
-    <M extends ReplayMutationMediator<Mutation<any, any>>>(value: M): M
+    <P, C>(value: Mutation<P, C>): ReplayMutationMediator<P, C>
+    <M extends ReplayMutationMediator<any, any>>(value: M): M
     <D>(value: D): Data<D>
   }
-  const normalize: INormalize = (value: any): any => isAtom(value) ? replayWithLatest(1, value as any) : replayWithLatest(1, Data.of(value))
+  const normalize: INormalize = (value: any): any => isAtomLike(value) ? replayWithLatest(1, value as any) : replayWithLatest(1, Data.of(value))
 
   // The up & down value are expected to be type of Atom,
   //   -> one of the up | down value is required to be type of Atom at least.
   //   -> cause there is no way to get the auto-generated down Atom.
-  if (isAtom(up) && !isAtom(down)) {
+  if (isAtomLike(up) && !isAtomLike(down)) {
     if (isArray(down)) {
       down.forEach(i => {
-        if (isAtom(i)) {
-          binaryTweenPipeAtom(normalize(up), i as AtomLike)
+        if (isAtomLike(i)) {
+          binaryTweenPipeAtom(normalize(up), i)
         } else {
           // do nothing
         }
@@ -172,11 +172,11 @@ export const connectDriverInterfaces: IConnectDriverInterfaces = (up: any, down:
     } else {
       // do nothing
     }
-  } else if (isAtom(up) && isAtom(down)) {
+  } else if (isAtomLike(up) && isAtomLike(down)) {
     // downstream atom do not need to be replayable
-    binaryTweenPipeAtom(normalize(up), down as AtomLike)
-  } else if (!isAtom(up) && isAtom(down)) {
-    binaryTweenPipeAtom(normalize(up), down as AtomLike)
+    binaryTweenPipeAtom(normalize(up), down)
+  } else if (!isAtomLike(up) && isAtomLike(down)) {
+    binaryTweenPipeAtom(normalize(up), down)
   } else if (isPlainObject(up) && isPlainObject(down)) {
     Object.entries(up).forEach(([key, value]) => {
       if (!isNil(down[key])) {

@@ -1,9 +1,8 @@
-import { isString, isNumber, isFunction } from '../internal'
+import { isString, isNumber, isFunction } from '../internal/base'
 import { curry } from '../functional'
 
-type InjectScript = (src: string, onload?: GlobalEventHandlers['onload'], removeAfterLoaded?: boolean) => HTMLScriptElement
-export const injectScript: InjectScript = (
-  src: string, onload, removeAfterLoaded = false
+export const injectScript = (
+  src: string, onload: GlobalEventHandlers['onload'] = null, removeAfterLoaded = false
 ): HTMLScriptElement => {
   const script = document.createElement('script')
   script.setAttribute('type', 'text/javascript')
@@ -20,16 +19,17 @@ export const injectScript: InjectScript = (
   return script
 }
 
-type CustomEventMaker = <T extends string, D extends Record<string, unknown>>
-  (type: T, detail: D, options: EventInit) => CustomEvent<D>
-
+const DEFAULT_CUSTOM_EVENT_DEFAULT: Record<string, unknown> = {}
 /**
- * "event.detail" is of type object always,
- * and there is an "eventType" property in it,
- * which equals to custom type's name.
+ * "event.detail" is always of type object which has an "eventType" property in it,
+ *   "eventType"'s value equals to name of custom type.
  */
-export const makeCustomEvent: CustomEventMaker = (type, detail, options) =>
-  new CustomEvent(type, { ...(options ?? {}), detail: { eventType: type, ...(detail ?? {}) } })
+export const makeCustomEvent = <D extends Record<string, unknown>>(
+  type: string,
+  detail: D = DEFAULT_CUSTOM_EVENT_DEFAULT as D,
+  options: EventInit = {}
+): CustomEvent<{ eventType: string } & D> =>
+    new CustomEvent(type, { ...options, detail: { eventType: type, ...detail } })
 
 /**
  * @param { string } selector element's id or selector

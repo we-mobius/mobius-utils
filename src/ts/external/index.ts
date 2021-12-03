@@ -1,6 +1,7 @@
 export * from './unique'
 export * from './stateMachine'
 export * from './class'
+export * from './scheduler'
 
 export * from './path'
 export * from './request'

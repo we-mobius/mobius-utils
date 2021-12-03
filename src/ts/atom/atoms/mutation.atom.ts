@@ -1,4 +1,6 @@
 import { isNil, isFunction, isObject, isPlainObject, isEmpty } from '../../internal/base'
+import { syncScheduler, asyncScheduler } from '../../external/scheduler'
+
 import { isPausor, isTerminator } from '../metas'
 import {
   Mutator, Datar, isDatar, isMutator,
@@ -253,8 +255,14 @@ export class Mutation<P, C> extends BaseAtom implements AtomLike {
     }
 
     if (!isEmpty(_mutator)) {
+      const { isAsync } = this._options
       this._consumers.forEach(consumer => {
-        consumer(_mutator, this)
+        if (isAsync) {
+          asyncScheduler(() => consumer(_mutator, this))
+        } else {
+          // syncScheduler(() => consumer(_mutator, this))
+          consumer(_mutator, this)
+        }
       })
     }
   }

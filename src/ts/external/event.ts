@@ -6,18 +6,18 @@ const webEnv = isInWeb()
 // reference: https://zh.javascript.info/onload-ondomcontentloaded
 // reference: https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState
 
-export const domLoadedD = webEnv ? createDataFromEvent({ target: document, type: 'DOMContentLoaded' })[0] : Data.empty()
+export const domLoadedD = webEnv ? createDataFromEvent<Event>({ target: document, type: 'DOMContentLoaded' })[0] : Data.empty<Event>()
 export const domLoadedRD = ReplayMediator.of(domLoadedD, { autoTrigger: true })
 
-export const windowLoadedD = webEnv ? createDataFromEvent({ target: window, type: 'load' })[0] : Data.empty()
+export const windowLoadedD = webEnv ? createDataFromEvent<Event>({ target: window, type: 'load' })[0] : Data.empty<Event>()
 export const windowLoadedRD = ReplayMediator.of(windowLoadedD, { autoTrigger: true })
 
 export const readyStateD = webEnv
-  ? createDataFromEvent({ target: document, type: 'readystatechange', handler: () => document.readyState })[0]
-  : Data.empty()
+  ? createDataFromEvent<DocumentReadyState>({ target: document, type: 'readystatechange', handler: () => document.readyState })[0]
+  : Data.empty<DocumentReadyState>()
 export const readyStateRD = ReplayMediator.of(readyStateD, { autoTrigger: true })
 if (webEnv) {
-  readyStateD.triggerValue(document.readyState)
+  readyStateD.mutate(() => document.readyState)
 }
 
 export const interactiveStateD = filterT((v: string): boolean => v === 'interactive' || v === 'complete', readyStateRD)
@@ -26,14 +26,14 @@ export const interactiveStateRD = ReplayMediator.of(interactiveStateD, { autoTri
 export const completeStateD = filterT((v: string): boolean => v === 'complete', readyStateRD)
 export const completeStateRD = ReplayMediator.of(completeStateD, { autoTrigger: true })
 
-export const windowResizeD = webEnv ? createDataFromEvent({ target: window, type: 'resize' })[0] : Data.empty()
+export const windowResizeD = webEnv ? createDataFromEvent<Event>({ target: window, type: 'resize' })[0] : Data.empty<Event>()
 export const windowResizeRD = ReplayMediator.of(windowResizeD, { autoTrigger: true })
 if (webEnv) {
-  windowResizeD.triggerValue({ type: 'resize', target: window })
+  windowResizeD.mutate(() => ({ type: 'resize', target: window } as unknown as Event))
 }
 
-export const windowD = webEnv ? Data.of(window) : Data.empty()
+export const windowD = webEnv ? Data.of(window) : Data.empty<typeof window>()
 export const windowRD = ReplayMediator.of(windowD, { autoTrigger: true })
 
-export const documentD = webEnv ? Data.of(document) : Data.empty()
+export const documentD = webEnv ? Data.of(document) : Data.empty<typeof document>()
 export const documentRD = ReplayMediator.of(documentD, { autoTrigger: true })

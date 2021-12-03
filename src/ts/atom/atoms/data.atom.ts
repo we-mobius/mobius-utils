@@ -1,4 +1,6 @@
 import { isNil, isFunction, isObject, isPlainObject, isEmpty } from '../../internal/base'
+import { syncScheduler, asyncScheduler } from '../../external/scheduler'
+
 import { isPausor, isTerminator } from '../metas'
 import { Mutator, Datar, isDatar, isMutator, DEFAULT_DATAR_OPTIONS } from '../particles'
 import {
@@ -174,7 +176,12 @@ export class Data<V> extends BaseAtom implements AtomLike {
 
     if (!isEmpty(_datar)) {
       this._consumers.forEach(consumer => {
-        consumer(_datar, this)
+        if (this._options.isAsync) {
+          asyncScheduler(() => consumer(_datar, this))
+        } else {
+          // syncScheduler(() => consumer(_datar, this))
+          consumer(_datar, this)
+        }
       })
     }
   }

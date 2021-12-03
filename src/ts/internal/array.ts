@@ -45,12 +45,16 @@ export const unshift = curry((item, arr) => [item, ...arr])
 type Shift = <T>(arr: T[]) => T[]
 export const shift: Shift = ([_, ...rest]) => rest
 
-type Unique = <T>(arr: T[]) => T[]
+type Unique = <T = any>(arr: T[]) => T[]
 export const unique: Unique = arr => [...(new Set(arr))]
 
-export const concat = invoker(2, 'concat')
+interface IConcat {
+  <A extends any[], B extends any[]>(a: A, b: B): [...B, ...A]
+  <A extends any[], B extends any[]>(a: A): (b: B) => [...B, ...A]
+}
+export const concat: IConcat = invoker(2, 'concat')
 
-export const union = curryN(2, compose(unique, flip(concat)))
+export const union = curryN(2, compose(unique, flip(concat) as (...args: any[]) => any))
 
 // reference: ramda, it is more efficient when the array length gap is large
 type CompareArray = (arr1: any[], arr2: any[]) => any[]
