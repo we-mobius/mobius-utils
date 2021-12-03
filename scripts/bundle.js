@@ -16,12 +16,18 @@ const empty = () => {
   })
 }
 
+/**
+ * Get tsconfig.json string and remove comments.
+ */
 const getTSConfigJSONString = () => readFileSync(rootResolvePath('./tsconfig.json'), { encoding: 'utf8' })
   .replace(/\s\/\*.*\*\//g, '')
   .replace(/\s\/\/.*,/g, '')
   .replace(/\s\/\*.*/g, '')
   .replace(/\s\*(.)*/g, '')
 const getTSConfig = () => JSON.parse(getTSConfigJSONString())
+/**
+ * Recursively collect files in the given directory.
+ */
 const collectFiles = (rootPath, results = []) => {
   const files = fs.readdirSync(rootPath)
   files.forEach(item => {
@@ -35,6 +41,9 @@ const collectFiles = (rootPath, results = []) => {
   return results
 }
 
+/**
+ * Compile the ECMAScript2015 version.
+ */
 const packES = () => {
   return new Promise((resolve) => {
     const compilerOptions = getTSConfig().compilerOptions
@@ -68,6 +77,9 @@ const packES = () => {
   })
 }
 
+/**
+ * Generate type files.
+ */
 const packTypings = () => {
   return new Promise((resolve) => {
     const compilerOptions = getTSConfig().compilerOptions
@@ -96,6 +108,9 @@ const packTypings = () => {
   })
 }
 
+/**
+ * Pack source code.
+ */
 const pack = () => {
   return new Promise((resolve) => {
     webpack(getWebpackConfig({ mode: BUILD_MODE }))
