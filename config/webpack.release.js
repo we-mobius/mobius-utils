@@ -95,7 +95,7 @@ export const getReleaseConfig = () => ([
     ...reusedConfigs
   },
   {
-    target: 'node',
+    target: 'web',
     entry: {
       main: './src/main.ts',
       worker: './src/worker.release.entry.ts'
