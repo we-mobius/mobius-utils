@@ -96,7 +96,8 @@
     "serve:dist": "npx live-server ./dist --port=0624",
     "expose": "npx ngrok http 624",
     "bundle": "node ./scripts/bundle",
-    "beforepublish": "npm run build && npm run dist && npm run bundle"
+    "doc": "node ./scripts/document",
+    "beforepublish": "npm run build && npm run dist && npm run bundle && npm run doc"
   },
   "repository": {
     "type": "git",

@@ -1,10 +1,21 @@
 {
-  "readme": "./README.md",
+  "name": "Mobius Utils API",
+  "readme": "none",
+  "includeVersion": true,
   "entryPoints": [
-    "src/main.ts"
+    "./src/main.ts"
   ],
-  "out": "docs/typedoc",
+  "out": "./docs/api",
+  "tsconfig": "./tsconfig.json",
   "sort": [
+    "static-first",
     "source-order"
-  ]
+  ],
+  "categorizeByGroup": true,
+  "cleanOutputDir": true,
+  "emit": "docs",
+  "excludeExternals": true,
+  "theme": "default",
+  "hideGenerator": true,
+  "hideLegend": true
 }
