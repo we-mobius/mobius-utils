@@ -69,7 +69,7 @@ export interface MutationSubscription<P, C> extends Subscription {
   proxyConsumer: MutatorConsumer<P, C>
 }
 
-export class Mutation<P, C> extends BaseAtom implements AtomLike {
+export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   private readonly _options: Required<MutationOptions<P, C>>
   private _mutator: Mutator<P, C>
   private readonly _consumers: Set<MutatorConsumer<P, C>>

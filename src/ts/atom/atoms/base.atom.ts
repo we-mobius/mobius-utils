@@ -41,8 +41,8 @@ export interface AtomLike {
 
 export const isAtomLike = (tar: any): tar is AtomLike => isObject(tar) && tar.isAtom
 
-export type DataLike<V> = Data<V> | DataMediator<V>
-export type MutationLike<P, C> = Mutation<P, C> | MutationMediator<P, C>
+export type DataLike<V = any> = Data<V> | DataMediator<V>
+export type MutationLike<P = any, C = any> = Mutation<P, C> | MutationMediator<P, C>
 /**
  * AtomLike that can take any as input and any as output.
  */
@@ -50,11 +50,11 @@ export type AtomLikeOfAny = Data<any> | DataMediator<any> | Mutation<any, any> |
 /**
  * AtomLike that can take I as input.
  */
-export type AtomLikeOfInput<I> = Data<I> | DataMediator<I> | Mutation<I, any> | MutationMediator<I, any>
+export type AtomLikeOfInput<I = any> = Data<I> | DataMediator<I> | Mutation<I, any> | MutationMediator<I, any>
 /**
  * AtomLike that can emit O as output.
  */
-export type AtomLikeOfOutput<O> = Data<O> | DataMediator<O> | Mutation<any, O> | MutationMediator<any, O>
+export type AtomLikeOfOutput<O = any> = Data<O> | DataMediator<O> | Mutation<any, O> | MutationMediator<any, O>
 
 /******************************************************************************************************
  *
@@ -65,7 +65,7 @@ export type AtomLikeOfOutput<O> = Data<O> | DataMediator<O> | Mutation<any, O> |
 /**
  *
  */
-type Unary<I, O> = (input: I) => O
+type Unary<I = any, O = any> = (input: I) => O
 /**
  *
  */

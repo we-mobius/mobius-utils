@@ -54,7 +54,7 @@ export interface DataSubscription<V> extends Subscription {
   proxyConsumer: DatarConsumer<V>
 }
 
-export class Data<V> extends BaseAtom implements AtomLike {
+export class Data<V = any> extends BaseAtom implements AtomLike {
   private readonly _options: Required<DataOptions>
   private _datar: Datar<V>
   private readonly _consumers: Set<DatarConsumer<V>>
