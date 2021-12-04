@@ -150,7 +150,7 @@ export const useGeneralTache_ = looseCurryN(3, useGeneralTache)
 /**
  *
  */
-type SSTache<P, C> = (source: AtomLikeOfOutput<P>) => Data<C>
+export type SSTache<P = any, C = any> = (source: AtomLikeOfOutput<P>) => Data<C>
 /**
  * @param { MutatorOriginTransformationUnion<P, C> } transformation
  * @param { MutationOptions<P, C> } options same as MutationOptions
@@ -200,7 +200,7 @@ interface ArraySMTacheConfig<P> {
   transformation: MutatorOriginTransformationUnion<P, any>
   options?: MutationOptions<P, any>
 }
-type ArraySMTache<P> = (source: AtomLikeOfOutput<P>) => Array<Data<any>>
+export type ArraySMTache<P = any> = (source: AtomLikeOfOutput<P>) => Array<Data<any>>
 /**
  * @param { ArraySMTacheConfig<P>[] } configArr `[{ transformation, options }, ...]`
  * @return { ArraySMTache<P> } ArraySSTache :: `(source) => Array<Data<any>>`
@@ -246,7 +246,7 @@ interface ObjectSMTacheConfig<P> {
   transformation: MutatorOriginTransformationUnion<P, any>
   options?: MutationOptions<P, any>
 }
-type ObjectSMTache<P> = (source: AtomLikeOfOutput<P>) => Record<string, Data<any>>
+export type ObjectSMTache<P = any> = (source: AtomLikeOfOutput<P>) => Record<string, Data<any>>
 /**
  * @param { ObjectSMTacheConfig<P> } configObj `{ [key: string]: { transformation, options? } }`
  * @return { ObjectSMTache<P> } ObjectSSTache :: `(source) => Record<string, Data<any>>`
@@ -349,7 +349,7 @@ interface ArrayMSTacheConfig<P, C> extends MSTacheConfig<P, C> {
   transformation: MutatorOriginTransformationUnion<P, C> | ArrayMSTacheFullyTransformation<P, C>
   sourcesType: 'array'
 }
-interface ArrayMSTache<P, C> {
+export interface ArrayMSTache<P, C> {
   (sources: Array<AtomLikeOfOutput<P>>): Data<C>
   (...sources: Array<AtomLikeOfOutput<P>>): Data<C>
 }
@@ -480,7 +480,7 @@ interface ObjectMSTacheConfig<P, C> extends MSTacheConfig<P, C> {
   transformation: MutatorOriginTransformationUnion<P, C> | ObjectMSTacheFullyTransformation<P, C>
   sourcesType: 'object'
 }
-type ObjectMSTache<P, C> = (
+export type ObjectMSTache<P, C> = (
   sources: Record<string, AtomLikeOfOutput<P>>
 ) => Data<C>
 /**
