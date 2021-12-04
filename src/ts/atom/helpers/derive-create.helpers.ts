@@ -546,19 +546,27 @@ interface FunctionTriggerAgent<P extends any[], R> {
   emit?: emitFunction<P>
   isBound: boolean
 }
+/**
+ * Function Trigger Agent is designed to be passed to `createFunctionTrigger` function
+ *   as part of its options.
+ *
+ * @example
+ * ```js
+ * createFunctionTrigger({ ...createFunctionTriggerAgent(handler), ...otherOptions })
+ * ```
+ */
 export const createFunctionTriggerAgent = <P extends any[], R>(
   handler: (...args: P) => R
 ): FunctionTriggerAgent<P, R> => {
-  let emit: emitFunction<P> | undefined
-  let isBound = false
-  const agent = (innerEmit: emitFunction<P>): void => {
-    emit = innerEmit
-    isBound = true
+  const agentCollection: FunctionTriggerAgent<P, R> = {
+    handler: handler,
+    isBound: false,
+    emit: undefined,
+    agent: (innerEmit: emitFunction<P>): void => {
+      agentCollection.emit = innerEmit
+      agentCollection.isBound = true
+    }
   }
-  return {
-    agent,
-    handler,
-    emit,
-    isBound
-  }
+
+  return agentCollection
 }
