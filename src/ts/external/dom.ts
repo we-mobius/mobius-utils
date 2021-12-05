@@ -36,7 +36,7 @@ export const makeCustomEvent = <D extends Record<string, unknown>>(
  * @param interval polling interval (in ms)
  * @return { void } no return value
  */
-export const pollingToGetNode = curry((selector: string, interval: number, callback: (node: Element) => void): void => {
+export const pollingToGetElement = (selector: string, interval: number, callback: (node: Element) => void): void => {
   if (!isString(selector)) {
     throw (new TypeError('"selector" is expected to be type of "String".'))
   }
@@ -55,4 +55,15 @@ export const pollingToGetNode = curry((selector: string, interval: number, callb
       callback(node)
     }
   }, interval)
-})
+}
+
+interface IPollingToGetElement {
+  (selector: string, interval: number, callback: (node: Element) => void): void
+  (selector: string): (interval: number, callback: (node: Element) => void) => void
+  (selector: string, interval: number): (callback: (node: Element) => void) => void
+  (selector: string): (interval: number) => (callback: (node: Element) => void) => void
+}
+/**
+ * @see {@link pollingToGetElement}
+ */
+export const pollingToGetElement_: IPollingToGetElement = curry(pollingToGetElement)
