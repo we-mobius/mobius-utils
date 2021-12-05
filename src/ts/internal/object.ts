@@ -33,7 +33,7 @@ export const assignTo = looseCurry((target, source, ...sources) => Object.assign
 
 export type PropPath = number | string | Array<number | string>
 /**
- * @param { Array<number | string> | string | number } path Can be 'a.b,c/e/"f".["g.h"]\\i\\j'
+ * @param path Can be 'a.b,c/e/"f".["g.h"]\\i\\j'
  */
 export const getPropByPath = curry((path: PropPath, obj) => {
   if (!isArray(path) && !isString(path) && !isNumber(path)) {
@@ -52,7 +52,7 @@ export const getPropByPath = curry((path: PropPath, obj) => {
 })
 
 /**
- * @param { Array<number | string> | string | number } path Can be 'a.b,c/e/"f".["g.h"]\\i\\j'
+ * @param path Can be 'a.b,c/e/"f".["g.h"]\\i\\j'
  */
 export const setPropByPath = curry((path: PropPath, value, obj) => {
   if (!isArray(path) && !isString(path) && !isNumber(path)) {
@@ -96,8 +96,8 @@ export const deepCopy = (tar: any): any => {
 
 /**
  * @TODO: 支持保留循环引用关系，通过添加一个额外的 Map 作为参数实现
- * @param { any } target target
- * @param { any } source source
+ * @param target target
+ * @param source source
  * @return { any } target
  */
 export const deepMerge = curry((target, source) => {

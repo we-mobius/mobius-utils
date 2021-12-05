@@ -34,7 +34,7 @@ import type { Data } from './data.atom'
  ******************************************************************************************************/
 
 /**
- * @param { any } tar anything
+ * @param tar anything
  * @return { boolean } whether the target is a Mutation instance
  */
 export const isMutation = <P = any, C = any>(tar: any): tar is Mutation<P, C> => isObject(tar) && tar.isMutation
@@ -48,7 +48,7 @@ export const isMutation = <P = any, C = any>(tar: any): tar is Mutation<P, C> =>
 /**
  *
  */
-export interface MutationOptions<P, C> extends BaseAtomOptions {
+export interface MutationOptions<P = any, C = any> extends BaseAtomOptions {
   lift?: TransformationLiftOptions
   mutator?: MutatorOptions
   isLifted?: boolean
@@ -61,14 +61,21 @@ export const DEFAULT_MUTATION_OPTIONS: Required<MutationOptions<any, any>> = {
   isLifted: false,
   originTransformation: null
 }
-export type MutatorConsumer<P, C> = (mutator: Mutator<P, C>, mutation: Mutation<P, C>) => void
-export type TransformationConsumer<P, C> = (transformation: (cur: Datar<C>, ...args: any[]) => C, mutation: Mutation<P, C>) => void
-export type MutationConsumer<P, C> = MutatorConsumer<P, C> | TransformationConsumer<P, C>
 
-export interface MutationSubscription<P, C> extends Subscription {
+export type MutatorConsumer<P = any, C = any> =
+  (mutator: Mutator<P, C>, mutation: Mutation<P, C>) => void
+export type TransformationConsumer<P = any, C = any> =
+  (transformation: (cur: Datar<C>, ...args: any[]) => C, mutation: Mutation<P, C>) => void
+export type MutationConsumer<P = any, C = any> =
+  MutatorConsumer<P, C> | TransformationConsumer<P, C>
+
+export interface MutationSubscription<P = any, C = any> extends Subscription {
   proxyConsumer: MutatorConsumer<P, C>
 }
 
+/**
+ *
+ */
 export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   private readonly _options: Required<MutationOptions<P, C>>
   private _mutator: Mutator<P, C>
@@ -109,8 +116,8 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   /**
    * Create a new Mutation instance with Mutator or Function.
    *
-   * @param { Mutator<AnyFunction> | AnyFunction } transformation can be a Mutator or a function
-   * @param { MutatorOptions } [options.mutator] Mutator options, when use a Function to create,
+   * @param transformation can be a Mutator or a function
+   * @param [options.mutator] Mutator options, when use a Function to create,
    *                                             `Mutator.of` will be used as Mutator factory,
    *                                             and `options.mutator` will be used as Mutator options.
    */
@@ -192,9 +199,9 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   /**
    * Stream value of Mutation.
    *
-   * @param { MutatorConsumer<DV> } consumer The consumer will be invoked by "trigger" method when there is a adequate value.
-   * @param { SubscribeOptions } options
-   * @param { boolean } [options.isExtracted = false] Whether to extract the value from the datar before it be passed to consumer.
+   * @param consumer The consumer will be invoked by "trigger" method when there is a adequate value.
+   * @param options
+   * @param [options.isExtracted = false] Whether to extract the value from the datar before it be passed to consumer.
    * @return { MutationSubscription<P, C> } MutationSubscription<P, C>
    */
   // TODO: how can i narrow consumer's type by `options.isExtracted`?
@@ -244,7 +251,7 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   /**
    * `Empty mutator` will not be triggered.
    *
-   * @param { Mutator<MT> | undefined } mutator mutator
+   * @param mutator mutator
    * @return { void } void
    */
   trigger (mutator?: Mutator<P, C>): void {
@@ -271,7 +278,7 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
    * Internally call `trigger` method which will not trigger `empty mutator`,
    *   so the `Vacuo` value will not be triggered by `triggerTransformation` method.
    *
-   * @param { MT | undefined } transformation transformation
+   * @param transformation transformation
    * @return { void } void
    */
   triggerTransformation (transformation?: Mutator<P, C>['transformation']): void {
@@ -287,7 +294,7 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
    *
    * Given "data" will be **upstream** of current Mutation, which is different from "beObservedBy" method.
    *
-   * @param { Mutation } mutation data -> current mutation (-> other data)
+   * @param mutation data -> current mutation (-> other data)
    */
   observe (data: Data<P>): ReturnType<(typeof data)['subscribe']> {
     if (!isData(data)) {
@@ -303,7 +310,7 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
    *
    * Given "data" will be **downstream** of current Mutation, which is different from "observe" method.
    *
-   * @param { Mutation } mutation (other data ->) current mutation -> data
+   * @param mutation (other data ->) current mutation -> data
    */
   beObservedBy (data: Data<C>): MutationSubscription<P, C> {
     return data.observe(this)
@@ -320,8 +327,8 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
    *   -> wrap and save result of datar.run as new mutator
    *   -> trigger consumers with new mutator & contexts
    *
-   * @param { Datar | Data | any } datar Will be the 2nd param of mutator's operation.
-   * @param { Data } data
+   * @param datar Will be the 2nd param of mutator's operation.
+   * @param data
    * @return { Mutation } Mutation(this)
    */
   // mutate <DV>(datar: Datar<OrBaseMeta<DV>>, data: Data<DV>): Mutation<P, C>
@@ -373,11 +380,11 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   }
 
   /**
-   * @param { Trigger<MT | Mutator<MT>> } trigger Which Take an internalTrigger(Function) as first parameter,
+   * @param trigger Which Take an internalTrigger(Function) as first parameter,
    *                                              invoke internalTrigger with any value will lead to
    *                                              Mutation's trigger method be triggerd with that value.
-   * @param { AtomTriggerRegisterOptions } options
-   * @param { boolean } [options.forceWrap = false] If true, the emitted value of trigger will always be wrapped in Mutator.
+   * @param options
+   * @param [options.forceWrap = false] If true, the emitted value of trigger will always be wrapped in Mutator.
    * @return { TriggerController } TriggerController
    */
   registerTrigger (

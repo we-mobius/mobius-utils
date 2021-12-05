@@ -23,10 +23,10 @@ import type { MutationOptions, AtomLikeOfAny, AtomLikeOfOutput } from '../atoms'
 /**
  *
  */
-interface TacheOptions {
+export interface TacheOptions {
   [key: string]: any
 }
-interface TacheLevelContexts {
+export interface TacheLevelContexts {
   [key: string]: any
 }
 
@@ -57,7 +57,7 @@ const DEFAULT_CONNET: connect = (tacheOptions, tacheLevelContexts, pieces) => {
   binaryTweenPipeAtom(inputs, midpieces)
 }
 
-interface GeneralTacheCreateOptions<
+export interface GeneralTacheCreateOptions<
   O extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts, In = any, Mid = any, Out = any
 > {
   prepareOptions?: PrepareOptions<O>
@@ -68,7 +68,7 @@ interface GeneralTacheCreateOptions<
   connect?: connect<O, TLC, In, Mid, Out>
 }
 
-const DEFAULT_GENERAL_TACHE_CREATE_OPTIONS: Required<GeneralTacheCreateOptions> = {
+export const DEFAULT_GENERAL_TACHE_CREATE_OPTIONS: Required<GeneralTacheCreateOptions> = {
   prepareOptions: DEFAULT_PREPARE_OPTIONS,
   prepareTacheLevelContexts: DEFAULT_PREPARE_TACHE_LEVEL_CONTEXTS,
   prepareInput: DEFAULT_PREPARE_INPUT,
@@ -77,11 +77,11 @@ const DEFAULT_GENERAL_TACHE_CREATE_OPTIONS: Required<GeneralTacheCreateOptions> 
   connect: DEFAULT_CONNET
 }
 
-type Tache = (...sources: any[]) => ReturnType<PrepareOutput>
+export type Tache = (...sources: any[]) => ReturnType<PrepareOutput>
 
 /**
- * @param { GeneralTacheCreateOptions | PrepareMidpiece } createOptions
- * @param { TacheOptions } [tacheOptions]
+ * @param createOptions
+ * @param [tacheOptions]
  * @return { Tache } tache :: `(...sources: any[]) => ReturnType<PrepareOutput>`
  */
 export const createGeneralTache = (
@@ -127,10 +127,17 @@ export const createGeneralTache = (
     return outputs
   }
 }
-export const createGeneralTache_ = looseCurryN(2, createGeneralTache)
+interface ICreateGeneralTache_ {
+  (createOptions: GeneralTacheCreateOptions | PrepareMidpiece, tacheOptions?: TacheOptions): Tache
+  (createOptions: GeneralTacheCreateOptions | PrepareMidpiece): (tacheOptions?: TacheOptions) => Tache
+}
+/**
+ * @see {@link createGeneralTache}
+ */
+export const createGeneralTache_: ICreateGeneralTache_ = looseCurryN(2, createGeneralTache)
 
 /**
- * @param { PartialFunction } tacheMaker partial applied createGeneralTache
+ * @param tacheMaker partial applied createGeneralTache
  */
 export const useGeneralTache = (
   tacheMaker: (options: TacheOptions) => Tache, tacheOptions: TacheOptions, ...sources: any[]
@@ -152,8 +159,8 @@ export const useGeneralTache_ = looseCurryN(3, useGeneralTache)
  */
 export type SSTache<P = any, C = any> = (source: AtomLikeOfOutput<P>) => Data<C>
 /**
- * @param { MutatorOriginTransformationUnion<P, C> } transformation
- * @param { MutationOptions<P, C> } options same as MutationOptions
+ * @param transformation
+ * @param options same as MutationOptions
  * @return { SSTache } SSTache :: `(source) => Data<any>`
  */
 export const createSSTache = <P, C>(
@@ -169,7 +176,7 @@ export const createSSTache = <P, C>(
   const preparedOptions = { ...DEFAULT_MUTATION_OPTIONS, ...options }
 
   /**
-   * @param { AtomLike } source
+   * @param source
    * @return { Data<C> } Data
    */
   return source => {
@@ -202,7 +209,7 @@ interface ArraySMTacheConfig<P> {
 }
 export type ArraySMTache<P = any> = (source: AtomLikeOfOutput<P>) => Array<Data<any>>
 /**
- * @param { ArraySMTacheConfig<P>[] } configArr `[{ transformation, options }, ...]`
+ * @param configArr `[{ transformation, options }, ...]`
  * @return { ArraySMTache<P> } ArraySSTache :: `(source) => Array<Data<any>>`
  */
 export const createArraySMTache = <P>(configArr: Array<ArraySMTacheConfig<P>>): ArraySMTache<P> => {
@@ -220,7 +227,7 @@ export const createArraySMTache = <P>(configArr: Array<ArraySMTacheConfig<P>>): 
   })
 
   /**
-   * @param { AtomLike } source Atom
+   * @param source Atom
    * @return { Data<any> } Array of Data
    */
   return source => {
@@ -248,7 +255,7 @@ interface ObjectSMTacheConfig<P> {
 }
 export type ObjectSMTache<P = any> = (source: AtomLikeOfOutput<P>) => Record<string, Data<any>>
 /**
- * @param { ObjectSMTacheConfig<P> } configObj `{ [key: string]: { transformation, options? } }`
+ * @param configObj `{ [key: string]: { transformation, options? } }`
  * @return { ObjectSMTache<P> } ObjectSSTache :: `(source) => Record<string, Data<any>>`
  */
 export const createObjectSMTache = <P>(configObj: Record<string, ObjectSMTacheConfig<P>>): ObjectSMTache<P> => {
@@ -270,7 +277,7 @@ export const createObjectSMTache = <P>(configObj: Record<string, ObjectSMTacheCo
   , {})
 
   /**
-   * @param { Atom } source Atom
+   * @param source Atom
    * @return Object of Data
    */
   return source => {
@@ -354,7 +361,7 @@ export interface ArrayMSTache<P, C> {
   (...sources: Array<AtomLikeOfOutput<P>>): Data<C>
 }
 /**
- * @param { ArrayMSTacheConfig<C> } config
+ * @param config
  * @return TacheMaker
  */
 export const createArrayMSTache = <P, C>(
@@ -484,7 +491,7 @@ export type ObjectMSTache<P, C> = (
   sources: Record<string, AtomLikeOfOutput<P>>
 ) => Data<C>
 /**
- * @param { ObjectMSTacheConfig<C> } config
+ * @param config
  * @return TacheMaker
  */
 export const createObjectMSTache = <P, C>(

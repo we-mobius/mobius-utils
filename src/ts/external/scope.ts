@@ -42,8 +42,8 @@ export interface ScopeManager<Creator extends ScopeManagerCreator> {
 const SCOPE_MANAGERS = new Map()
 
 /**
- * @param { object | function } creator
- * @param { ScopeManagerCreateOptions } options
+ * @param creator
+ * @param options
  * @return ScopeManager
  */
 const createScopeManager = <Creator extends ScopeManagerCreator>(
@@ -78,8 +78,8 @@ const createScopeManager = <Creator extends ScopeManagerCreator>(
      * if there is none, create one,
      * if there is one, just return it.
      *
-     * @param { string } scope
-     * @param { { instance?, params? } } [options] can be omitted when the type of scope is Object
+     * @param scope
+     * @param [options] can be omitted when the type of scope is Object
      * @return instance
      */
     registerScope: function (scope, options) {
@@ -118,8 +118,8 @@ const createScopeManager = <Creator extends ScopeManagerCreator>(
     },
 
     /**
-     * @param { string } scope
-     * @param { { acceptPromise?: boolean } } [options]
+     * @param scope
+     * @param [options]
      * @return instance | Atom of instance
      */
     getInstance: function (scope, options = {}) {
@@ -156,9 +156,9 @@ const createScopeManager = <Creator extends ScopeManagerCreator>(
 /**
  * Make and return a ScopeManager.
  *
- * @param { ScopeManagerCreator } creator scope manager creator
- * @param { boolean } [options.isStray = false]
- * @param { string } [options.strayFlag]
+ * @param creator scope manager creator
+ * @param [options.isStray = false]
+ * @param [options.strayFlag]
  * @return { ScopeManager } ScopeManager
  * @todo TODO: strayFlay 同名检测
  */

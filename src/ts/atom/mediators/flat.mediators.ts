@@ -16,7 +16,7 @@ import type { MediatorTypeMaker, MediatorType } from './base.mediators'
  ******************************************************************************************************/
 
 /**
- * @param { Any } tar anything
+ * @param tar anything
  * @return { boolean } whether the target is a FlatMediator instance
  */
 export const isFlatMediator = (tar: any): tar is FlatMediatorUnion =>
@@ -53,7 +53,7 @@ type FlatMediatorUnion
 /**
  *
  */
-export class FlatDataMediator<V> extends DataMediator<V> {
+export class FlatDataMediator<V = any> extends DataMediator<V> {
   private readonly _originAtom: Data<V>
   private _connection: { unsubscribe: () => void } | null
   private _subscription: Subscription | null
@@ -153,7 +153,7 @@ export class FlatDataMediator<V> extends DataMediator<V> {
 /**
  *
  */
-export class FlatMutationMediator<P, C> extends MutationMediator<P, C> {
+export class FlatMutationMediator<P = any, C = any> extends MutationMediator<P, C> {
   private readonly _originAtom: Mutation<P, C>
   private _connection: { unsubscribe: () => void } | null
   private _subscription: Subscription | null

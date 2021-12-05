@@ -16,7 +16,7 @@ type AnyFunction = (...args: any[]) => any
  ******************************************************************************************************/
 
 /**
- * @param { Any } tar anything
+ * @param tar anything
  * @return { boolean } whether the target is a ExampleMediator instance
  */
 export const isExampleMediator = <A extends Data<unknown> | Mutation<AnyFunction>>(tar: Any): tar is ExampleMediator<A> =>

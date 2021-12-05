@@ -29,23 +29,23 @@ export enum ParticleType {
  ******************************************************************************************************/
 
 /**
- * @param { any } tar anything
+ * @param tar anything
  * @return { boolean } whether the target is a Particle instance
  */
 export const isParticle = (tar: any): tar is Particle => isObject(tar) && tar.isParticle
 /**
-  * @param { any } tar anything
+  * @param tar anything
   * @return { boolean } whether the target is a Chaos instance
   */
 export const isChaos = (tar: any): tar is Chaos => isObject(tar) && tar.isChaos
 /**
-  * @param { any } tar anything
+  * @param tar anything
   * @return { boolean } whether target is a Datar instance
   */
 export const isDatar = <V = any>(tar: any): tar is Datar<V> =>
   isObject(tar) && tar.isDatar
 /**
-  * @param { any } tar anything
+  * @param tar anything
   * @return { boolean } whether target is a Mutator instance
   */
 export const isMutator = <P = any, C = any>(tar: any): tar is Mutator<P, C> =>
@@ -119,23 +119,23 @@ export interface DatarOptions extends BaseParticleOptions {}
 export const DEFAULT_DATAR_OPTIONS: Required<DatarOptions> = {
   ...DEFAULT_BASEPARTICLE_OPTIONS
 }
-type MutatorOfDatar<V>
+type MutatorOfDatar<V = any>
   = Mutator<any, V>
   | Chaos
 
 /**
  * @return { boolean } whether the target is a valid mutator of datar
  */
-export const isValidMutatorOfDatar = <P, C>(tar: any): tar is Mutator<P, C> =>
+export const isValidMutatorOfDatar = <P = any, C = any>(tar: any): tar is Mutator<P, C> =>
   isChaos(tar) || isMutator(tar)
 
 /**
  * Designed to carry the value of Data.
  *
- * @param { boolean } [options.isHPMode = true] whether the datar is in HPMode, when in HPMode,
+ * @param [options.isHPMode = true] whether the datar is in HPMode, when in HPMode,
  *                                              the mutator of datar will always be Chaos.
  */
-export class Datar<V> extends Particle {
+export class Datar<V = any> extends Particle {
   value: V
   options: Required<DatarOptions>
   mutator: MutatorOfDatar<V>
@@ -187,7 +187,7 @@ export class Datar<V> extends Particle {
   get isEmpty (): boolean { return isVacuo(this.value) }
 
   /**
-   * @param { Mutator } mutator
+   * @param mutator
    * @return { Datar } this
    */
   fill (mutator: MutatorOfDatar<V>): this {
@@ -201,8 +201,8 @@ export class Datar<V> extends Particle {
   /**
    * Rarely used, this method exists to ensure the symmetry of Datar and Mutator.
    *
-   * @param { MutatorOfDatar<V> } mutator the mutator to be applied
-   * @param { any[] } args exists for the symmetry of Mutator.run
+   * @param mutator the mutator to be applied
+   * @param args exists for the symmetry of Mutator.run
    * @return { MutatorOfDatar<V>['transformation'] } transformation function of specified mutator
    */
   run <M extends Mutator<V, any>>(mutator: M, data?: Data<V>, ...args: any[]): M['transformation'] {
@@ -235,15 +235,20 @@ export const DEFAULT_MUTATOR_OPTIONS: Required<MutatorOptions> = {
   lift: DEFAULT_TRANSFORMATION_LIFT_OPTIONS
 }
 
-export type MutatorTransformation<P, C> = (prev: Chaos | Datar<P>, cur: Datar<C>, mutation?: Mutation<P, C>, ...args: any[]) => C
-type DatarOfMutator<V> = Datar<V> | Chaos
-export const isValidDatarOfMutator = (tar: any): tar is DatarOfMutator<any> =>
+export type MutatorTransformation<P = any, C = any> =
+  (prev: Chaos | Datar<P>, cur: Datar<C>, mutation?: Mutation<P, C>, ...args: any[]) => C
+type DatarOfMutator<V = any> = Datar<V> | Chaos
+
+/**
+ * Predicate whether the target is a valid datar of mutator, i.e. Chaos or Datar.
+ */
+export const isValidDatarOfMutator = <V = any>(tar: any): tar is DatarOfMutator<V> =>
   isChaos(tar) || isDatar(tar)
 
-export type LiftBothTransformation<P, C> = (prev: Vacuo | P, cur: C, mutation?: Mutation<P, C>, ...args: any[]) => C
-export type LiftLeftTransformation<P, C> = (prev: Vacuo | P, cur: Datar<C>, mutation?: Mutation<P, C>, ...args: any[]) => C
-export type LiftRightTransformation<P, C> = (prev: Chaos | Datar<P>, cur: C, mutation?: Mutation<P, C>, ...args: any[]) => C
-export type MutatorOriginTransformationUnion<P, C>
+export type LiftBothTransformation<P = any, C = any> = (prev: Vacuo | P, cur: C, mutation?: Mutation<P, C>, ...args: any[]) => C
+export type LiftLeftTransformation<P = any, C = any> = (prev: Vacuo | P, cur: Datar<C>, mutation?: Mutation<P, C>, ...args: any[]) => C
+export type LiftRightTransformation<P = any, C = any> = (prev: Chaos | Datar<P>, cur: C, mutation?: Mutation<P, C>, ...args: any[]) => C
+export type MutatorOriginTransformationUnion<P = any, C = any>
   = MutatorTransformation<P, C>
   | LiftBothTransformation<P, C>
   | LiftLeftTransformation<P, C>
@@ -252,7 +257,7 @@ export type MutatorOriginTransformationUnion<P, C>
 /**
  * Designed to carry the transformation of Mutation.
  */
-export class Mutator<P, C> extends Particle {
+export class Mutator<P = any, C = any> extends Particle {
   transformation: MutatorTransformation<P, C>
   options: Required<MutatorOptions>
   datar: DatarOfMutator<P>
@@ -346,8 +351,8 @@ export class Mutator<P, C> extends Particle {
   /**
    * Dispatch transformation to correct lift method according to the given options.
    *
-   * @param { function } transformation
-   * @param { TransformationLiftOptions } [options = DEFAULT_TRANSFORMATION_LIFT_OPTIONS] default to `{ position: 'both' }`
+   * @param transformation
+   * @param [options = DEFAULT_TRANSFORMATION_LIFT_OPTIONS] default to `{ position: 'both' }`
    */
   static lift <P, C>(
     transformation: LiftBothTransformation<P, C>
@@ -382,7 +387,7 @@ export class Mutator<P, C> extends Particle {
   /**
    * Automatically unwrap both left & right param to value.
    *
-   * @param { AnyFunction } transformation
+   * @param transformation
    * @return { AnyFunction } wrapped transformation function
    */
   static liftBoth <P, C>(transformation: LiftBothTransformation<P, C>): MutatorTransformation<P, C> {
@@ -397,7 +402,7 @@ export class Mutator<P, C> extends Particle {
   /**
    * Automatically unwrap left param to value, keep right param Datar.
    *
-   * @param { function } transformation
+   * @param transformation
    * @return { function } wrapped transformation function
    */
   static liftLeft <P, C>(transformation: LiftLeftTransformation<P, C>): MutatorTransformation<P, C> {
@@ -412,7 +417,7 @@ export class Mutator<P, C> extends Particle {
   /**
    * Automatically unwrap right param to value, keep left param Datar.
    *
-   * @param { function } transformation
+   * @param transformation
    * @return { function } wrapped transformation function
    */
   static liftRight <P, C>(transformation: LiftRightTransformation<P, C>): MutatorTransformation<P, C> {
@@ -425,7 +430,7 @@ export class Mutator<P, C> extends Particle {
   }
 
   /**
-   * @param { Datar } datar
+   * @param datar
    * @return { Mutator } this
    */
   fill (datar: Datar<P>): this {
@@ -451,8 +456,8 @@ export class Mutator<P, C> extends Particle {
    *
    *   -> The new datar will be the new datar of Data B.
    *
-   * @param { Datar<any> } datar the datar to be passed to the transformation as 2nd parameter
-   * @param { any[] } args the rest of the arguments (3rd and after) to be passed to the transformation
+   * @param datar the datar to be passed to the transformation as 2nd parameter
+   * @param args the rest of the arguments (3rd and after) to be passed to the transformation
    * @return { ReturnType<MT> } Return type of transformation
    */
   run (datar: Datar<C>, mutation?: Mutation<P, C>, ...args: any[]): ReturnType<MutatorTransformation<P, C>> {

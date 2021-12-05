@@ -172,7 +172,7 @@ export const isPathnameLooseEqual = (pathname1: PathnameUnion, pathname2: Pathna
 }
 /**
  * judge whether two pathname are equal.
- * @param { 'strict' | 'loose' } mode mode of comparing
+ * @param mode mode of comparing
  * @return { boolean } whether two pathname are equal
  */
 export const isPathnameEqual = (mode: 'strict' | 'loose', pathname1: PathnameUnion, pathname2: PathnameUnion): boolean => {

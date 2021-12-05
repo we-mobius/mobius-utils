@@ -32,8 +32,8 @@ export const makeCustomEvent = <D extends Record<string, unknown>>(
     new CustomEvent(type, { ...options, detail: { eventType: type, ...detail } })
 
 /**
- * @param { string } selector element's id or selector
- * @param { number } interval polling interval (in ms)
+ * @param selector element's id or selector
+ * @param interval polling interval (in ms)
  * @return { void } no return value
  */
 export const pollingToGetNode = curry((selector: string, interval: number, callback: (node: Element) => void): void => {

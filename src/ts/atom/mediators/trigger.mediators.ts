@@ -16,8 +16,8 @@ import type { MediatorTypeMaker, MediatorType } from './base.mediators'
  ******************************************************************************************************/
 
 /**
- * @param { Any } tar anything
- * @return { boolean } whether the target is a TriggerMediator instance
+ * @param tar anything
+ * @return whether the target is a TriggerMediator instance
  */
 export const isTriggerMediator = (tar: any): tar is TriggerMediatorUnion =>
   isObject(tar) && tar.isTriggerMediator
@@ -42,10 +42,10 @@ export type TriggerMediatorUnion
   = TriggerDataMediator<any>
   | TriggerMutationMediator<any, any>
 
-type DataTrigger<V> = Trigger<V>
-type MutationTrigger<P, C> = Trigger<MutatorTransformation<P, C>>
-type TriggerDataMediatorMap<V> = Map<DataTrigger<V>, TriggerController>
-type TriggerMutationMediatorMap<P, C> = Map<MutationTrigger<P, C>, TriggerController>
+type DataTrigger<V = any> = Trigger<V>
+type MutationTrigger<P = any, C = any> = Trigger<MutatorTransformation<P, C>>
+type TriggerDataMediatorMap<V = any> = Map<DataTrigger<V>, TriggerController>
+type TriggerMutationMediatorMap<P = any, C = any> = Map<MutationTrigger<P, C>, TriggerController>
 
 /******************************************************************************************************
  *
@@ -56,7 +56,7 @@ type TriggerMutationMediatorMap<P, C> = Map<MutationTrigger<P, C>, TriggerContro
 /**
  *
  */
-export class TriggerDataMediator<V> extends DataMediator<V> {
+export class TriggerDataMediator<V = any> extends DataMediator<V> {
   private readonly _map: TriggerDataMediatorMap<V>
 
   constructor (atom: Data<V>) {
@@ -149,7 +149,7 @@ export class TriggerDataMediator<V> extends DataMediator<V> {
 /**
  *
  */
-export class TriggerMutationMediator<P, C> extends MutationMediator<P, C> {
+export class TriggerMutationMediator<P = any, C = any> extends MutationMediator<P, C> {
   private readonly _map: TriggerMutationMediatorMap<P, C>
 
   constructor (atom: Mutation<P, C>) {

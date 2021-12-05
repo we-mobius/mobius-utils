@@ -7,7 +7,7 @@ type ClassObject = Record<string, boolean>
 type ClassUnion = ClassString | ClassArray | ClassObject
 
 /**
- * @param { string } str same as value of class attribute on HTML tags
+ * @param str same as value of class attribute on HTML tags
  * @return { ClassString } formatted class string
  * @example
  * ```ts
@@ -30,7 +30,7 @@ export const neatenClassStr = (str: string): ClassString => {
 
 /**
  * Format target string to standard class string using `neatenClassStr`, then split it to array by space.
- * @param { ClassString } str class string
+ * @param str class string
  * @return { ClassArray } array of classnames
  * @example
  * ```ts
@@ -48,7 +48,7 @@ export const classStrToArr = (str: ClassString): ClassArray => {
   return classArr
 }
 /**
- * @param { ClassArray } arr array of classnames
+ * @param arr array of classnames
  * @return { ClassObject } PlainObject which use classname as key and exist of classname as value
  * @example
  * ```ts
@@ -72,7 +72,7 @@ export const classArrToObj = (arr: ClassArray): ClassObject => {
 }
 /**
  * Equal to `pipe(classStrToArr, classArrToObj)`.
- * @param { ClassString } str class string
+ * @param str class string
  * @return { ClassObject } PlainObject which use classname as key and exist of classname as value
  */
 export const classStrToObj = (str: ClassString): ClassObject => {
@@ -85,7 +85,7 @@ export const classStrToObj = (str: ClassString): ClassObject => {
 }
 /**
  * Classname in target object which value is false will be ignored.
- * @param { ClassObject } classObject PlainObject which use classname as key and exist of classname as value
+ * @param classObject PlainObject which use classname as key and exist of classname as value
  * @return { ClassArray } array of classnames
  */
 export const classObjToArr = (obj: ClassObject): ClassArray => {
@@ -99,7 +99,7 @@ export const classObjToArr = (obj: ClassObject): ClassArray => {
   return classArr
 }
 /**
- * @param { ClassArray } arr array of classnames
+ * @param arr array of classnames
  * @return { ClassString } class string
  */
 export const classArrToStr = (arr: ClassArray): ClassString => {
@@ -111,7 +111,7 @@ export const classArrToStr = (arr: ClassArray): ClassString => {
 }
 /**
  * Same as `pipe(classObjToArr, classArrToStr)`.
- * @param { ClassObject } classObject PlainObject which use classname as key and exist of classname as value
+ * @param classObject PlainObject which use classname as key and exist of classname as value
  * @return { ClassString } class string
  */
 export const classObjToStr = (obj: ClassObject): ClassString => {
@@ -123,7 +123,7 @@ export const classObjToStr = (obj: ClassObject): ClassString => {
   return classStr
 }
 /**
- * @param { ClassUnion } tar target, type of classString | classArray | classObject
+ * @param tar target, type of classString | classArray | classObject
  * @return { classString } class string
  */
 export const toClassStr = (tar: ClassUnion): ClassString => {
@@ -138,7 +138,7 @@ export const toClassStr = (tar: ClassUnion): ClassString => {
   }
 }
 /**
- * @param { ClassUnion } tar target, type of classString | classArray | classObject
+ * @param tar target, type of classString | classArray | classObject
  * @return { ClassArray } array of classnames
  */
 export const toClassArr = (tar: ClassUnion): ClassArray => {
@@ -153,7 +153,7 @@ export const toClassArr = (tar: ClassUnion): ClassArray => {
   }
 }
 /**
- * @param { ClassUnion } tar target, type of classString | classArray | classObject
+ * @param tar target, type of classString | classArray | classObject
  * @return { ClassObject } PlainObject which use classname as key and exist of classname as value
  */
 export const toClassObj = (tar: ClassUnion): ClassObject => {
@@ -169,8 +169,8 @@ export const toClassObj = (tar: ClassUnion): ClassObject => {
 }
 /**
  * Curried.
- * @param { string | array | object } target string | array | object
- * @param { ClassUnion } cls target, type of classString | classArray | classObject
+ * @param target string | array | object
+ * @param cls target, type of classString | classArray | classObject
  * @return { ClassUnion } classString | classArray | classObject
  */
 export const formatClassTo = curry(
@@ -189,8 +189,8 @@ export const formatClassTo = curry(
 
 /**
  * Curried.
- * @param { string } prefix classname prefix
- * @param { ClassUnion } cls class, type of classString | classArray | classObject
+ * @param prefix classname prefix
+ * @param cls class, type of classString | classArray | classObject
  * @return { ClassUnion } typeof param class, says classString | classArray | classObject
  */
 export const prefixClassWith = curry((prefix: string, cls: ClassUnion): typeof cls => {
@@ -218,8 +218,8 @@ export const prefixClassWith = curry((prefix: string, cls: ClassUnion): typeof c
 })
 /**
  * Curried.
- * @param { string } prefix classname prefix
- * @param { ClassUnion } cls class, type of classString | classArray | classObject
+ * @param prefix classname prefix
+ * @param cls class, type of classString | classArray | classObject
  * @return { ClassUnion } typeof param class, says classString | classArray | classObject
  */
 export const removePrefixOfClass = curry((prefix: string, cls: ClassUnion): typeof cls => {
@@ -254,8 +254,8 @@ export const removePrefixOfClass = curry((prefix: string, cls: ClassUnion): type
 
 /**
  * Curried.
- * @param { ClassUnion } added class, type of classString | classArray | classObject
- * @param { ClassUnion } target class, type of classString | classArray | classObject
+ * @param added class, type of classString | classArray | classObject
+ * @param target class, type of classString | classArray | classObject
  * @return { ClassUnion } typeof param class, says classString | classArray | classObject
  */
 export const addClass = curry((added: ClassUnion, target: ClassUnion): typeof target => {
@@ -266,8 +266,8 @@ export const addClass = curry((added: ClassUnion, target: ClassUnion): typeof ta
 })
 /**
  * Curried.
- * @param { ClassUnion } removed class, type of classString | classArray | classObject
- * @param { ClassUnion } target class, type of classString | classArray | classObject
+ * @param removed class, type of classString | classArray | classObject
+ * @param target class, type of classString | classArray | classObject
  * @return { ClassUnion } typeof param class, says classString | classArray | classObject
  */
 export const removeClass = curry((removed: ClassUnion, target: ClassUnion): typeof target => {
@@ -281,8 +281,8 @@ export const removeClass = curry((removed: ClassUnion, target: ClassUnion): type
 })
 /**
  * Curried.
- * @param { ClassUnion } toggled class, type of classString | classArray | classObject
- * @param { ClassUnion } target class, type of classString | classArray | classObject
+ * @param toggled class, type of classString | classArray | classObject
+ * @param target class, type of classString | classArray | classObject
  * @return { ClassUnion } typeof param class, says classString | classArray | classObject
  */
 export const toggleClass = curry((toggled: ClassUnion, target: ClassUnion): typeof target => {
@@ -296,8 +296,8 @@ export const toggleClass = curry((toggled: ClassUnion, target: ClassUnion): type
 type Replaced = Record<string, string> | Array<string | string[]> | string
 /**
  * Curried.
- * @param { Replaced } replaced class, type of classString | classArray | classObject
- * @param { ClassUnion } target class, type of classString | classArray | classObject
+ * @param replaced class, type of classString | classArray | classObject
+ * @param target class, type of classString | classArray | classObject
  * @return { ClassUnion } typeof param class, says classString | classArray | classObject
  */
 export const replaceClass = curry((replaced: Replaced, target: ClassUnion): typeof target => {
@@ -358,8 +358,8 @@ export const replaceClass = curry((replaced: Replaced, target: ClassUnion): type
 })
 /**
  * Curried.
- * @param { ClassUnion } contained class, type of classString | classArray | classObject
- * @param { ClassUnion } target class, type of classString | classArray | classObject
+ * @param contained class, type of classString | classArray | classObject
+ * @param target class, type of classString | classArray | classObject
  * @return { boolean } whether target class contains contained class
  */
 export const containClass = curry((contained, target) => {

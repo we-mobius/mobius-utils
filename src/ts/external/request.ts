@@ -45,7 +45,7 @@ const commonConfig = {
  * - use wx.request for wechat miniapp environment
  * - use axios for web or node environment
  *
- * @param { BiuRequestConfig } config request config
+ * @param config request config
  */
 export const biu = async (config: BiuRequestConfig): Promise<any> => {
   if (!isPlainObject(config)) {

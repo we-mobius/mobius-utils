@@ -25,7 +25,7 @@ import type { MediatorTypeMaker, MediatorType } from './base.mediators'
  ******************************************************************************************************/
 
 /**
- * @param { Any } tar anything
+ * @param tar anything
  * @return { boolean } whether the target is a ReplayMediator instance
  */
 export const isReplayMediator = (tar: any): tar is ReplayMediatorUnion =>
@@ -64,7 +64,7 @@ export type ReplayMediatorUnion
 /**
  *
  */
-export class ReplayDataMediator<V> extends DataMediator<V> {
+export class ReplayDataMediator<V = any> extends DataMediator<V> {
   private _history: Array<Datar<V>>
   private readonly _consumers: Set<DatarConsumer<V>>
   private readonly _subscription: Subscription
@@ -192,7 +192,7 @@ export class ReplayDataMediator<V> extends DataMediator<V> {
 /**
  *
  */
-export class ReplayMutationMediator<P, C> extends MutationMediator<P, C> {
+export class ReplayMutationMediator<P = any, C = any> extends MutationMediator<P, C> {
   private _history: Array<Mutator<P, C>>
   private readonly _consumers: Set<MutatorConsumer<P, C>>
   private readonly _subscription: Subscription
@@ -372,14 +372,18 @@ interface IReplayLatest {
 }
 /**
  * Make a replay mediator with specified replayTime but without autoTrigger.
- * @param { number } replayTime
+ *
+ * @param replayTime
+ * @param atom
  */
 export const replayWithoutLatest: IReplayLatest = curry((replayTime, atom) => {
   return ReplayMediator.of(atom, { replayTime, autoTrigger: false })
 })
 /**
- * Make a replay mediator with specified replay time and auto trigger
- * @param { number } replayTime
+ * Make a replay mediator with specified replay time and auto trigger.
+ *
+ * @param replayTime
+ * @param atom
  */
 export const replayWithLatest: IReplayLatest = curry((replayTime, atom) => {
   return ReplayMediator.of(atom, { replayTime, autoTrigger: true })

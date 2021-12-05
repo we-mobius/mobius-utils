@@ -44,8 +44,8 @@ export const urlUUID = (): string => {
 /**
  * 获取当前运行时唯一的字符串，可用于标识组件
  *
- * @param { string } prefix default to 'mobius'
- * @param { string } fingerPrint default to 'cigaret'
+ * @param prefix default to 'mobius'
+ * @param fingerPrint default to 'cigaret'
  * @return String
  */
 export const makeUniqueString = (() => {

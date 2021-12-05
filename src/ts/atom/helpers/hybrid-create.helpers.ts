@@ -40,7 +40,7 @@ interface IWithMediator {
  *
  * @param atom Atom, i.e. Data or Mutation
  * @param mediatorRepresentative Mediator Representative
- * @param { Record<string, any> } [options] options of specified Mediator Representative.
+ * @param [options] options of specified Mediator Representative.
  */
 export const withMediator: IWithMediator = (atom: any, mediatorRepresentative: any, options: Record<string, any> = {}): any => {
   const _mediator = mediatorRepresentative.of(atom, options)
@@ -56,7 +56,7 @@ interface IWithTriggerMediator {
  * Create trigger mediator of given atom, then return tuple of given atom & created mediator.
  *
  * @param atom Atom, i.e. Data or Mutation
- * @param { TriggerMediatorOptions } [options] options of trigger mediator representative.
+ * @param [options] options of trigger mediator representative.
  */
 export const withTriggerMediator: IWithTriggerMediator = (atom: any, options: any = {}): any => withMediator(atom, TriggerMediator, options)
 export const withTriggerMediator_ = looseCurryN(1, withTriggerMediator)
@@ -69,7 +69,7 @@ interface IWithReplayMediator {
  * Create replay mediator of given atom, then return tuple of given atom & created mediator.
  *
  * @param atom Atom, i.e. Data or Mutation
- * @param { TriggerMediatorOptions } [options] options of replay mediator representative.
+ * @param [options] options of replay mediator representative.
  */
 export const withReplayMediator: IWithReplayMediator = (atom: any, options: any = {}): any => withMediator(atom, ReplayMediator, options)
 export const withReplayMediator_ = looseCurryN(1, withReplayMediator)
@@ -82,7 +82,7 @@ interface IWithFlatMediator {
  * Create flat mediator of given atom, then return tuple of given atom & created mediator.
  *
  * @param atom Atom, i.e. Data or Mutation
- * @param { TriggerMediatorOptions } [options] options of flat mediator representative.
+ * @param [options] options of flat mediator representative.
  */
 export const withFlatMediator: IWithFlatMediator = (atom: any, options: any = {}): any => withMediator(atom, FlatMediator, options)
 export const withFlatMediator_ = looseCurryN(1, withFlatMediator)

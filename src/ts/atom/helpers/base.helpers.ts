@@ -5,7 +5,7 @@ import { isMediator } from '../mediators'
 import type { AtomType } from '../atoms'
 
 /**
- * @param { any } tar anything
+ * @param tar anything
  * @return { AtomType | undefined } If target is an Atom instance or Mediator instance,
  *                                  return its `atomType`, otherwise return `undefined`.
  */

@@ -51,7 +51,7 @@ const THROTTLE_TYPE_ERROR = new TypeError('Throttle: fn must be a NormalFunction
 type SimpleThrottleTime =
   <T extends AnyFunction>(fn: T, ms: number, strict?: boolean) => (...args: LooseArray<Parameters<T>>) => void
 /**
- * @param { boolean } [strict = false] If true, the window of target function be invoked will
+ * @param [strict = false] If true, the window of target function be invoked will
  *                                     greater than maxium of specified ms and target function's
  *                                     execution time. If false, just greater than specified ms.
  * @return { Function } Throttled function
@@ -146,7 +146,7 @@ export const throttleS: SimpleThrottle = fn => {
 type ThrottleTime =
   <T extends AnyFunction>(fn: T, ms: number, strict?: boolean) => (...args: LooseArray<Parameters<T>>) => Promise<ReturnType<T>>
 /**
- * @param { boolean } [strict = false] If true, the window of target function be invoked will
+ * @param [strict = false] If true, the window of target function be invoked will
  *                                     greater than maxium of specified ms and target function's
  *                                     execution time. If false, just greater than specified ms.
  * @return { Function } Throttled function

@@ -56,7 +56,7 @@ export interface DriverInterfaces {
 export type DriverFactory = (options: DriverOptions) => DriverInterfaces
 
 /**
- * @param { GeneralDriverCreateOptions | PrepareSingletonLevelContexts } createOptions
+ * @param createOptions
  * @return { DriverFactory } DriverFactory :: `(options?: {}) => { inputs: object, outputs: object }`
  */
 export const createGeneralDriver = (
@@ -82,7 +82,7 @@ export const createGeneralDriver = (
   const preparedDriverLevelContexts = { ...DEFAULT_DRIVER_LEVEL_CONTEXTS, ...prepareDriverLevelContexts() }
 
   /**
-   * @param { DriverOptions } [options = DEFAULT_DRIVER_OPTIONS] In order to clarify the role of each configuration item,
+   * @param [options = DEFAULT_DRIVER_OPTIONS] In order to clarify the role of each configuration item,
    *                                           the configuration is best to be in object format.
    * @return { DriverFactory } DriverFactory
    */
@@ -198,9 +198,9 @@ export const connectDriverInterfaces: IConnectDriverInterfaces = (up: any, down:
 }
 
 /**
- * @param { DriverFactory } driverFactory
- * @param { DriverOptions } driverOptions
- * @param { DriverInterfaces } interfaces
+ * @param driverFactory
+ * @param driverOptions
+ * @param interfaces
  * @return { DriverInterfaces } driverInterfaces
  */
 export const useGeneralDriver = (driver: DriverFactory, driverOptions: DriverOptions, interfaces: DriverInterfaces): DriverInterfaces => {
@@ -220,9 +220,9 @@ export const useGeneralDriver = (driver: DriverFactory, driverOptions: DriverOpt
 }
 
 /**
- * @param { DriverFactory } driverFactory
- * @param { DriverOptions } driverOptions
- * @param { DriverInterfaces } interfaces
+ * @param driverFactory
+ * @param driverOptions
+ * @param interfaces
  * @return { DriverInterfaces } driver
  */
 export const useGeneralDriver_ = looseCurryN(3, useGeneralDriver)

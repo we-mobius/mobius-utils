@@ -11,7 +11,7 @@ import type { Vacuo, Terminator } from '../metas'
 import type { AtomLikeOfOutput } from '../atoms'
 
 /**
- * @param { PropPath } selector
+ * @param selector
  *
  * @see {@link dynamicPluckT}, {@link staticPluckT}
  */

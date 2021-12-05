@@ -25,22 +25,15 @@ export enum AtomType {
  *
  ******************************************************************************************************/
 
-/**
- * @param { any } tar anything
- * @return { boolean } whether the target is an Atom instance
- */
-export const isAtom = (tar: any): tar is BaseAtom => isObject(tar) && tar.isAtom
-
 export interface AtomLike {
   isAtom: boolean
   subscribe: (consumer: (particle: any, atom?: any) => void, options?: any) => Subscription
   trigger: (particle?: any) => void
   observe: (atom?: any) => void
   beObservedBy: (atom?: any) => void
+  pipe: (...fns: Array<(...args: any[]) => any>) => AtomLike
+  compose: (...fns: Array<(...args: any[]) => any>) => AtomLike
 }
-
-export const isAtomLike = (tar: any): tar is AtomLike => isObject(tar) && tar.isAtom
-
 export type DataLike<V = any> = Data<V> | DataMediator<V>
 export type MutationLike<P = any, C = any> = Mutation<P, C> | MutationMediator<P, C>
 /**
@@ -55,6 +48,16 @@ export type AtomLikeOfInput<I = any> = Data<I> | DataMediator<I> | Mutation<I, a
  * AtomLike that can emit O as output.
  */
 export type AtomLikeOfOutput<O = any> = Data<O> | DataMediator<O> | Mutation<any, O> | MutationMediator<any, O>
+
+/**
+ * @param tar anything
+ * @return { boolean } whether the target is an Atom instance
+ */
+export const isAtom = (tar: any): tar is BaseAtom => isObject(tar) && tar.isAtom
+
+export const isAtomLike = (tar: any): tar is AtomLike => isObject(tar) && tar.isAtom
+export const isDataLike = <V = any>(tar: any): tar is DataLike<V> => isObject(tar) && tar.isData
+export const isMutationLike = <P = any, C = any>(tar: any): tar is MutationLike<P, C> => isObject(tar) && tar.isMutation
 
 /******************************************************************************************************
  *
@@ -186,5 +189,5 @@ export interface TriggerController {
   pause?: () => void
   cancel?: () => void
 }
-export type InternalTrigger<Accepted> = (accepted: Accepted, ...args: any[]) => void
-export type Trigger<Accepted> = (internalTrigger: InternalTrigger<Accepted>) => TriggerController
+export type InternalTrigger<Accepted = any> = (accepted: Accepted, ...args: any[]) => void
+export type Trigger<Accepted = any> = (internalTrigger: InternalTrigger<Accepted>) => TriggerController

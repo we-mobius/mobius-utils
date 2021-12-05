@@ -32,10 +32,10 @@ const DEFAULT_ITERABLE_TRIGGER_CREATE_OPTIONS: Omit<Required<IterableTriggerCrea
 }
 
 /**
- * @param { Iterable } options.iterable which values will be trigged in sequence
- * @param { boolean } [options.autoStart = false] indicate if the iterable will be iterated automatically
- * @param { boolean } [options.repeatable = true] indicate if the iterable will be iterated repeatedly
- * @param { Function } [options.handler = asIs] will be apply to values before them passed to trigger
+ * @param options.iterable which values will be trigged in sequence
+ * @param [options.autoStart = false] indicate if the iterable will be iterated automatically
+ * @param [options.repeatable = true] indicate if the iterable will be iterated repeatedly
+ * @param [options.handler = asIs] will be apply to values before them passed to trigger
  */
 export const createIterableTrigger = <V = any, R = V>(options: IterableTriggerCreateOptions<V, R>): Trigger<R> => {
   if (!isPlainObject(options)) {
@@ -119,10 +119,10 @@ const DEFAULT_EVENT_TRIGGER_CREATE_OPTIONS: Omit<Required<EventTriggerCreateOpti
 }
 
 /**
- * @param { EventTarget } options.target which has addEventListener method & removeEventListener method
- * @param { string } options.type event type which will pass as first argument of addEventListener & removeEventListener
- * @param { boolean } [options.autoStart = true] indicate if the event will be listened automatically
- * @param { Function } [options.handler = asIs] will be apply to event argument before it passed to trigger
+ * @param options.target which has addEventListener method & removeEventListener method
+ * @param options.type event type which will pass as first argument of addEventListener & removeEventListener
+ * @param [options.autoStart = true] indicate if the event will be listened automatically
+ * @param [options.handler = asIs] will be apply to event argument before it passed to trigger
  */
 export const createEventTrigger = <R = any>(options: EventTriggerCreateOptions<R>): Trigger<R> => {
   if (!isPlainObject(options)) {
@@ -196,11 +196,11 @@ const DEFAULT_INTERVAL_TRIGGER_CREATE_OPTIONS: Required<IntervalTriggerCreateOpt
 }
 
 /**
- * @param { number } [options.start = 0] (in millisecond) will be the start value of interval value
- * @param { number } [options.step = 1000] (in millisecond) will add to start value when interval goes
- * @param { number } [options.interval = 1000] (in millisecond) will be the ms argument of setInterval
- * @param { boolean } [options.autoStart = true] indicate if the interval will auto start
- * @param { Function } [options.handler = asIs] will be apply to interval value before it passed to trigger
+ * @param [options.start = 0] (in millisecond) will be the start value of interval value
+ * @param [options.step = 1000] (in millisecond) will add to start value when interval goes
+ * @param [options.interval = 1000] (in millisecond) will be the ms argument of setInterval
+ * @param [options.autoStart = true] indicate if the interval will auto start
+ * @param [options.handler = asIs] will be apply to interval value before it passed to trigger
  * @return Trigger
  */
 export const createIntervalTrigger = <R = any>(options: IntervalTriggerCreateOptions<R>): Trigger<R> => {
@@ -282,9 +282,9 @@ const DEFAULT_TIMEOUT_TRIGGER_CREATE_OPTIONS: Omit<Required<TimeoutTriggerCreate
 }
 
 /**
- * @param { number } options.timeout (in millisecond) will be the ms argument of setTimeout
- * @param { boolean } [options.autoStart = true] indicate if the timeout will auto start
- * @param { Function } [options.handler = asIs] result of its execution will be passed to trigger
+ * @param options.timeout (in millisecond) will be the ms argument of setTimeout
+ * @param [options.autoStart = true] indicate if the timeout will auto start
+ * @param [options.handler = asIs] result of its execution will be passed to trigger
  */
 export const createTimeoutTrigger = <R = any>(options: TimeoutTriggerCreateOptions<R>): Trigger<R> => {
   if (!isPlainObject(options)) {
@@ -367,9 +367,9 @@ const DEFAULT_OBSERVABLE_TRIGGER_CREATE_OPTIONS: Omit<Required<ObservableTrigger
 }
 
 /**
- * @param { Observable } options.observable Observable(Rx)
- * @param { boolean } [options.autoStart = true] indicate if the Observable will be subscribed automatically
- * @param { Function } [options.handler = asIs] will be apply to emitted value of Observable before it passed to trigger
+ * @param options.observable Observable(Rx)
+ * @param [options.autoStart = true] indicate if the Observable will be subscribed automatically
+ * @param [options.handler = asIs] will be apply to emitted value of Observable before it passed to trigger
  */
 export const createObservableTrigger = <V = any, R = V>(options: ObservableTriggerCreateOptions<V, R>): Trigger<R> => {
   if (!isPlainObject(options)) {
@@ -451,9 +451,9 @@ const DEFAULT_FUNCTION_TRIGGER_CREATE_OPTIONS: Omit<Required<FunctionTriggerCrea
 }
 
 /**
- * @param { Function } options.agent which takes emitFunction as argument, it will execute in create process
- * @param { boolean } [options.autoStart = true] indicate if the shouldEmit will be set to true initially
- * @param { Function } [options.handler = asIs] will be apply to emitted value of emitFunction before it passed to trigger
+ * @param options.agent which takes emitFunction as argument, it will execute in create process
+ * @param [options.autoStart = true] indicate if the shouldEmit will be set to true initially
+ * @param [options.handler = asIs] will be apply to emitted value of emitFunction before it passed to trigger
  * @example
  * ```ts
  * //                                  slow usecase

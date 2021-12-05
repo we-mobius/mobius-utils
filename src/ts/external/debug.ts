@@ -11,9 +11,9 @@ export const perf = {
 
 /**
  * @deprecated 重新规划一个更好的日志方案，支持运行时日志和应用监控两个主要场景
- * @param { string } file file name
- * @param { string } functionName function name
- * @param { string } description description
+ * @param file file name
+ * @param functionName function name
+ * @param description description
  * @return { void } no return value
  */
 export const stdLineLog = curry(

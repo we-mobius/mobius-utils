@@ -7,7 +7,7 @@ import { isObject } from '../internal/base'
  ******************************************************************************************************/
 
 /**
- * @param { any } value
+ * @param value
  * @return { boolean } whether the value is a Vain instance
  */
 export const isVain = (tar: any): tar is Vain => isObject(tar) && tar.isVain

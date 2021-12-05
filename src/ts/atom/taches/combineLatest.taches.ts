@@ -10,12 +10,12 @@ import type { AtomLikeOfOutput } from '../atoms'
 type StringRecord<V> = Record<string, V>
 
 interface ICombineLatestT {
-  <V>(
-    ...sources: Array<AtomLikeOfOutput<V>> | [Array<AtomLikeOfOutput<V>>]
-  ): Data<V[]>
-  <V>(
-    source: StringRecord<AtomLikeOfOutput<V>>
-  ): Data<StringRecord<V>>
+  <V extends Array<AtomLikeOfOutput<any>>>(
+    ...sources: V | [V]
+  ): Data<ExtractAtomValueInArray<V>>
+  <V extends StringRecord<AtomLikeOfOutput<any>>>(
+    sources: V
+  ): Data<ExtractAtomValueInObject<V>>
 }
 
 /**
@@ -31,18 +31,36 @@ export const combineLatestT: ICombineLatestT = (...sources: any[]): any => {
   }
 }
 
+type IsTuple<T> =
+  T extends readonly any[] ?
+    number extends T['length'] ? false : true
+    : false
+type ExtractAtomValueInArray<V> = IsTuple<V> extends false ? (
+  V extends Array<infer I> ? I extends AtomLikeOfOutput<any> ? I['meta'] : V : V
+) :
+  V extends [] ? [] :
+      (
+        V extends [infer A, ...infer B] ?
+            (
+              B extends [] ?
+                  [A extends AtomLikeOfOutput<infer I> ? I : never] :
+                  [A extends AtomLikeOfOutput<infer I> ? I : never, ...ExtractAtomValueInArray<B>]
+            )
+          : V
+      )
+
 /**
  * @see {@link combineLatestT}
  */
-export const arrayCombineLatestT = <V>(
-  ...sources: Array<AtomLikeOfOutput<V>> | [Array<AtomLikeOfOutput<V>>]
-): Data<V[]> => {
-  let preparedSources: Array<AtomLikeOfOutput<V>> = []
+export const arrayCombineLatestT = <V extends Array<AtomLikeOfOutput<any>>>(
+  ...sources: V | [V]
+): Data<ExtractAtomValueInArray<V>> => {
+  let preparedSources: Array<AtomLikeOfOutput<any>> = []
 
   if (sources.length === 1 && isArray(sources[0])) {
     preparedSources = sources[0]
   } else {
-    preparedSources = sources as Array<AtomLikeOfOutput<V>>
+    preparedSources = sources as Array<AtomLikeOfOutput<any>>
   }
 
   const inputAtoms = preparedSources.map(source => {
@@ -56,19 +74,19 @@ export const arrayCombineLatestT = <V>(
 
   interface WrappedData {
     id: number
-    value: Vacuo | V
+    value: Vacuo | any
   }
   const wrapMutations = Array.from({ length }).map((val, idx) =>
-    Mutation.ofLiftLeft<V, WrappedData>((prev) => ({ id: idx, value: prev }))
+    Mutation.ofLiftLeft<any, WrappedData>((prev) => ({ id: idx, value: prev }))
   )
 
   const wrappedDatas = Array.from({ length }).map(() => Data.empty<WrappedData>())
 
   const combineM = Mutation.ofLiftLeft((() => {
     const _internalStates = Array.from<boolean>({ length })
-    const _intervalValues = Array.from<V>({ length })
+    const _intervalValues = Array.from<any>({ length })
 
-    return (prev: WrappedData | Vacuo): V[] | Terminator => {
+    return (prev: WrappedData | Vacuo): any[] | Terminator => {
       if (isVacuo(prev)) return TERMINATOR
       if (isVacuo(prev.value)) return TERMINATOR
 
@@ -87,7 +105,7 @@ export const arrayCombineLatestT = <V>(
     }
   })())
 
-  const outputD = Data.empty<V[]>()
+  const outputD = Data.empty<ExtractAtomValueInArray<V>>()
 
   pipeAtom(combineM, outputD)
   wrappedDatas.forEach(data => {
@@ -103,13 +121,16 @@ export const arrayCombineLatestT = <V>(
   return outputD
 }
 
+type ExtractAtomValueInObject<T> = {
+  [P in keyof T]: T[P] extends AtomLikeOfOutput<infer V> ? V : never
+}
 /**
  * @see {@link combineLatestT}
  */
-export const objectCombineLatestT = <V>(
-  sources: StringRecord<AtomLikeOfOutput<V>>
-): Data<StringRecord<V>> => {
-  const inputAtoms = Object.entries(sources).reduce<StringRecord<AtomLikeOfOutput<V>>>(
+export const objectCombineLatestT = <V extends StringRecord<AtomLikeOfOutput<any>>>(
+  sources: V
+): Data<ExtractAtomValueInObject<V>> => {
+  const inputAtoms = Object.entries(sources).reduce<StringRecord<AtomLikeOfOutput<any>>>(
     (acc, [key, atom]) => {
       if (!isAtomLike(atom)) {
         throw (new TypeError('"sources" are expected to be type of "AtomLike".'))
@@ -121,16 +142,16 @@ export const objectCombineLatestT = <V>(
 
   interface WrappedData {
     key: string
-    value: Vacuo | V
+    value: Vacuo | any
   }
-  const wrapMutations = Object.entries(sources).reduce<StringRecord<Mutation<V, WrappedData>>>(
+  const wrapMutations = Object.entries(sources).reduce<StringRecord<Mutation<any, any>>>(
     (acc, [key]) => {
       acc[key] = Mutation.ofLiftLeft((prev) => ({ key: key, value: prev }))
       return acc
     }, {}
   )
 
-  const wrappedDatas = Object.entries(sources).reduce<StringRecord<Data<WrappedData>>>(
+  const wrappedDatas = Object.entries(sources).reduce<StringRecord<Data<any>>>(
     (acc, [key]) => {
       acc[key] = Data.empty()
       return acc
@@ -142,14 +163,14 @@ export const objectCombineLatestT = <V>(
       acc[key] = false
       return acc
     }, {})
-    const _intervalValues = Object.keys(sources).reduce<StringRecord<V | undefined>>(
+    const _intervalValues = Object.keys(sources).reduce<StringRecord<any>>(
       (acc, key) => {
         acc[key] = undefined
         return acc
       }, {}
     )
 
-    return (prev: Vacuo | WrappedData): StringRecord<V> | Terminator => {
+    return (prev: Vacuo | WrappedData): StringRecord<any> | Terminator => {
       if (isVacuo(prev)) return TERMINATOR
       if (isVacuo(prev.value)) return TERMINATOR
 
@@ -161,14 +182,14 @@ export const objectCombineLatestT = <V>(
       _intervalValues[key] = value
 
       if (Object.values(_internalStates).every(val => val)) {
-        return { ..._intervalValues } as unknown as StringRecord<V>
+        return { ..._intervalValues }
       } else {
         return TERMINATOR
       }
     }
   })())
 
-  const outputD = Data.empty<StringRecord<V>>()
+  const outputD = Data.empty<ExtractAtomValueInObject<V>>()
 
   pipeAtom(combineM, outputD)
   Object.values(wrappedDatas).forEach(data => {

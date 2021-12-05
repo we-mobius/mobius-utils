@@ -39,27 +39,27 @@ export enum MetaType {
  ******************************************************************************************************/
 
 /**
- * @param { any } tar anything
+ * @param tar anything
  * @return { boolean } whether the target is Meta instance
  */
 export const isMeta = (tar: any): tar is BaseMeta => isObject(tar) && tar.isMeta
 /**
- * @param { any } tar anything
+ * @param tar anything
  * @return { boolean } whether the targe is a Vacuo instance
  */
 export const isVacuo = (tar: any): tar is Vacuo => isFunction(tar) && tar.isVacuo
 /**
- * @param { any } tar anything
+ * @param tar anything
  * @return { boolean } whether the target is a Void instance
  */
 export const isVoid = (tar: any): tar is Void => isObject(tar) && tar.isVoid
 /**
-  * @param { any } tar anything
+  * @param tar anything
   * @return { boolean } whether the target is a Pausor instance
   */
 export const isPausor = (tar: any): tar is Pausor => isObject(tar) && tar.isPausor
 /**
-  * @param { any } tar anything
+  * @param tar anything
   * @return { boolean } whether the target is a Terminator instance
   */
 export const isTerminator = (tar: any): tar is Terminator => isObject(tar) && tar.isTerminator

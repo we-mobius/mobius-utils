@@ -24,10 +24,21 @@ import type {
  ******************************************************************************************************/
 
 /**
- * @param { any } tar anything
- * @return { boolean } whether the target is an Mediator instance
+ * @param tar anything
+ * @return whether the target is an Mediator instance
  */
-export const isMediator = <A extends BaseAtom>(tar: any): tar is BaseMediator<A> => isObject(tar) && tar.isMediator
+export const isMediator = <BA extends BaseAtom>(tar: any): tar is BaseMediator<BA> => isObject(tar) && tar.isMediator
+/**
+ * @param tar anything
+ * @return whether the target is an Data Mediator instance
+ */
+export const isDataMediator = <V = any>(tar: any): tar is DataMediator<V> => isMediator(tar) && tar.isMediator && tar.isData
+/**
+ * @param tar anything
+ * @return whether the target is an Mutation Mediator instance
+ */
+export const isMutationMediator = <P = any, C = any>(tar: any): tar is MutationMediator<P, C> =>
+  isMediator(tar) && tar.isMediator && !tar.isMutation
 
 /******************************************************************************************************
  *
@@ -38,7 +49,7 @@ export const isMediator = <A extends BaseAtom>(tar: any): tar is BaseMediator<A>
 /**
  *
  */
-type Unary<I, O> = (input: I) => O
+type Unary<I = any, O = any> = (input: I) => O
 /**
  *
  */
@@ -160,7 +171,7 @@ export abstract class BaseMediator<BA extends BaseAtom> extends Vain {
 /**
  *
  */
-export abstract class DataMediator<V> extends BaseMediator<Data<V>> implements AtomLike {
+export abstract class DataMediator<V = any> extends BaseMediator<Data<V>> implements AtomLike {
   get datar (): Datar<V> {
     return this._atom.datar
   }
@@ -225,7 +236,7 @@ export abstract class DataMediator<V> extends BaseMediator<Data<V>> implements A
 /**
  *
  */
-export abstract class MutationMediator<P, C> extends BaseMediator<Mutation<P, C>> implements AtomLike {
+export abstract class MutationMediator<P = any, C = any> extends BaseMediator<Mutation<P, C>> implements AtomLike {
   get mutator (): Mutator<P, C> {
     return this._atom.mutator
   }
