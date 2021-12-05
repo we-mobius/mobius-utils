@@ -29,6 +29,7 @@ export * from './taches/skipWhile.taches'
 export * from './taches/take.taches'
 export * from './taches/takeUntil.taches'
 export * from './taches/takeWhile.taches'
+export * from './taches/holdLatestUntil.taches'
 
 export * from './taches/iif.taches'
 export * from './taches/case.taches'

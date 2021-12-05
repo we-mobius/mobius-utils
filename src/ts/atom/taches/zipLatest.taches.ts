@@ -61,7 +61,7 @@ export const arrayZipLatestT = <V>(
 
   const zipM = Mutation.ofLiftLeft((() => {
     const _internalState = Array.from<boolean>({ length: preparedSources.length })
-    const _intervalValues = Array.from<V>({ length: preparedSources.length })
+    const _internalValues = Array.from<V>({ length: preparedSources.length })
 
     return (prev: Vacuo | WrappedSource): V[] | Terminator => {
       if (isVacuo(prev)) return TERMINATOR
@@ -69,11 +69,11 @@ export const arrayZipLatestT = <V>(
 
       const { id } = prev
       _internalState[id] = true
-      _intervalValues[id] = prev.value
+      _internalValues[id] = prev.value
 
-      if (_internalState.every(val => val) && _intervalValues.every(val => !isTerminator(val))) {
+      if (_internalState.every(val => val) && _internalValues.every(val => !isTerminator(val))) {
         _internalState.forEach((_, idx) => { _internalState[idx] = false })
-        return [..._intervalValues]
+        return [..._internalValues]
       } else {
         return TERMINATOR
       }
@@ -129,7 +129,7 @@ export const objectZipLatestT = <V>(
       acc[key] = false
       return acc
     }, {})
-    const _intervalValues = Object.keys(sources).reduce<StringRecord<V | undefined>>((acc, key) => {
+    const _internalValues = Object.keys(sources).reduce<StringRecord<V | undefined>>((acc, key) => {
       acc[key] = undefined
       return acc
     }, {})
@@ -141,13 +141,13 @@ export const objectZipLatestT = <V>(
       const { key } = prev
 
       _internalState[key] = true
-      _intervalValues[key] = prev.value
+      _internalValues[key] = prev.value
 
-      if (Object.values(_internalState).every(val => val) && Object.values(_intervalValues).every(val => !isTerminator(val))) {
+      if (Object.values(_internalState).every(val => val) && Object.values(_internalValues).every(val => !isTerminator(val))) {
         Object.keys(_internalState).forEach(key => {
           _internalState[key] = false
         })
-        return { ..._intervalValues } as unknown as StringRecord<V>
+        return { ..._internalValues } as unknown as StringRecord<V>
       } else {
         return TERMINATOR
       }

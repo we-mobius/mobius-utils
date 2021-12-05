@@ -65,7 +65,7 @@ export const arrayCombineT = <V>(
 
   const combineM = Mutation.ofLiftLeft((() => {
     const _internalStates = Array.from<boolean>({ length })
-    const _intervalValues = Array.from<V | undefined>({ length })
+    const _internalValues = Array.from<V | undefined>({ length })
 
     return (prev: WrappedData | Vacuo): Array<V | undefined> | Terminator => {
       if (isVacuo(prev)) return TERMINATOR
@@ -76,9 +76,9 @@ export const arrayCombineT = <V>(
       if (isTerminator(value)) return TERMINATOR
 
       _internalStates[id] = true
-      _intervalValues[id] = value
+      _internalValues[id] = value
 
-      return [..._intervalValues]
+      return [..._internalValues]
     }
   })())
 
@@ -137,7 +137,7 @@ export const objectCombineT = <V>(
       acc[key] = false
       return acc
     }, {})
-    const _intervalValues = Object.keys(sources).reduce<StringRecord<V | undefined>>(
+    const _internalValues = Object.keys(sources).reduce<StringRecord<V | undefined>>(
       (acc, key) => {
         acc[key] = undefined
         return acc
@@ -153,9 +153,9 @@ export const objectCombineT = <V>(
       if (isTerminator(value)) return TERMINATOR
 
       _internalStates[key] = true
-      _intervalValues[key] = value
+      _internalValues[key] = value
 
-      return { ..._intervalValues }
+      return { ..._internalValues }
     }
   })())
 

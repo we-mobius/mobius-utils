@@ -41,7 +41,7 @@ export const takeUntilT = <V>(
       condition: boolean
       target: boolean
     } = { condition: false, target: false }
-    const _intervalValues: {
+    const _internalValues: {
       condition: any
       target: V | undefined
     } = { condition: undefined, target: undefined }
@@ -53,14 +53,14 @@ export const takeUntilT = <V>(
       const { type, value } = prev
 
       _internalStates[type] = true
-      _intervalValues[type] = value
+      _internalValues[type] = value
 
       if (_internalStates.condition) {
         return TERMINATOR
       }
 
       if (type === 'target') {
-        return _intervalValues.target!
+        return _internalValues.target!
       }
 
       throw (new TypeError('Unexpected "type".'))

@@ -41,7 +41,7 @@ export const takeWhileT = <V>(
       condition: boolean
       target: boolean
     } = { condition: false, target: false }
-    const _intervalValues: {
+    const _internalValues: {
       condition: boolean
       target: V | undefined
     } = { condition: false, target: undefined }
@@ -53,7 +53,7 @@ export const takeWhileT = <V>(
       const { type } = prev
 
       _internalStates[type] = true
-      _intervalValues[type] = prev.value as any
+      _internalValues[type] = prev.value as any
 
       if (!_internalStates.condition || !_internalStates.target) {
         return TERMINATOR
@@ -63,7 +63,7 @@ export const takeWhileT = <V>(
       }
 
       if (type === 'target') {
-        return _intervalValues.condition ? _intervalValues.target! : TERMINATOR
+        return _internalValues.condition ? _internalValues.target! : TERMINATOR
       }
 
       throw (new TypeError('Unexpected "type".'))

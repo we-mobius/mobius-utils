@@ -41,7 +41,7 @@ export const skipUntilT = <V>(
       condition: boolean
       target: boolean
     } = { condition: false, target: false }
-    const _intervalValues: {
+    const _internalValues: {
       condition: any
       target: V | undefined
     } = { condition: undefined, target: undefined }
@@ -53,7 +53,7 @@ export const skipUntilT = <V>(
       const { type, value } = prev
 
       _internalStates[type] = true
-      _intervalValues[type] = value
+      _internalValues[type] = value
 
       if (!_internalStates.condition || !_internalStates.target) {
         return TERMINATOR
@@ -62,7 +62,7 @@ export const skipUntilT = <V>(
         return TERMINATOR
       }
       if (type === 'target') {
-        return _intervalValues.target!
+        return _internalValues.target!
       }
 
       throw (new TypeError('Unexpected "type".'))

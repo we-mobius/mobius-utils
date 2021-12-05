@@ -84,7 +84,7 @@ export const arrayCombineLatestT = <V extends Array<AtomLikeOfOutput<any>>>(
 
   const combineM = Mutation.ofLiftLeft((() => {
     const _internalStates = Array.from<boolean>({ length })
-    const _intervalValues = Array.from<any>({ length })
+    const _internalValues = Array.from<any>({ length })
 
     return (prev: WrappedData | Vacuo): any[] | Terminator => {
       if (isVacuo(prev)) return TERMINATOR
@@ -95,10 +95,10 @@ export const arrayCombineLatestT = <V extends Array<AtomLikeOfOutput<any>>>(
       if (isTerminator(value)) return TERMINATOR
 
       _internalStates[id] = true
-      _intervalValues[id] = value
+      _internalValues[id] = value
 
       if (_internalStates.every(val => val)) {
-        return [..._intervalValues]
+        return [..._internalValues]
       } else {
         return TERMINATOR
       }
@@ -163,7 +163,7 @@ export const objectCombineLatestT = <V extends StringRecord<AtomLikeOfOutput<any
       acc[key] = false
       return acc
     }, {})
-    const _intervalValues = Object.keys(sources).reduce<StringRecord<any>>(
+    const _internalValues = Object.keys(sources).reduce<StringRecord<any>>(
       (acc, key) => {
         acc[key] = undefined
         return acc
@@ -179,10 +179,10 @@ export const objectCombineLatestT = <V extends StringRecord<AtomLikeOfOutput<any
       if (isTerminator(value)) return TERMINATOR
 
       _internalStates[key] = true
-      _intervalValues[key] = value
+      _internalValues[key] = value
 
       if (Object.values(_internalStates).every(val => val)) {
-        return { ..._intervalValues }
+        return { ..._internalValues }
       } else {
         return TERMINATOR
       }
