@@ -9,18 +9,11 @@ import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 import type { Vacuo, Terminator } from '../metas'
 import type { AtomLikeOfOutput } from '../atoms'
 
-interface Effect<V, T> {
-  (
-    emit: (value: V) => void,
-    target: T,
-    immediateReturn: (value: V) => void
-  ): V | Terminator
-  (
-    emit: (value: V) => void,
-    target: T,
-    immediateReturn: (value: V) => void
-  ): void
-}
+type Effect<V, T> = (
+  emit: (value: V) => void,
+  target: T,
+  immediateReturn: (value: V) => void
+) => any
 
 /**
  * `effectT` transfer the value's emittion authority to the `effect` function,
