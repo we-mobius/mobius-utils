@@ -11,7 +11,7 @@ import type { AtomLikeOfOutput } from '../atoms'
 /**
  * @see {@link dynamicEmptyStartWithT}, {@link staticEmptyStartWithT}
  */
-export const emptyStartWithT = <V>(
+export const emptyStartWithT = <V = any>(
   start: V | AtomLikeOfOutput<V>, target: AtomLikeOfOutput<V>
 ): Data<V> => {
   if (isAtomLike(start)) {
@@ -21,8 +21,8 @@ export const emptyStartWithT = <V>(
   }
 }
 interface IEmptyStartWithT_ {
-  <V>(start: V | AtomLikeOfOutput<V>, target: AtomLikeOfOutput<V>): Data<V>
-  <V>(start: V | AtomLikeOfOutput<V>): (target: AtomLikeOfOutput<V>) => Data<V>
+  <V = any>(start: V | AtomLikeOfOutput<V>, target: AtomLikeOfOutput<V>): Data<V>
+  <V = any>(start: V | AtomLikeOfOutput<V>): (target: AtomLikeOfOutput<V>) => Data<V>
 }
 /**
  * @see {@link emptyStartWithT}
@@ -111,8 +111,8 @@ export const dynamicEmptyStartWithT = <V>(
   return outputD
 }
 interface IDynamicEmptyStartWithT_ {
-  <V>(start: AtomLikeOfOutput<V>, target: AtomLikeOfOutput<V>): Data<V>
-  <V>(start: AtomLikeOfOutput<V>): (target: AtomLikeOfOutput<V>) => Data<V>
+  <V = any>(start: AtomLikeOfOutput<V>, target: AtomLikeOfOutput<V>): Data<V>
+  <V = any>(start: AtomLikeOfOutput<V>): (target: AtomLikeOfOutput<V>) => Data<V>
 }
 /**
  * @seee {@link dynamicEmptyStartWithT}
@@ -128,8 +128,8 @@ export const staticEmptyStartWithT = <V>(
   return dynamicEmptyStartWithT(replayWithLatest(1, Data.of(start)), target)
 }
 interface IStaticEmptyStartWithT_ {
-  <V>(start: V, target: AtomLikeOfOutput<V>): Data<V>
-  <V>(start: V): (target: AtomLikeOfOutput<V>) => Data<V>
+  <V = any>(start: V, target: AtomLikeOfOutput<V>): Data<V>
+  <V = any>(start: V): (target: AtomLikeOfOutput<V>) => Data<V>
 }
 /**
  * @see {@link staticEmptyStartWithT}

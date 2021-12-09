@@ -25,14 +25,21 @@ export enum AtomType {
  *
  ******************************************************************************************************/
 
+type AnyFunction = (...args: any[]) => any
+type First<T extends any[]> = T[0] extends any ? T[0]: never
+type Last<T extends any[]> = T extends [...other: any[], last: infer R] ? R : never
+type CastAny<T> = T extends AnyFunction ? T : AnyFunction
+
 export interface AtomLike {
   isAtom: boolean
   subscribe: (consumer: (particle: any, atom?: any) => void, options?: any) => Subscription
   trigger: (particle?: any) => void
   observe: (atom?: any) => void
   beObservedBy: (atom?: any) => void
-  pipe: (...fns: Array<(...args: any[]) => any>) => AtomLike
-  compose: (...fns: Array<(...args: any[]) => any>) => AtomLike
+  pipe: <FNS extends AnyFunction[] = AnyFunction[]>
+  (...fns: FNS) => FNS extends [] ? [] : ReturnType<CastAny<Last<FNS>>>
+  compose: <FNS extends AnyFunction[] = AnyFunction[]>
+  (...fns: AnyFunction[]) => FNS extends [] ? [] : ReturnType<CastAny<First<FNS>>>
 }
 export type DataLike<V = any> = Data<V> | DataMediator<V>
 export type MutationLike<P = any, C = any> = Mutation<P, C> | MutationMediator<P, C>
@@ -103,43 +110,46 @@ export abstract class BaseAtom extends Vain {
   abstract get consumers (): Set<any>
 
   pipe (): this
-  pipe<A> (fn1: Unary<this, A>): A
-  pipe<A, B> (fn1: Unary<this, A>, fn2: Unary<A, B>): B
-  pipe<A, B, C> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>): C
-  pipe<A, B, C, D> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>): D
-  pipe<A, B, C, D, E> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>): E
-  pipe<A, B, C, D, E, F> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>): F
+  pipe<A = any> (fn1: Unary<this, A>): A
+  pipe<A = any, B = any> (fn1: Unary<this, A>, fn2: Unary<A, B>): B
+  pipe<A = any, B = any, C = any> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>): C
+  pipe<A = any, B = any, C = any, D = any> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>): D
   // eslint-disable-next-line max-len
-  pipe<A, B, C, D, E, F, G> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>): G
+  pipe<A = any, B = any, C = any, D = any, E = any> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>): E
   // eslint-disable-next-line max-len
-  pipe<A, B, C, D, E, F, G, H> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>, fn8: Unary<G, H>): H
+  pipe<A = any, B = any, C = any, D = any, E = any, F = any> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>): F
   // eslint-disable-next-line max-len
-  pipe<A, B, C, D, E, F, G, H, I> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>, fn8: Unary<G, H>, fn9: Unary<H, I>): I
+  pipe<A = any, B = any, C = any, D = any, E = any, F = any, G = any> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>): G
   // eslint-disable-next-line max-len
-  pipe<A, B, C, D, E, F, G, H, I, J> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>, fn8: Unary<G, H>, fn9: Unary<H, I>, fn10: Unary<I, J>): J
+  pipe<A = any, B = any, C = any, D = any, E = any, F = any, G = any, H = any> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>, fn8: Unary<G, H>): H
   // eslint-disable-next-line max-len
-  pipe<A, B, C, D, E, F, G, H, I, J> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>, fn8: Unary<G, H>, fn9: Unary<H, I>, fn10: Unary<I, J>, ...fns: Array<Unary<any, any>>): any
+  pipe<A = any, B = any, C = any, D = any, E = any, F = any, G = any, H = any, I = any> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>, fn8: Unary<G, H>, fn9: Unary<H, I>): I
+  // eslint-disable-next-line max-len
+  pipe<A = any, B = any, C = any, D = any, E = any, F = any, G = any, H = any, I = any, J = any> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>, fn8: Unary<G, H>, fn9: Unary<H, I>, fn10: Unary<I, J>): J
+  // eslint-disable-next-line max-len
+  pipe<A = any, B = any, C = any, D = any, E = any, F = any, G = any, H = any, I = any, J = any> (fn1: Unary<this, A>, fn2: Unary<A, B>, fn3: Unary<B, C>, fn4: Unary<C, D>, fn5: Unary<D, E>, fn6: Unary<E, F>, fn7: Unary<F, G>, fn8: Unary<G, H>, fn9: Unary<H, I>, fn10: Unary<I, J>, ...fns: Array<Unary<any, any>>): any
   pipe (...args: any[]): any {
     // @ts-expect-error pass args through
     return pipe(...args)(this)
   }
 
   compose (): this
-  compose<A> (fn1: Unary<this, A>): A
-  compose<A, B> (fn2: Unary<A, B>, fn1: Unary<this, A>): B
-  compose<A, B, C> (fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): C
-  compose<A, B, C, D> (fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): D
-  compose<A, B, C, D, E> (fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): E
+  compose<A = any> (fn1: Unary<this, A>): A
+  compose<A = any, B = any> (fn2: Unary<A, B>, fn1: Unary<this, A>): B
+  compose<A = any, B = any, C = any> (fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): C
+  compose<A = any, B = any, C = any, D = any> (fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): D
   // eslint-disable-next-line max-len
-  compose<A, B, C, D, E, F> (fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): F
+  compose<A = any, B = any, C = any, D = any, E = any> (fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): E
   // eslint-disable-next-line max-len
-  compose<A, B, C, D, E, F, G> (fn7: Unary<F, G>, fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): G
+  compose<A = any, B = any, C = any, D = any, E = any, F = any> (fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): F
   // eslint-disable-next-line max-len
-  compose<A, B, C, D, E, F, G, H> (fn8: Unary<G, H>, fn7: Unary<F, G>, fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): H
+  compose<A = any, B = any, C = any, D = any, E = any, F = any, G = any> (fn7: Unary<F, G>, fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): G
   // eslint-disable-next-line max-len
-  compose<A, B, C, D, E, F, G, H, I> (fn9: Unary<H, I>, fn8: Unary<G, H>, fn7: Unary<F, G>, fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): I
+  compose<A = any, B = any, C = any, D = any, E = any, F = any, G = any, H = any> (fn8: Unary<G, H>, fn7: Unary<F, G>, fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): H
   // eslint-disable-next-line max-len
-  compose<A, B, C, D, E, F, G, H, I, J> (fn10: Unary<I, J>, fn9: Unary<H, I>, fn8: Unary<G, H>, fn7: Unary<F, G>, fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): J
+  compose<A = any, B = any, C = any, D = any, E = any, F = any, G = any, H = any, I = any> (fn9: Unary<H, I>, fn8: Unary<G, H>, fn7: Unary<F, G>, fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): I
+  // eslint-disable-next-line max-len
+  compose<A = any, B = any, C = any, D = any, E = any, F = any, G = any, H = any, I = any, J = any> (fn10: Unary<I, J>, fn9: Unary<H, I>, fn8: Unary<G, H>, fn7: Unary<F, G>, fn6: Unary<E, F>, fn5: Unary<D, E>, fn4: Unary<C, D>, fn3: Unary<B, C>, fn2: Unary<A, B>, fn1: Unary<this, A>): J
   compose (...args: any[]): any {
     // @ts-expect-error pass args through
     return compose(...args)(this)

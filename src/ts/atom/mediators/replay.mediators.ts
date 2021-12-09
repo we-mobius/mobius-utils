@@ -12,7 +12,7 @@ import {
 
 import type { Datar, Mutator } from '../particles'
 import type {
-  SubscribeOptions,
+  SubscribeOptions, AtomLike,
   ValueConsumer, DatarConsumer, DataConsumer, DataSubscription,
   TransformationConsumer, MutatorConsumer, MutationConsumer, MutationSubscription
 } from '../atoms'
@@ -360,14 +360,14 @@ export class ReplayMediator {
 }
 
 interface IReplayLatestPartial {
-  <V>(atom: Data<V>): ReplayDataMediator<V>
-  <P, C>(atom: Mutation<P, C>): ReplayMutationMediator<P, C>
+  <V = any>(atom: Data<V>): ReplayDataMediator<V>
+  <P = any, C = any>(atom: Mutation<P, C>): ReplayMutationMediator<P, C>
   <I extends ReplayMediatorUnion>(atom: I): I
 }
 interface IReplayLatest {
   (replayTime: number): IReplayLatestPartial
-  <V>(replayTime: number, atom: Data<V>): ReplayDataMediator<V>
-  <P, C>(replayTime: number, atom: Mutation<P, C>): ReplayMutationMediator<P, C>
+  <V = any>(replayTime: number, atom: Data<V>): ReplayDataMediator<V>
+  <P = any, C = any>(replayTime: number, atom: Mutation<P, C>): ReplayMutationMediator<P, C>
   <I extends ReplayMediatorUnion> (replayTime: number, atom: I): I
 }
 /**

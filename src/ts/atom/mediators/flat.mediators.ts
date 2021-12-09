@@ -297,8 +297,8 @@ export class FlatMediator {
 }
 
 interface IWithValueFlatted {
-  <V> (atom: Data<V>, options?: FlatMediatorOptions): FlatDataMediator<V>
-  <P, C> (atom: Mutation<P, C>, options?: FlatMediatorOptions): FlatMutationMediator<P, C>
+  <V = any> (atom: Data<V>, options?: FlatMediatorOptions): FlatDataMediator<V>
+  <P = any, C = any> (atom: Mutation<P, C>, options?: FlatMediatorOptions): FlatMutationMediator<P, C>
   <I extends FlatMediatorUnion> (atom: I, options?: FlatMediatorOptions): I
 }
 /**
