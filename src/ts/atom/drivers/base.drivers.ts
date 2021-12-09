@@ -4,89 +4,111 @@ import { isAtomLike, Data } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { binaryTweenPipeAtom } from '../helpers'
 
-import type { AtomLike, Mutation } from '../atoms'
+import type { AtomLike, Mutation, AtomLikeOfOutput, AtomLikeOfInput } from '../atoms'
 import type { ReplayDataMediator, ReplayMutationMediator } from '../mediators'
 
-export interface DriverOptions {
-  [key: string]: any
+type AnyStringRecord = Record<string, any>
+
+/************************************************************************************************
+ *
+ *                                    Main Types & Functions
+ *
+ ************************************************************************************************/
+
+export interface DriverOptions extends AnyStringRecord {
 }
-export interface DriverLevelContexts {
-  inputs?: { [key: string]: any }
-  outputs?: { [key: string]: any }
-  [key: string]: any
+export interface DriverLevelContexts extends AnyStringRecord {
+  inputs?: AnyStringRecord
+  outputs?: AnyStringRecord
 }
-export interface SingletonLevelContexts {
-  inputs?: { [key: string]: any }
-  outputs?: { [key: string]: any }
-  [key: string]: any
+export interface DriverSingletonLevelContexts extends AnyStringRecord {
+  inputs?: AnyStringRecord
+  outputs?: AnyStringRecord
 }
-
-const DEFAULT_DRIVER_OPTIONS: DriverOptions = {}
-const DEFAULT_DRIVER_LEVEL_CONTEXTS: DriverLevelContexts = { inputs: {}, outputs: {} }
-const DEFAULT_SINGLETON_LEVEL_CONTEXTS: SingletonLevelContexts = { inputs: {}, outputs: {} }
-
-type PrepareOptions = (options: DriverOptions) => DriverOptions
-type PrepareDriverLevelContexts = () => DriverLevelContexts
-type PrepareSingletonLevelContexts = (options: DriverOptions, driverLevelContexts: DriverLevelContexts) => SingletonLevelContexts
-type PrepareInstance = (options: DriverOptions, driverLevelContexts: DriverLevelContexts, singletonLevelContexts: SingletonLevelContexts) => { [key: string]: any }
-
-const defaultPrepareOptions: PrepareOptions = (options) => options
-const defaultPrepareDriverLevelContexts: PrepareDriverLevelContexts = () => DEFAULT_DRIVER_LEVEL_CONTEXTS
-const defaultPrepareSingletonLevelContexts: PrepareSingletonLevelContexts = (options, driverLevelContexts) => DEFAULT_SINGLETON_LEVEL_CONTEXTS
-const defaultPrepareInstance: PrepareInstance = (options, driverLevelContexts, singletonLevelContexts) => ({ ...singletonLevelContexts })
-
-export interface GeneralDriverCreateOptions {
-  prepareOptions?: PrepareOptions
-  prepareDriverLevelContexts?: PrepareDriverLevelContexts
-  prepareSingletonLevelContexts?: PrepareSingletonLevelContexts
-  prepareInstance: PrepareInstance
+export interface DriverInstance extends AnyStringRecord {
+  inputs?: AnyStringRecord
+  outputs?: AnyStringRecord
 }
 
-const DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS: Required<GeneralDriverCreateOptions> = {
-  prepareOptions: defaultPrepareOptions,
-  prepareDriverLevelContexts: defaultPrepareDriverLevelContexts,
-  prepareSingletonLevelContexts: defaultPrepareSingletonLevelContexts,
-  prepareInstance: defaultPrepareInstance
+const DEFAULT_DRIVER_OPTIONS = {}
+const DEFAULT_DRIVER_LEVEL_CONTEXTS = { inputs: {}, outputs: {} }
+const DEFAULT_SINGLETON_LEVEL_CONTEXTS = { inputs: {}, outputs: {} }
+
+type PrepareDriverSingletonLevelContexts<
+  Options extends DriverOptions = DriverOptions,
+  DLC extends DriverLevelContexts = DriverLevelContexts,
+  DSLC extends DriverSingletonLevelContexts = DriverSingletonLevelContexts
+> =
+  (options: Options, driverLevelContexts: DLC) => DSLC
+
+export interface GeneralDriverCreateOptions<
+  Options extends DriverOptions = DriverOptions,
+  DLC extends DriverLevelContexts = DriverLevelContexts,
+  DSLC extends DriverSingletonLevelContexts = DriverSingletonLevelContexts,
+  Instance extends DriverInstance = DriverInstance
+> {
+  prepareOptions?: (options: Options) => Options
+  prepareDriverLevelContexts?: () => DLC
+  prepareSingletonLevelContexts?: PrepareDriverSingletonLevelContexts<Options, DLC, DSLC>
+  prepareInstance: (
+    options: Options,
+    driverLevelContexts: DLC,
+    singletonLevelContexts: DSLC
+  ) => Instance
 }
 
-export interface DriverInterfaces {
-  inputs?: { [key: string]: any }
-  outputs?: { [key: string]: any }
+const DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS: Required<GeneralDriverCreateOptions<any, any, any, any>> = {
+  prepareOptions: (options) => options,
+  prepareDriverLevelContexts: () => DEFAULT_DRIVER_LEVEL_CONTEXTS,
+  prepareSingletonLevelContexts: (options, driverLevelContexts) => DEFAULT_SINGLETON_LEVEL_CONTEXTS,
+  prepareInstance: (options, driverLevelContexts, singletonLevelContexts) => ({ ...singletonLevelContexts })
 }
-export type DriverFactory = (options: DriverOptions) => DriverInterfaces
+
+export type DriverMaker<
+  Options extends DriverOptions = DriverOptions, Instance extends DriverInstance = DriverInstance
+> = (options?: Options) => Instance
 
 /**
  * @param createOptions
- * @return { DriverFactory } DriverFactory :: `(options?: {}) => { inputs: object, outputs: object }`
+ * @return { DriverMaker } DriverFactory :: `(options?: {}) => { inputs: object, outputs: object }`
  */
-export const createGeneralDriver = (
-  createOptions: GeneralDriverCreateOptions | PrepareSingletonLevelContexts = DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS
-): DriverFactory => {
+export const createGeneralDriver = <
+  Options extends DriverOptions = DriverOptions,
+  DLC extends DriverLevelContexts = DriverLevelContexts,
+  DSLC extends DriverSingletonLevelContexts = DriverSingletonLevelContexts,
+  Instance extends DriverInstance = DriverInstance
+>(
+    createOptions: GeneralDriverCreateOptions<Options, DLC, DSLC, Instance> |
+    PrepareDriverSingletonLevelContexts<Options, DLC, DSLC> = DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS
+  ): DriverMaker<Options, Instance> => {
   if (!isPlainObject(createOptions) && !isFunction(createOptions)) {
     throw (new TypeError('"createOptions" is expected to be type of "PlainObject" | "Function".'))
   }
+  let preparedCreateOptions: Required<GeneralDriverCreateOptions<Options, DLC, DSLC, Instance>>
   if (isFunction(createOptions)) {
-    createOptions = { ...DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS, prepareSingletonLevelContexts: createOptions }
+    preparedCreateOptions = { ...DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS, prepareSingletonLevelContexts: createOptions }
   } else {
-    createOptions = { ...DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS, ...createOptions }
+    preparedCreateOptions = { ...DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS, ...createOptions }
   }
 
   const {
     prepareOptions, prepareDriverLevelContexts, prepareSingletonLevelContexts, prepareInstance
-  } = createOptions as Required<GeneralDriverCreateOptions>
+  } = preparedCreateOptions
 
   const _driverLevelContexts = prepareDriverLevelContexts()
   if (!isPlainObject(_driverLevelContexts)) {
     throw (new TypeError('The returned value of "prepareDriverLevelContexts" is expected to be type of "PlainObject".'))
   }
-  const preparedDriverLevelContexts = { ...DEFAULT_DRIVER_LEVEL_CONTEXTS, ...prepareDriverLevelContexts() }
+  const preparedDriverLevelContexts = {
+    ...DEFAULT_DRIVER_LEVEL_CONTEXTS, ..._driverLevelContexts
+  }
 
   /**
    * @param [options = DEFAULT_DRIVER_OPTIONS] In order to clarify the role of each configuration item,
    *                                           the configuration is best to be in object format.
-   * @return { DriverFactory } DriverFactory
+   * @return { DriverMaker } DriverFactory
    */
-  const driverFactory = (options: DriverOptions = DEFAULT_DRIVER_OPTIONS): DriverInterfaces => {
+  const driverFactory = (options: Options = DEFAULT_DRIVER_OPTIONS as Options): Instance => {
     if (!isPlainObject(options)) {
       throw (new TypeError('"options" is expected to be type of "PlainObject".'))
     }
@@ -95,15 +117,17 @@ export const createGeneralDriver = (
     if (!isPlainObject(_options)) {
       throw (new TypeError('The returned value of "prepareOptions" is expected to be type of "PlainObject".'))
     }
-    const preparedOptions = { ...DEFAULT_DRIVER_OPTIONS, ..._options }
+    const preparedOptions = { ...DEFAULT_DRIVER_OPTIONS as Options, ..._options }
 
     const _singletonLevelContexts = prepareSingletonLevelContexts(preparedOptions, preparedDriverLevelContexts)
     if (!isPlainObject(_singletonLevelContexts)) {
       throw (new TypeError('"singletonLevelContexts" is expected to be type of "PlainObject"'))
     }
-    const preparedSingletomLevelContexts = { ...DEFAULT_SINGLETON_LEVEL_CONTEXTS, ..._singletonLevelContexts }
+    const preparedSingletonLevelContexts = {
+      ...DEFAULT_SINGLETON_LEVEL_CONTEXTS, ..._singletonLevelContexts
+    }
 
-    const { inputs, outputs } = preparedSingletomLevelContexts
+    const { inputs, outputs } = preparedSingletonLevelContexts
     if (!isPlainObject(inputs)) {
       throw (new TypeError('"inputs" returned as singletonLevelContexts is expected to be type of "PlainObject"'))
     }
@@ -111,7 +135,7 @@ export const createGeneralDriver = (
       throw (new TypeError('"outputs" returned as singletonLevelContexts is expected to be type of "PlainObject"'))
     }
 
-    const driverInterfaces = prepareInstance(preparedOptions, preparedDriverLevelContexts, preparedSingletomLevelContexts)
+    const driverInterfaces = prepareInstance(preparedOptions, preparedDriverLevelContexts, preparedSingletonLevelContexts)
 
     return driverInterfaces
   }
@@ -119,7 +143,7 @@ export const createGeneralDriver = (
   return driverFactory
 }
 
-const formatDriverInterfaces = (driverInterfaces: DriverInterfaces): DriverInterfaces => {
+const formatDriverInterfaces = (driverInterfaces: DriverInstance): DriverInstance => {
   if (!isPlainObject(driverInterfaces)) {
     throw (new TypeError('"driverInterfaces" is expected to be type of "PlainObject".'))
   }
@@ -159,7 +183,7 @@ export const connectDriverInterfaces: IConnectDriverInterfaces = (up: any, down:
 
   // The up & down value are expected to be type of Atom,
   //   -> one of the up | down value is required to be type of Atom at least.
-  //   -> cause there is no way to get the auto-generated down Atom.
+  //   -> cause the developer is no way to get the auto-generated down Atom, and it makes no sense.
   if (isAtomLike(up) && !isAtomLike(down)) {
     if (isArray(down)) {
       down.forEach(i => {
@@ -197,13 +221,24 @@ export const connectDriverInterfaces: IConnectDriverInterfaces = (up: any, down:
   }
 }
 
+type ConnectedInputs<Target> = {
+  [K in keyof Target]+?: Target[K] extends AtomLikeOfOutput<infer V> ? V | AtomLikeOfOutput<V> : never
+}
+type ConnectedOutputs<Target> = {
+  [K in keyof Target]+?: Target[K] extends AtomLikeOfOutput<infer V> ? AtomLikeOfInput<V> : never
+}
+type ConnectedInterfacesOf<Instance extends DriverInstance = DriverInstance> = {
+  [K in keyof Instance]+?: K extends 'inputs' ?
+    ConnectedInputs<Instance[K]> : K extends 'outputs' ?
+      ConnectedOutputs<Instance[K]> : any
+}
+
 /**
- * @param driverFactory
- * @param driverOptions
- * @param interfaces
- * @return { DriverInterfaces } driverInterfaces
+ * @return A simple copy of the driver instance, plainobject has `inputs`, `outputs` or others.
  */
-export const useGeneralDriver = (driver: DriverFactory, driverOptions: DriverOptions, interfaces: DriverInterfaces): DriverInterfaces => {
+export const useGeneralDriver = <Options extends DriverOptions = DriverOptions, Instance extends DriverInstance = DriverInstance>(
+  driver: DriverMaker<Options, Instance>, driverOptions: Options | undefined, interfaces: ConnectedInterfacesOf<Instance>
+): Instance => {
   const driverInterfaces = driver(driverOptions)
 
   const { inputs: { ...innerInputs } = {}, outputs: { ...innerOutputs } = {}, ...others } = { ...driverInterfaces }
@@ -212,17 +247,39 @@ export const useGeneralDriver = (driver: DriverFactory, driverOptions: DriverOpt
   if (isPlainObject(interfaces) && !isEmptyObj(interfaces)) {
     const { inputs: { ...outerInputs } = {}, outputs: { ...outerOutputs } = {} } = { ...formatDriverInterfaces(interfaces) }
 
+    // outer inputs as upstream, send data to inner inputs
+    //   -> inner inputs as downstream, receive data from outer inputs
     connectDriverInterfaces(outerInputs, innerInputs)
+    // inner outputs as upstream, send data to outer outputs
+    //   -> outer outputs as downstream, receive data from inner outputs
     connectDriverInterfaces(innerOutputs, outerOutputs)
   }
 
-  return { inputs: innerInputs, outputs: innerOutputs, ...others }
+  // return a simple copy of driver instance
+  const returnedDriver = { inputs: innerInputs, outputs: innerOutputs, ...others } as unknown as Instance
+  return returnedDriver
 }
 
+export interface IPartialUseGeneralDriver_<
+  Options extends DriverOptions = DriverOptions, Instance extends DriverInstance = DriverInstance
+> {
+  (driverOptions: Options | undefined, interfaces: ConnectedInterfacesOf<Instance>): Instance
+  (driverOptions: Options | undefined): (interfaces: ConnectedInterfacesOf<Instance>) => Instance
+}
+export interface IUseGeneralDriver_ {
+  // pass all three arguments at one time
+  <Options extends DriverOptions = DriverOptions, Instance extends DriverInstance = DriverInstance>(
+    driver: DriverMaker<Options, Instance>, driverOptions: Options | undefined, interfaces: ConnectedInterfacesOf<Instance>
+  ): Instance
+  // pass first two arguments then rest one, first two at one time
+  <Options extends DriverOptions = DriverOptions, Instance extends DriverInstance = DriverInstance>
+  (driver: DriverMaker<Options, Instance>, driverOptions: Options | undefined): (interfaces: ConnectedInterfacesOf<Instance>) => Instance
+  // pass all three arguments one by one
+  // or pass first argument then rest two, rest two at one time
+  <Options extends DriverOptions = DriverOptions, Instance extends DriverInstance = DriverInstance>
+  (driver: DriverMaker<Options, Instance>): IPartialUseGeneralDriver_<Options, Instance>
+}
 /**
- * @param driverFactory
- * @param driverOptions
- * @param interfaces
- * @return { DriverInterfaces } driver
+ * @see {@link useGeneralDriver}
  */
-export const useGeneralDriver_ = looseCurryN(3, useGeneralDriver)
+export const useGeneralDriver_: IUseGeneralDriver_ = looseCurryN(3, useGeneralDriver)
