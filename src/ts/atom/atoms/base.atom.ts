@@ -109,6 +109,8 @@ export abstract class BaseAtom extends Vain {
   abstract get options (): Record<string, any>
   abstract get consumers (): Set<any>
 
+  abstract setOptions <K extends keyof BaseAtomOptions>(key: keyof BaseAtomOptions, value: BaseAtomOptions[K]): void
+
   pipe (): this
   pipe<A = any> (fn1: Unary<this, A>): A
   pipe<A = any, B = any> (fn1: Unary<this, A>, fn2: Unary<A, B>): B

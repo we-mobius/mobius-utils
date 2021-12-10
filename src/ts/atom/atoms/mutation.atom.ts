@@ -107,6 +107,13 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   get consumers (): Set<MutatorConsumer<P, C>> { return this._consumers }
 
   /**
+   * Set Mutation's options by key.
+   */
+  setOptions<K extends keyof MutationOptions>(key: K, value: Required<MutationOptions>[K]): void {
+    this._options[key] = value
+  }
+
+  /**
    * @return { true } true
    */
   get isMutation (): true { return true }

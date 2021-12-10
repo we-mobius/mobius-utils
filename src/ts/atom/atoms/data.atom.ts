@@ -88,6 +88,13 @@ export class Data<V = any> extends BaseAtom implements AtomLike {
   get consumers (): Set<DatarConsumer<V>> { return this._consumers }
 
   /**
+   * Set Data's options by key.
+   */
+  setOptions<K extends keyof DataOptions>(key: K, value: Required<DataOptions>[K]): void {
+    this._options[key] = value
+  }
+
+  /**
    * @return { true } true
    */
   get isData (): true { return true }
