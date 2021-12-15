@@ -120,9 +120,6 @@
     "@babel/plugin-transform-runtime": "^7.11.5",
     "@babel/preset-env": "^7.11.5",
     "@commitlint/cli": "^8.3.5",
-    "@types/javascript-state-machine": "^2.4.3",
-    "@types/rx": "^4.1.2",
-    "@types/uuid": "^8.3.1",
     "@typescript-eslint/eslint-plugin": "^4.30.0",
     "@typescript-eslint/parser": "^4.30.0",
     "babel-loader": "^8.1.0",
@@ -181,9 +178,12 @@
   },
   "sideEffects": false,
   "dependencies": {
+    "@types/javascript-state-machine": "^2.4.3",
+    "@types/uuid": "^8.3.1",
     "axios": "^0.24.0",
     "javascript-state-machine": "^3.1.0",
     "nanoid": "^3.1.30",
+    "rxjs": "^6.6.7",
     "uuid": "^8.3.2"
   }
 }

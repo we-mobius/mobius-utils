@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-import type { Observable } from 'rx'
+import type { Observable } from 'rxjs'
 
 /**
  * 进行类型检测的常用手段包括：
