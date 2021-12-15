@@ -15,6 +15,9 @@ type AnyStringRecord = Record<string, any>
  *
  ************************************************************************************************/
 
+/**
+ *
+ */
 export interface DriverOptions extends AnyStringRecord {
 }
 export interface DriverLevelContexts extends AnyStringRecord {
