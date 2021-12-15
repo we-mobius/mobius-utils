@@ -38,7 +38,7 @@ export const urlUUID = (): string => {
   const tempURL = URL.createObjectURL(new Blob())
   const uuid = tempURL.toString() // blob:https://www.cigaret.world/1e34c01e-ab7c-4e60-b6f3-a6101e8c0d2d
   URL.revokeObjectURL(tempURL) // release object URL
-  return uuid.substr(uuid.lastIndexOf('/') + 1)
+  return uuid.substring(uuid.lastIndexOf('/') + 1)
 }
 
 /**
