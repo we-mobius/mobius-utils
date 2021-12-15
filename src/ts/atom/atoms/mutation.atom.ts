@@ -48,13 +48,13 @@ export const isMutation = <P = any, C = any>(tar: any): tar is Mutation<P, C> =>
 /**
  *
  */
-export interface MutationOptions<P = any, C = any> extends BaseAtomOptions {
+export interface MutationOptions<P = any, C = any, Contexts extends any[] = any[]> extends BaseAtomOptions {
   lift?: TransformationLiftOptions
   mutator?: MutatorOptions
   isLifted?: boolean
-  originTransformation?: null | MutatorOriginTransformationUnion<P, C>
+  originTransformation?: null | MutatorOriginTransformationUnion<P, C, Contexts>
 }
-export const DEFAULT_MUTATION_OPTIONS: Required<MutationOptions<any, any>> = {
+export const DEFAULT_MUTATION_OPTIONS: Required<MutationOptions<any, any, any[]>> = {
   ...DEFAULT_BASEATOM_OPTIONS,
   lift: DEFAULT_TRANSFORMATION_LIFT_OPTIONS,
   mutator: DEFAULT_MUTATOR_OPTIONS,

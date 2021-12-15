@@ -220,8 +220,9 @@ export class Datar<V = any> extends Particle {
 /**
   *
   */
+export type TransformationLiftPositions = 'unknown' | 'both' | 'left' | 'right' | 'none'
 export interface TransformationLiftOptions {
-  position?: 'unknown' | 'both' | 'left' | 'right' | 'none'
+  position?: TransformationLiftPositions
 }
 export const DEFAULT_TRANSFORMATION_LIFT_OPTIONS: Required<TransformationLiftOptions> = {
   position: 'both'
@@ -235,8 +236,8 @@ export const DEFAULT_MUTATOR_OPTIONS: Required<MutatorOptions> = {
   lift: DEFAULT_TRANSFORMATION_LIFT_OPTIONS
 }
 
-export type MutatorTransformation<P = any, C = any> =
-  (prev: Chaos | Datar<P>, cur: Datar<C>, mutation?: Mutation<P, C>, ...args: any[]) => C
+export type MutatorTransformation<P = any, C = any, Contexts extends any[] = any[]> =
+  (prev: Chaos | Datar<P>, cur: Datar<C>, mutation?: Mutation<P, C>, ...contexts: Contexts) => C
 type DatarOfMutator<V = any> = Datar<V> | Chaos
 
 /**
@@ -245,14 +246,17 @@ type DatarOfMutator<V = any> = Datar<V> | Chaos
 export const isValidDatarOfMutator = <V = any>(tar: any): tar is DatarOfMutator<V> =>
   isChaos(tar) || isDatar(tar)
 
-export type LiftBothTransformation<P = any, C = any> = (prev: Vacuo | P, cur: C, mutation?: Mutation<P, C>, ...args: any[]) => C
-export type LiftLeftTransformation<P = any, C = any> = (prev: Vacuo | P, cur: Datar<C>, mutation?: Mutation<P, C>, ...args: any[]) => C
-export type LiftRightTransformation<P = any, C = any> = (prev: Chaos | Datar<P>, cur: C, mutation?: Mutation<P, C>, ...args: any[]) => C
-export type MutatorOriginTransformationUnion<P = any, C = any>
-  = MutatorTransformation<P, C>
-  | LiftBothTransformation<P, C>
-  | LiftLeftTransformation<P, C>
-  | LiftRightTransformation<P, C>
+export type LiftBothTransformation<P = any, C = any, Contexts extends any[] = any[]> =
+  (prev: Vacuo | P, cur: C, mutation?: Mutation<P, C>, ...contexts: Contexts) => C
+export type LiftLeftTransformation<P = any, C = any, Contexts extends any[] = any[]> =
+  (prev: Vacuo | P, cur: Datar<C>, mutation?: Mutation<P, C>, ...contexts: Contexts) => C
+export type LiftRightTransformation<P = any, C = any, Contexts extends any[] = any[]> =
+  (prev: Chaos | Datar<P>, cur: C, mutation?: Mutation<P, C>, ...contexts: Contexts) => C
+export type MutatorOriginTransformationUnion<P = any, C = any, Contexts extends any[] = any[]>
+  = MutatorTransformation<P, C, Contexts>
+  | LiftBothTransformation<P, C, Contexts>
+  | LiftLeftTransformation<P, C, Contexts>
+  | LiftRightTransformation<P, C, Contexts>
 
 /**
  * Designed to carry the transformation of Mutation.
