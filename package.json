@@ -1,7 +1,7 @@
 {
   "name": "@we-mobius/mobius-utils",
-  "version": "1.1.0",
-  "description": "Utils lib that basically follows FP flavor.",
+  "version": "1.2.0",
+  "description": "Probably the most comprehensive, powerfull tools library for JavaScript & TypeScript.",
   "type": "module",
   "typings": "./typings/main.d.ts",
   "types": "./typings/main.d.ts",
@@ -106,7 +106,7 @@
   "author": {
     "name": "kongxiangyan",
     "email": "kcigaret@outlook.com",
-    "url": "http://cigaret.world/"
+    "url": "https://www.cigaret.world/"
   },
   "license": "GPL-3.0",
   "bugs": {
