@@ -8,6 +8,8 @@ import type { Data } from './data.atom'
 import type { Mutation } from './mutation.atom'
 import type { DataMediator, MutationMediator } from '../mediators'
 
+import type { First, Last } from '../../@types/index'
+
 /******************************************************************************************************
  *
  *                                                Atoms
@@ -26,8 +28,6 @@ export enum AtomType {
  ******************************************************************************************************/
 
 type AnyFunction = (...args: any[]) => any
-type First<T extends any[]> = T[0] extends any ? T[0]: never
-type Last<T extends any[]> = T extends [...other: any[], last: infer R] ? R : never
 type CastAny<T> = T extends AnyFunction ? T : AnyFunction
 
 export interface AtomLike {
