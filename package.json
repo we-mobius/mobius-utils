@@ -78,6 +78,7 @@
     "mobius",
     "utils",
     "functional",
+    "reactive",
     "stream",
     "atom"
   ],
