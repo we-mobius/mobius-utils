@@ -1,189 +1,290 @@
 import {
-  isString, isPlainObject, isFunction
-} from '../internal'
+  isUndefined, isString, isPlainObject, isObject
+} from '../internal/base'
 import {
   Data, isAtomLike,
   replayWithLatest,
   binaryTweenPipeAtom
 } from '../atom'
 
-type ScopeManagerCreator = (...args: any[]) => any | any
-interface ScopeManagerCreateOptions {
+import type { AnyFunction } from '../@types/index'
+
+/*********************************************************************************************************************
+ *
+ *                                                   Predicate
+ *
+ *********************************************************************************************************************/
+
+/**
+ * @param tar anything
+ * @return whether the target is a ScopeManager instance.
+ */
+export const isScopeManager = <Creator extends AnyFunction = AnyFunction>(tar: any): tar is ScopeManager<Creator> =>
+  isObject(tar) && tar.isScopeManager
+
+/*********************************************************************************************************************
+ *
+ *                                               ScopeManager Auxiliary
+ *
+ *********************************************************************************************************************/
+
+/**
+ *
+ */
+type ScopableCreator = AnyFunction
+
+/**
+ *
+ */
+interface ScopeManagerOptions {
   isStray?: boolean
   strayFlag?: string
 }
-interface GetInstanceOptions {
+const DEFAULT_SCOPE_MANAGER_CREATE_OPTIONS: Required<ScopeManagerOptions> = {
+  isStray: false,
+  strayFlag: undefined as any
+}
+
+interface InstanceGetOptions {
   acceptPromise?: boolean
 }
-export interface ScopeManager<Creator extends ScopeManagerCreator> {
-  getCreator: () => Creator
-  getOptions: () => ScopeManagerCreateOptions
-  isRegisteredScope: (scope: string) => boolean
-  releaseScope: (scope: string) => boolean
-  releaseManager: () => boolean
-
-  registerScope: <Instance extends any>(
-    scope: string, options: { instance?: Instance, params?: Parameters<Creator>[0]}
-  ) => ReturnType<Creator> | Creator | Instance
-
-  getInstance: (scope: string, options?: GetInstanceOptions) => any
-  scope: (scope: string, params?: Parameters<Creator>[0]) => any
+const DEFAULT_GET_INSTANCE_OPTIONS: Required<InstanceGetOptions> = {
+  acceptPromise: true
 }
 
-/**
- * Map{
- *   [Creator | CreatorInfo]: ScopeManager{
- *     [scope]: Instance,
- *     ...
- *   },
- *   ...
- * }
- */
-const SCOPE_MANAGERS = new Map()
-
-/**
- * @param creator
- * @param options
- * @return ScopeManager
- */
-const createScopeManager = <Creator extends ScopeManagerCreator>(
-  creator: Creator, options: ScopeManagerCreateOptions
-): ScopeManager<Creator> => {
-  const scopeMap = new Map()
-  const promiseMap = new Map()
-
-  return {
-    getCreator: () => creator,
-    getOptions: () => options,
-    isRegisteredScope: scope => scopeMap.get(scope) !== undefined,
-    releaseScope: scope => scopeMap.delete(scope),
-    releaseManager: () => {
-      const { isStray = false, strayFlag } = options
-      if (isStray) {
-        let res = false
-        // TODO: strayFlay 同名检测
-        SCOPE_MANAGERS.forEach((val, key) => {
-          if (!res && key.flag === strayFlag) {
-            res = SCOPE_MANAGERS.delete(key)
-          }
-        })
-        return res
-      } else {
-        return SCOPE_MANAGERS.delete(creator)
-      }
-    },
-
-    /**
-     * register an instance with given scope,
-     * if there is none, create one,
-     * if there is one, just return it.
-     *
-     * @param scope
-     * @param [options] can be omitted when the type of scope is Object
-     * @return instance
-     */
-    registerScope: function (scope, options) {
-      if (!isString(scope)) {
-        throw (new TypeError('"scope" is required and is expected to be type of "String".'))
-      }
-      if (options !== undefined && !isPlainObject(options)) {
-        throw (new TypeError('"options" is expected to be type of "Object" when provided.'))
-      }
-
-      let { instance: _instance, params = { '@scopeName': scope } } = options ?? {}
-
-      if (isPlainObject(params)) {
-        params = { ...params, '@scopeName': scope }
-      }
-
-      let instance = scopeMap.get(scope)
-
-      // If there is no instance registered, create one.
-      // Then check if there is a promise has been made, if so, trigger it
-      if (instance === undefined) {
-        instance = _instance ?? (isFunction(creator) ? creator(params) : creator)
-        scopeMap.set(scope, instance)
-
-        const promise = promiseMap.get(scope)
-        if (promise !== undefined) {
-          if (isAtomLike(instance)) {
-            binaryTweenPipeAtom(replayWithLatest(1, instance as any), promise)
-          } else {
-            binaryTweenPipeAtom(replayWithLatest(1, Data.of(instance)), promise)
-          }
-        }
-      }
-
-      return instance
-    },
-
-    /**
-     * @param scope
-     * @param [options]
-     * @return instance | Atom of instance
-     */
-    getInstance: function (scope, options = {}) {
-      if (!isString(scope)) {
-        throw (new TypeError('"scope" is required and is expected to be type of "String".'))
-      }
-      if (!isPlainObject(options)) {
-        throw (new TypeError('"options" is expected to be type of "PlainObject".'))
-      }
-
-      const { acceptPromise = true } = options
-
-      const instance = scopeMap.get(scope)
-      if (instance !== undefined) return instance
-      if (!acceptPromise) return false
-      // no instance exists & acceptPromise
-      const promise = promiseMap.get(scope)
-      if (promise !== undefined) return promise
-      promiseMap.set(scope, Data.empty())
-      return promiseMap.get(scope)
-    },
-
-    // ! use function declaration to keep "this" context
-    /**
-     * Same as pipe(registerScope, getInstance)
-     */
-    scope: function (scope, params) {
-      this.registerScope(scope, { params })
-      return this.getInstance(scope)
-    }
-  }
+interface ScopableCreatorInfo {
+  creator: ScopableCreator
+  options: ScopeManagerOptions
 }
-
 /**
- * Make and return a ScopeManager.
- *
- * @param creator scope manager creator
- * @param [options.isStray = false]
- * @param [options.strayFlag]
- * @return { ScopeManager } ScopeManager
- * @todo TODO: strayFlay 同名检测
+ * @structure `Map<[Creator | CreatorInfo], ScopeManager{ [scope]: Instance }>`
  */
-export const makeScopeManager = <Creator extends ScopeManagerCreator>(
-  creator: Creator, options: ScopeManagerCreateOptions = {}
-): ScopeManager<Creator> => {
-  if (!isPlainObject(options)) {
-    throw (new TypeError('"options" is expected to be type of "PlainObject".'))
-  }
+const SCOPE_MANAGERS = new Map<ScopableCreatorInfo, ScopeManager<ScopableCreator>>()
+const getScopeManager = <Creator extends ScopableCreator>(
+  creator: Creator, options: Required<ScopeManagerOptions>
+): ScopeManager<Creator> | undefined => {
+  const info = { creator, options }
+  let manager: ScopeManager<Creator> | undefined
 
-  const { isStray = false, strayFlag } = options
-
-  let manager
-
-  if (isStray) {
-    // TODO: strayFlay 同名检测
-    manager = createScopeManager(creator, options)
-    SCOPE_MANAGERS.set({ creator, options: { isStray, strayFlag }, flag: strayFlag }, manager)
-  } else {
-    manager = SCOPE_MANAGERS.get(creator)
-    if (manager === undefined) {
-      manager = createScopeManager(creator, options)
-      SCOPE_MANAGERS.set(creator, manager)
+  SCOPE_MANAGERS.forEach((value, key) => {
+    if (
+      key.creator === creator &&
+      key.options.isStray === info.options.isStray &&
+      key.options.strayFlag === info.options.strayFlag
+    ) {
+      // It is not necessary to check the duplicate key, `setScopeManager` ensures there is no duplicate key.
+      manager = value as ScopeManager<Creator>
     }
-  }
+  })
 
   return manager
+}
+const setScopeManager = <Creator extends ScopableCreator>(
+  creator: Creator, options: Required<ScopeManagerOptions>, manager: ScopeManager<Creator>
+): boolean => {
+  const info = { creator, options }
+
+  if (getScopeManager(creator, options) !== undefined) {
+    console.error('ScopeManager already exists.', creator, options)
+    throw (new Error(`ScopeManager already exists: { isStray: ${String(options.isStray)}, strayFlag: ${options.strayFlag} }.`))
+  } else {
+    SCOPE_MANAGERS.set(info, manager)
+  }
+
+  return true
+}
+const deleteScopeManager = <Creator extends ScopableCreator>(
+  creator: Creator, options: Required<ScopeManagerOptions>
+): boolean => {
+  const info = { creator, options }
+  let managerFound = false
+  let deleteResult = false
+
+  SCOPE_MANAGERS.forEach((value, key) => {
+    if (
+      key.creator === creator &&
+        key.options.isStray === info.options.isStray &&
+        key.options.strayFlag === info.options.strayFlag
+    ) {
+      managerFound = true
+      deleteResult = SCOPE_MANAGERS.delete(key)
+    }
+  })
+
+  if (!managerFound) {
+    console.error('ScopeManager does not exist.', creator, options)
+    throw (new Error(`ScopeManager does not exist: { isStray: ${String(options.isStray)}, strayFlag: ${options.strayFlag} }.`))
+  }
+
+  return deleteResult
+}
+
+/*********************************************************************************************************************
+ *
+ *                                                  Main ScopeManager
+ *
+ *********************************************************************************************************************/
+
+/**
+ *
+ */
+export class ScopeManager<Creator extends ScopableCreator> {
+  private readonly _options: Required<ScopeManagerOptions>
+  private readonly _creator: Creator
+  private readonly _scopes: Map<string, ReturnType<Creator>>
+  private readonly _promises: Map<string, Data<ReturnType<Creator>>>
+
+  constructor (creator: Creator, options: ScopeManagerOptions = DEFAULT_SCOPE_MANAGER_CREATE_OPTIONS) {
+    this._options = { ...DEFAULT_SCOPE_MANAGER_CREATE_OPTIONS, ...options }
+    this._creator = creator
+    this._scopes = new Map()
+    this._promises = new Map()
+  }
+
+  get isScopeManager (): true { return true }
+
+  get creator (): Creator { return this._creator }
+  get options (): Required<ScopeManagerOptions> { return this._options }
+
+  /**
+   * Create a ScopeManager instance with given `creator` and `options`,
+   *   put it in global `SCOPE_MANAGERS` map as well.
+   */
+  static of <Creator extends ScopableCreator>(
+    creator: Creator, options: ScopeManagerOptions = DEFAULT_SCOPE_MANAGER_CREATE_OPTIONS
+  ): ScopeManager<Creator> {
+    if (!isPlainObject(options)) {
+      throw (new TypeError('"options" is expected to be type of "PlainObject".'))
+    }
+
+    const { isStray, strayFlag } = { ...DEFAULT_SCOPE_MANAGER_CREATE_OPTIONS, ...options }
+
+    let manager: ScopeManager<Creator> | undefined
+
+    if (isStray) {
+      manager = new ScopeManager(creator, options)
+      // `setScopeManager` Manager will do the duplicate check.
+      setScopeManager(creator, { isStray, strayFlag }, manager)
+    } else {
+      manager = getScopeManager(creator, { isStray, strayFlag })
+      if (manager === undefined) {
+        manager = new ScopeManager(creator, options)
+        setScopeManager(creator, { isStray, strayFlag }, manager)
+      }
+    }
+
+    return manager
+  }
+
+  /**
+   * @param scope scope name to be checked.
+   * @return whether the given scope name is registered.
+   */
+  isRegistered (scope: string): boolean {
+    return this._scopes.has(scope)
+  }
+
+  /**
+   * @param scope scope name to be released.
+   * @return whether the given scope name is successfully released.
+   */
+  releaseScope (scope: string): boolean {
+    return this._scopes.delete(scope)
+  }
+
+  release (): boolean {
+    this._scopes.clear()
+    return deleteScopeManager(this._creator, this._options)
+  }
+
+  /**
+   * Register an instance with given scope name & options,
+   *   if there is none, create one,
+   *   if there is one, just return it.
+   */
+  registerScope (scope: string, options?: { instance: ReturnType<Creator> }): ReturnType<Creator>
+  registerScope (scope: string, options?: { params?: Parameters<Creator>[0] }): ReturnType<Creator>
+  registerScope (
+    scope: string, options: { instance?: ReturnType<Creator>, params?: Parameters<Creator>[0]} = {}
+  ): ReturnType<Creator> {
+    if (!isString(scope)) {
+      throw (new TypeError('"scope" is required and is expected to be type of "String".'))
+    }
+    if (!isUndefined(options) && !isPlainObject(options)) {
+      throw (new TypeError('"options" is expected to be type of "PlainObject" when provided.'))
+    }
+
+    const { instance, params } = options
+
+    let preparedParams
+    if (isUndefined(params)) {
+      preparedParams = { '@scopeName': scope }
+    } else if (isPlainObject(params)) {
+      preparedParams = { ...params, '@scopeName': scope }
+    } else {
+      preparedParams = params
+    }
+
+    let preparedInstance: ReturnType<Creator> | undefined
+    preparedInstance = this._scopes.get(scope)
+    // If there is no instance registered, create one.
+    // Then check if there is a promise has been made, if so, trigger it
+    if (preparedInstance === undefined) {
+      // If `options.instance` is provided, use it directly, otherwise create one using `this._creator`.
+      preparedInstance = instance ?? this._creator(preparedParams)
+      this._scopes.set(scope, preparedInstance as ReturnType<Creator>)
+
+      const promise = this._promises.get(scope)
+      if (promise !== undefined) {
+        if (isAtomLike(preparedInstance)) {
+          binaryTweenPipeAtom(replayWithLatest(1, preparedInstance as any), promise)
+        } else {
+          binaryTweenPipeAtom(replayWithLatest(1, Data.of(preparedInstance)), promise)
+        }
+      }
+    }
+
+    return preparedInstance as ReturnType<Creator>
+  }
+
+  getInstance (scope: string): ReturnType<Creator> | Data<ReturnType<Creator>>
+  getInstance (
+    scope: string, options?: InstanceGetOptions & { acceptPromise: true }
+  ): ReturnType<Creator> | Data<ReturnType<Creator>>
+  getInstance (
+    scope: string, options?: InstanceGetOptions & { acceptPromise: false }
+  ): ReturnType<Creator> | undefined
+  getInstance (
+    scope: string, options: InstanceGetOptions = DEFAULT_GET_INSTANCE_OPTIONS
+  ): ReturnType<Creator> | Data<ReturnType<Creator>> | undefined {
+    if (!isString(scope)) {
+      throw (new TypeError('"scope" is required and is expected to be type of "String".'))
+    }
+    if (!isUndefined(options) && !isPlainObject(options)) {
+      throw (new TypeError('"options" is expected to be type of "PlainObject" when provided.'))
+    }
+
+    const { acceptPromise } = { ...DEFAULT_GET_INSTANCE_OPTIONS, ...options }
+
+    const instance = this._scopes.get(scope)
+    if (!isUndefined(instance)) return instance
+    // instance is undefined, check if acceptPromise
+    if (!acceptPromise) return undefined
+    // no instance exists & acceptPromise, check if there is a promise has been made
+    const promise = this._promises.get(scope)
+    if (!isUndefined(promise)) return promise
+    // no premake promise, create one
+    this._promises.set(scope, Data.empty())
+    return this._promises.get(scope)
+  }
+
+  /**
+   * Synchronously get an instance with given scope name.
+   */
+  scope (scope: string, params?: Parameters<Creator>[0]): ReturnType<Creator> {
+    // Invoking `registerScope` first ensures that the instance is created.
+    this.registerScope(scope, { params })
+    // So the `getInstance` is guaranteed to return a instance instead of Promise.
+    return this.getInstance(scope) as ReturnType<Creator>
+  }
 }
