@@ -11,13 +11,13 @@ import type { Observable } from 'rxjs'
  */
 
 export type Primative = string | number | boolean | bigint | symbol | null | undefined
-// @refer: https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-2.html#object-type
+// @refer https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-2.html#object-type
 export type NonPrimative = object
 
-// @refer: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#Data_types
+// @refer https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#Data_types
 export const isUndefined = (tar: any): tar is undefined =>
   Object.prototype.toString.call((tar)) === '[object Undefined]'
-// @refer: https://stackoverflow.com/a/52097700
+// @refer https://stackoverflow.com/a/52097700
 export const isDefined = <T>(variable: T): variable is T => typeof variable !== 'undefined'
 export const isBoolean = (tar: any): tar is boolean =>
   Object.prototype.toString.call(tar) === '[object Boolean]'
@@ -117,7 +117,7 @@ export const isEmptyStr = (tar: any): tar is '' =>
   isString(tar) && tar.length === 0
 export const isEmptyArr = (tar: any): tar is [] =>
   isArray(tar) && tar.length === 0
-// @refer: https://mannes.tech/typescript-object-type-errors/
+// @refer https://mannes.tech/typescript-object-type-errors/
 export const isEmptyObj = (tar: any): tar is {} =>
   isPlainObject(tar) && Object.keys(tar).length === 0
 // - `null` and `undefined` are considered empty values
@@ -129,12 +129,14 @@ export const isEmpty = (tar: any): boolean =>
   (isObject(tar) && tar.isEmpty)
 export const isNil = (v: any): v is (null | undefined) => v === null || v === undefined
 export const isNotNil = (v: any): boolean => !isNil(v)
-
 export const isWindow = (tar: any): tar is Window =>
   Object.prototype.toString.call(tar) === '[object Window]'
+export const isElement = (tar: any): tar is Element => tar instanceof Element
+export const isNode = (tar: any): tar is Node => tar instanceof Node
+export const isHTMLElement = (tar: any): tar is HTMLElement => tar instanceof HTMLElement
 export const isDocument = (tar: any): tar is Document =>
   Object.prototype.toString.call(tar) === '[object HTMLDocument]'
-// refer: https://developer.mozilla.org/zh-CN/docs/Web/API/Event
+// @refer https://developer.mozilla.org/zh-CN/docs/Web/API/Event
 export const isEventTarget = (tar: any): tar is EventTarget =>
   tar instanceof EventTarget
 export const isIterable = <T>(tar: any): tar is Iterable<T> =>
