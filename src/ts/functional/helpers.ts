@@ -488,10 +488,10 @@ type ComposeLeft = <FNS extends AnyFunction[]>
   (...fns: FNS & Pipe<FNS> extends AnyFunction ? FNS : never) => Pipe<FNS>
 
 // NOTE: 另外一种 compose 实现
-// @refer: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/ReduceRight
+// @refer https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/ReduceRight
 // const compose = (...args) => value => args.reduceRight((acc, fn) => fn(acc), value)
 // 本质是一个闭包，直觉上不喜欢（虽然能够带来一些调试上的好处）
-//   -> @refer: https://www.freecodecamp.org/news/pipe-and-compose-in-javascript-5b04004ac937/
+//   -> @refer https://www.freecodecamp.org/news/pipe-and-compose-in-javascript-5b04004ac937/
 // 下面这种更符合函数式思维，实现上更接近数学定义
 export const composeL: HPPipe = (...fns: any[]) => {
   const initialFunction = fns.shift() ?? asIs
