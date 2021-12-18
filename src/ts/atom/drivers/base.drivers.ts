@@ -53,7 +53,7 @@ export interface GeneralDriverCreateOptions<
   prepareOptions?: (options: Options) => Options
   prepareDriverLevelContexts?: () => DLC
   prepareSingletonLevelContexts?: PrepareDriverSingletonLevelContexts<Options, DLC, DSLC>
-  prepareInstance: (
+  prepareInstance?: (
     options: Options,
     driverLevelContexts: DLC,
     singletonLevelContexts: DSLC
