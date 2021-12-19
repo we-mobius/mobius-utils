@@ -23,7 +23,7 @@ export const debounceS: SimpleDebounce = (fn, ms) => {
   let timer: NodeJS.Timeout
   return (...args) => {
     clearTimeout(timer)
-    timer = setTimeout(() => fn(...args), ms)
+    timer = setTimeout(() => fn(...args), ms) as any
   }
 }
 
@@ -39,7 +39,7 @@ export const debounce: Debounce = (fn, ms) => {
         resolve(res)
       })
       waiting = []
-    }) as (() => void), ms)
+    }) as (() => void), ms) as any
 
     return await new Promise(resolve => {
       waiting.push(resolve)
