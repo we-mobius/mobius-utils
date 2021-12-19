@@ -1,10 +1,10 @@
 import { Data, createDataFromEvent, ReplayMediator, filterT } from '../atom/index'
-import { isInWeb } from './environment'
+import { isInWebEnvironment } from './environment'
 
-const webEnv = isInWeb()
+const webEnv = isInWebEnvironment()
 
-// reference: https://zh.javascript.info/onload-ondomcontentloaded
-// reference: https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState
+// @refer https://zh.javascript.info/onload-ondomcontentloaded
+// @refer https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState
 
 export const domLoadedD = webEnv ? createDataFromEvent<Event>({ target: document, type: 'DOMContentLoaded' })[0] : Data.empty<Event>()
 export const domLoadedRD = ReplayMediator.of(domLoadedD, { autoTrigger: true })
