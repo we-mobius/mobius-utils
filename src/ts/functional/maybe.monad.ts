@@ -166,5 +166,3 @@ const b = Maybe.nothing().map(add).map(square).map(double)
 
 const c = Maybe.fromNilable(null).map(add).map(square).map(double)
 // -> null
-
-console.log(a, b, c)
