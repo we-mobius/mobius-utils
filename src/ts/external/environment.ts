@@ -9,7 +9,7 @@ import { isFunction, isObject } from '../internal/base'
 const safeWX =
   (typeof wx !== 'undefined') ? wx : (undefined as WechatMiniprogram.Wx | undefined)
 const safeGlobal =
-  typeof global !== 'undefined' ? global : (undefined as (NodeJS.Global & typeof globalThis) | undefined)
+  typeof global !== 'undefined' ? global : (undefined as (typeof globalThis) | undefined)
 const safeWindow =
   typeof window !== 'undefined' ? window : (undefined as (Window & typeof globalThis) | undefined)
 const safeDocument =
@@ -50,7 +50,7 @@ export interface WebEnvContexts extends CommonContexts {
   document: Document
 }
 export interface NodeEnvContexts extends CommonContexts {
-  global: NodeJS.Global & typeof globalThis
+  global: typeof globalThis
 }
 export interface WXMINAEnvContexts extends CommonContexts {
   wxmina: WechatMiniprogram.Wx
@@ -61,7 +61,7 @@ export const WEB_ENV_CONTEXTS: WebEnvContexts = {
   globalThis, window: safeWindow as (Window & typeof globalThis), document: safeDocument as Document
 }
 export const NODE_ENV_CONTEXTS: NodeEnvContexts = {
-  globalThis, global: safeGlobal as (NodeJS.Global & typeof globalThis)
+  globalThis, global: safeGlobal as (typeof globalThis)
 }
 export const WXMINA_ENV_CONTEXTS: WXMINAEnvContexts = {
   globalThis, wxmina: safeWX as WechatMiniprogram.Wx
