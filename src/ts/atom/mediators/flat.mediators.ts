@@ -1,7 +1,7 @@
 import { isObject } from '../../internal/base'
 import { looseCurryN } from '../../functional'
 import {
-  Data, isData, Mutation, isMutation, isAtom
+  Data, isData, Mutation, isMutation, isAtomLike
 } from '../../atom'
 import { isMediator, DataMediator, MutationMediator } from './base.mediators'
 
@@ -88,7 +88,7 @@ export class FlatDataMediator<V = any> extends DataMediator<V> {
   static of<I extends Data<any> | FlatMediatorUnion> (
     atom: I, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS
   ): FlatMediatorUnion {
-    if (!isAtom(atom)) {
+    if (!isAtomLike(atom)) {
       throw (new TypeError('"atom" is expected to be a general Atom or a FlatMediatorUnion.'))
     }
     if (isMediator(atom) && !isFlatMediator(atom)) {
@@ -188,7 +188,7 @@ export class FlatMutationMediator<P = any, C = any> extends MutationMediator<P, 
   static of<I extends Mutation<any, any> | FlatMediatorUnion> (
     atom: I, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS
   ): FlatMediatorUnion {
-    if (!isAtom(atom)) {
+    if (!isAtomLike(atom)) {
       throw (new TypeError('"atom" is expected to be a general Atom or a FlatMediatorUnion.'))
     }
     if (isMediator(atom) && !isFlatMediator(atom)) {
@@ -273,7 +273,7 @@ export class FlatMediator {
   static of<I extends Data<any> | Mutation<any, any> | FlatMediatorUnion> (
     atom: I, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS
   ): FlatMediatorUnion {
-    if (!isAtom(atom)) {
+    if (!isAtomLike(atom)) {
       throw (new TypeError('"atom" is expected to be a general Atom or a FlatMediatorUnion.'))
     }
     if (isMediator(atom) && !isFlatMediator(atom)) {

@@ -1,5 +1,5 @@
 import { isObject } from '../../internal/base'
-import { isAtom, Data, isData, Mutation, isMutation } from '../atoms'
+import { isAtomLike, Data, isData, Mutation, isMutation } from '../atoms'
 import {
   isMediator,
   DataMediator, MutationMediator
@@ -74,7 +74,7 @@ export class TriggerDataMediator<V = any> extends DataMediator<V> {
   static of<I extends Data<any> | TriggerMediatorUnion> (
     atom: I
   ): TriggerMediatorUnion {
-    if (!isAtom(atom)) {
+    if (!isAtomLike(atom)) {
       throw (new TypeError('"atom" is expected to be a general Atom or a TriggerMediatorUnion.'))
     }
     if (isMediator(atom) && !isTriggerMediator(atom)) {
@@ -167,7 +167,7 @@ export class TriggerMutationMediator<P = any, C = any> extends MutationMediator<
   static of<I extends Mutation<any, any> | TriggerMediatorUnion> (
     atom: I
   ): TriggerMediatorUnion {
-    if (!isAtom(atom)) {
+    if (!isAtomLike(atom)) {
       throw (new TypeError('"atom" is expected to be a general Atom or a TriggerMediatorUnion.'))
     }
     if (isMediator(atom) && !isTriggerMediator(atom)) {
@@ -258,7 +258,7 @@ export class TriggerMediator {
   static of<I extends Data<any> | Mutation<any, any> | TriggerMediatorUnion> (
     atom: I, options: TriggerMediatorOptions = DEFAULT_TRIGGER_MEDIATOR_OPTIONS
   ): TriggerMediatorUnion {
-    if (!isAtom(atom)) {
+    if (!isAtomLike(atom)) {
       throw (new TypeError('"atom" is expected to be a general Atom or a TriggerMediatorUnion.'))
     }
     if (isMediator(atom) && !isTriggerMediator(atom)) {

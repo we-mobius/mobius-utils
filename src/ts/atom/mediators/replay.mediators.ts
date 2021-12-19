@@ -2,7 +2,7 @@ import { isObject, isNumber } from '../../internal/base'
 import { curry } from '../../functional'
 
 import {
-  isAtom, Data, isData, Mutation, isMutation, Subscription,
+  isAtomLike, Data, isData, Mutation, isMutation, Subscription,
   DEFAULT_SUBSCRIBE_OPTIONS
 } from '../atoms'
 import {
@@ -98,7 +98,7 @@ export class ReplayDataMediator<V = any> extends DataMediator<V> {
   static of<I extends Data<any> | ReplayMediatorUnion> (
     atom: I, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS
   ): ReplayMediatorUnion {
-    if (!isAtom(atom)) {
+    if (!isAtomLike(atom)) {
       throw (new TypeError('"atom" is expected to be a general Atom or a ReplayMediatorUnion.'))
     }
     if (isMediator(atom) && !isReplayMediator(atom)) {
@@ -226,7 +226,7 @@ export class ReplayMutationMediator<P = any, C = any> extends MutationMediator<P
   static of<I extends Mutation<any, any> | ReplayMediatorUnion> (
     atom: I, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS
   ): ReplayMediatorUnion {
-    if (!isAtom(atom)) {
+    if (!isAtomLike(atom)) {
       throw (new TypeError('"atom" is expected to be a general Atom or a ReplayMediatorUnion.'))
     }
     if (isMediator(atom) && !isReplayMediator(atom)) {
@@ -336,7 +336,7 @@ export class ReplayMediator {
   static of<I extends Data<any> | Mutation<any, any> | ReplayMediatorUnion> (
     atom: I, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS
   ): ReplayMediatorUnion {
-    if (!isAtom(atom)) {
+    if (!isAtomLike(atom)) {
       throw (new TypeError('"atom" is expected to be a general Atom or a ReplayMediatorUnion.'))
     }
     if (isMediator(atom) && !isReplayMediator(atom)) {
