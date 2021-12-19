@@ -1,12 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { isFunction } from '../internal/base'
+import { isFunction, isObject } from '../internal/base'
 
 // @refer https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/globalThis
 
 // wx only exists in miniprogram
-const globalWX = typeof wx === undefined ? wx : undefined
-const nodeGlobal = typeof global === undefined ? global : undefined
+// NOTE: hack to specify the expected type to safeTarget
+const safeWX =
+  (typeof wx !== 'undefined') ? wx : (undefined as WechatMiniprogram.Wx | undefined)
+const safeGlobal =
+  typeof global !== 'undefined' ? global : (undefined as (NodeJS.Global & typeof globalThis) | undefined)
+const safeWindow =
+  typeof window !== 'undefined' ? window : (undefined as (Window & typeof globalThis) | undefined)
+const safeDocument =
+  typeof document !== 'undefined' ? document : (undefined as Document | undefined)
 
 /**
  * Predicate whether the enviroment is Wexin Mini Program (MINA: MINA is not App).
@@ -14,7 +21,8 @@ const nodeGlobal = typeof global === undefined ? global : undefined
  *
  * @check `wx`, `wx.canIUse`
  */
-export const isInWXMINAEnvironment = (): boolean => (typeof globalWX !== 'undefined') && isFunction(globalWX.canIUse)
+export const isInWXMINAEnvironment = (): boolean =>
+  isObject(safeWX) && isFunction(safeWX.canIUse)
 /**
  * Predicate whether the enviroment is Web.
  *
@@ -38,21 +46,29 @@ interface CommonContexts {
   globalThis: typeof globalThis
 }
 export interface WebEnvContexts extends CommonContexts {
-  window: Window
+  window: Window & typeof globalThis
   document: Document
 }
 export interface NodeEnvContexts extends CommonContexts {
-  global: NodeJS.Global
+  global: NodeJS.Global & typeof globalThis
 }
 export interface WXMINAEnvContexts extends CommonContexts {
   wxmina: WechatMiniprogram.Wx
 }
 export interface DefaultEnvContexts extends CommonContexts { }
 
-export const WEB_ENV_CONTEXTS: WebEnvContexts = { globalThis, window, document }
-export const NODE_ENV_CONTEXTS: NodeEnvContexts = { globalThis, global: nodeGlobal as NodeJS.Global }
-export const WXMINA_ENV_CONTEXTS: WXMINAEnvContexts = { globalThis, wxmina: globalWX as WechatMiniprogram.Wx }
-export const DEFAULT_ENV_CONTEXTS: DefaultEnvContexts = { globalThis }
+export const WEB_ENV_CONTEXTS: WebEnvContexts = {
+  globalThis, window: safeWindow as (Window & typeof globalThis), document: safeDocument as Document
+}
+export const NODE_ENV_CONTEXTS: NodeEnvContexts = {
+  globalThis, global: safeGlobal as (NodeJS.Global & typeof globalThis)
+}
+export const WXMINA_ENV_CONTEXTS: WXMINAEnvContexts = {
+  globalThis, wxmina: safeWX as WechatMiniprogram.Wx
+}
+export const DEFAULT_ENV_CONTEXTS: DefaultEnvContexts = {
+  globalThis
+}
 
 export interface MultipleEnvironmentsAdaptions<R = any> {
   forWeb: (contexts: WebEnvContexts) => R
