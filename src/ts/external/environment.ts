@@ -2,69 +2,88 @@
 
 import { isFunction } from '../internal/base'
 
-// reference: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/globalThis
+// @refer https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/globalThis
 
-// @ts-expect-error wx only exists in miniprogram
+// wx only exists in miniprogram
 const globalWX = typeof wx === undefined ? wx : undefined
 const nodeGlobal = typeof global === undefined ? global : undefined
 
 /**
- * Judge whether the enviroment is Wexin Mini Program (MINA: MINA is not App).
+ * Predicate whether the enviroment is Wexin Mini Program (MINA: MINA is not App).
  * NOTE: typeof operator can operate on non-exist variable.
+ *
  * @check `wx`, `wx.canIUse`
  */
-export const isInWXMINA = (): boolean => (typeof globalWX !== 'undefined') && globalWX.canIUse
+export const isInWXMINAEnvironment = (): boolean => (typeof globalWX !== 'undefined') && isFunction(globalWX.canIUse)
 /**
- * Judge whether the enviroment is Web.
+ * Predicate whether the enviroment is Web.
+ *
  * @check `document`, `window`
  */
-export const isInWeb = (): boolean => typeof document === 'object' && typeof window === 'object'
+export const isInWebEnvironment = (): boolean => typeof document === 'object' && typeof window === 'object'
 /**
- * Judge whether the enviroment is Browser.
+ * Predicate whether the enviroment is Browser.
+ *
  * @check `document`
  */
-export const isInBrowser = isInWeb
+export const isInBrowserEnvironment = isInWebEnvironment
 /**
- * Judge whether the enviroment is Node.js.
+ * Predicate whether the enviroment is Node.js.
+ *
  * @check `global`
  */
-export const isInNode = (): boolean => typeof global !== 'undefined'
+export const isInNodeEnvironment = (): boolean => typeof global !== 'undefined'
 
 interface CommonContexts {
   globalThis: typeof globalThis
 }
-export interface WebContexts extends CommonContexts {
+export interface WebEnvContexts extends CommonContexts {
+  window: Window
   document: Document
 }
-export interface NodeContexts extends CommonContexts {
-  global?: NodeJS.Global
+export interface NodeEnvContexts extends CommonContexts {
+  global: NodeJS.Global
 }
-export interface WXMINAContexts extends CommonContexts {
-  wxmina: typeof globalWX
+export interface WXMINAEnvContexts extends CommonContexts {
+  wxmina: WechatMiniprogram.Wx
 }
-export interface DefaultContexts extends CommonContexts { }
+export interface DefaultEnvContexts extends CommonContexts { }
 
-export interface MultiPlatformAdaptions {
-  forWeb: (contexts: WebContexts) => any
-  forNode: (contexts: NodeContexts) => any
-  forWXMINA: (contexts: WXMINAContexts) => any
-  forDefault: (contexts: DefaultContexts) => any
+export const WEB_ENV_CONTEXTS: WebEnvContexts = { globalThis, window, document }
+export const NODE_ENV_CONTEXTS: NodeEnvContexts = { globalThis, global: nodeGlobal as NodeJS.Global }
+export const WXMINA_ENV_CONTEXTS: WXMINAEnvContexts = { globalThis, wxmina: globalWX as WechatMiniprogram.Wx }
+export const DEFAULT_ENV_CONTEXTS: DefaultEnvContexts = { globalThis }
+
+export interface MultipleEnvironmentsAdaptions<R = any> {
+  forWeb: (contexts: WebEnvContexts) => R
+  forNode: (contexts: NodeEnvContexts) => R
+  forWXMINA: (contexts: WXMINAEnvContexts) => R
+  forDefault: (contexts: DefaultEnvContexts) => R
+}
+
+export interface AsyncMultipleEnvironmentsAdaptions<R = any> {
+  forWeb: (contexts: WebEnvContexts) => R | Promise<R>
+  forNode: (contexts: NodeEnvContexts) => R | Promise<R>
+  forWXMINA: (contexts: WXMINAEnvContexts) => R | Promise<R>
+  forDefault: (contexts: DefaultEnvContexts) => R | Promise<R>
 }
 
 /**
  * (sync version of adaptMultiPlatformAsync) Run different function according to the environment.
+ *
+ * @see {@link adaptMultipleEnvironmentsAsync}
  */
-export const adaptMultiPlatform = (adaptions: Partial<MultiPlatformAdaptions>): any => {
+export const adaptMultipleEnvironments = <R = any>(adaptions: Partial<MultipleEnvironmentsAdaptions<R>>): R => {
   const { forWeb, forNode, forWXMINA, forDefault } = adaptions
 
-  if (isInWeb() && isFunction(forWeb)) {
-    return forWeb({ globalThis, document })
-  } else if (isInNode() && isFunction(forNode)) {
-    return forNode({ globalThis, global: nodeGlobal })
-  } else if (isInWXMINA() && isFunction(forWXMINA)) {
-    return forWXMINA({ globalThis, wxmina: globalWX })
+  if (isInWebEnvironment() && isFunction(forWeb)) {
+    return forWeb(WEB_ENV_CONTEXTS)
+  } else if (isInNodeEnvironment() && isFunction(forNode)) {
+    return forNode(NODE_ENV_CONTEXTS)
+  } else if (isInWXMINAEnvironment() && isFunction(forWXMINA)) {
+    return forWXMINA(WXMINA_ENV_CONTEXTS)
   } else if (isFunction(forDefault)) {
-    return forDefault({ globalThis })
+    return forDefault(DEFAULT_ENV_CONTEXTS)
   } else {
     throw (new TypeError('No adaptions found, please provide at least one of "forWeb", "forNode", "forWXMINA", "forDefault".'))
   }
@@ -72,17 +91,19 @@ export const adaptMultiPlatform = (adaptions: Partial<MultiPlatformAdaptions>): 
 
 /**
  * (async version of adaptMultiPlatform) Run different function according to the environment.
+ *
+ * @see {@link adaptMultipleEnvironments}
  */
-export const adaptMultiPlatformAsync = async (adaptions: Partial<MultiPlatformAdaptions>): Promise<any> => {
+export const adaptMultipleEnvironmentsAsync = async <R = any>(adaptions: Partial<AsyncMultipleEnvironmentsAdaptions<R>>): Promise<R> => {
   const { forWeb, forNode, forWXMINA, forDefault } = adaptions
-  if (isInWeb() && isFunction(forWeb)) {
-    return await Promise.resolve(forWeb({ globalThis, document }))
-  } else if (isInNode() && isFunction(forNode)) {
-    return await Promise.resolve(forNode({ globalThis, global: nodeGlobal }))
-  } else if (isInWXMINA() && isFunction(forWXMINA)) {
-    return await Promise.resolve(forWXMINA({ globalThis, wxmina: globalWX }))
+  if (isInWebEnvironment() && isFunction(forWeb)) {
+    return await Promise.resolve(forWeb(WEB_ENV_CONTEXTS))
+  } else if (isInNodeEnvironment() && isFunction(forNode)) {
+    return await Promise.resolve(forNode(NODE_ENV_CONTEXTS))
+  } else if (isInWXMINAEnvironment() && isFunction(forWXMINA)) {
+    return await Promise.resolve(forWXMINA(WXMINA_ENV_CONTEXTS))
   } else if (isFunction(forDefault)) {
-    return await Promise.resolve(forDefault({ globalThis }))
+    return await Promise.resolve(forDefault(DEFAULT_ENV_CONTEXTS))
   } else {
     throw (new TypeError('No adaptions found, please provide at least one of "forWeb", "forNode", "forWXMINA", "forDefault".'))
   }
