@@ -88,7 +88,6 @@ export const getReleaseConfig = () => ([
       // @refer: https://webpack.js.org/configuration/output/#outputlibrarytype
       // libraryTarget: 'umd',
       library: {
-        name: 'MobiusUtils',
         type: 'commonjs2'
       }
     },
