@@ -1,18 +1,30 @@
-import { isNormalFunction, isAsyncFunction } from './base'
+import { isFunction, isNormalFunction, isAsyncFunction } from './base'
 
-type AnyFunction = (...args: any[]) => any
+import type { AnyFunction } from '../@types/index'
+
 type LooseArray<T extends any[]> = [...T, ...any[]]
 
 export const iife = <T extends AnyFunction>(fn: T, ...args: LooseArray<Parameters<T>>): ReturnType<T> => fn(...args)
 
-type Once = <T extends AnyFunction>(fn: T) => (...args: LooseArray<Parameters<T>>) => ReturnType<T>
-export const once: Once = fn => {
+/**
+ * Generate a one-off function for a given function.
+ * @param fn - The function to generate a one-off function for.
+ * @param callback - The callback to call when the one-off function is called twice or more.
+ */
+export const once = <T extends AnyFunction>(
+  fn: T, callback?: (times: number) => void
+): ((...args: LooseArray<Parameters<T>>) => ReturnType<T>) => {
   let called = false
   let result: ReturnType<typeof fn>
+  let times = 0
   return (...args) => {
+    times += 1
     if (!called) {
       result = fn(...args)
       called = true
+    }
+    if (called && isFunction(callback)) {
+      callback(times)
     }
     return result
   }
