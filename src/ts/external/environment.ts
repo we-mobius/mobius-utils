@@ -14,6 +14,13 @@ const safeWindow =
   typeof window !== 'undefined' ? window : (undefined as (Window & typeof globalThis) | undefined)
 const safeDocument =
   typeof document !== 'undefined' ? document : (undefined as Document | undefined)
+const safeFetch =
+  typeof fetch !== 'undefined' ? fetch : (undefined as typeof fetch | undefined)
+
+/**
+ *
+ */
+export type EnvironmentUnion = 'wxmina' | 'web' | 'node' | 'unknown'
 
 /**
  * Predicate whether the enviroment is Wexin Mini Program (MINA: MINA is not App).
@@ -48,6 +55,7 @@ interface CommonContexts {
 export interface WebEnvContexts extends CommonContexts {
   window: Window & typeof globalThis
   document: Document
+  fetch: typeof fetch
 }
 export interface NodeEnvContexts extends CommonContexts {
   global: typeof globalThis
@@ -58,7 +66,10 @@ export interface WXMINAEnvContexts extends CommonContexts {
 export interface DefaultEnvContexts extends CommonContexts { }
 
 export const WEB_ENV_CONTEXTS: WebEnvContexts = {
-  globalThis, window: safeWindow as (Window & typeof globalThis), document: safeDocument as Document
+  globalThis,
+  window: safeWindow as (Window & typeof globalThis),
+  document: safeDocument as Document,
+  fetch: safeFetch as typeof fetch
 }
 export const NODE_ENV_CONTEXTS: NodeEnvContexts = {
   globalThis, global: safeGlobal as (typeof globalThis)
