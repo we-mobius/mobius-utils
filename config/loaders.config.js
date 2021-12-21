@@ -74,7 +74,8 @@ const jsLoader = {
     {
       loader: 'ts-loader',
       options: {
-        transpileOnly: true
+        transpileOnly: true,
+        onlyCompileBundledFiles: true
       }
     }
   ]

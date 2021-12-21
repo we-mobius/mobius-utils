@@ -4,6 +4,7 @@ import webpack from 'webpack'
 import path from 'path'
 import fs, { readFileSync } from 'fs'
 import ts from 'typescript'
+import chalk from 'chalk'
 
 const BUILD_MODE = 'release'
 const BUILD_TARGET_DES = 'release'
@@ -127,7 +128,11 @@ const pack = () => {
         const info = stats.toJson()
 
         if (stats.hasErrors()) {
-          console.error(info.errors)
+          info.errors.forEach((error) => {
+            console.log('Error: ', chalk(error.file))
+            console.log(chalk(error.message))
+            console.log('\r')
+          })
         }
 
         if (stats.hasWarnings()) {
@@ -135,9 +140,11 @@ const pack = () => {
             const { message } = info
             return !message.startsWith('asset size limit:') && !message.startsWith('webpack performance recommendations:')
           })
-          if (warnings.length > 0) {
-            console.warn(warnings)
-          }
+          warnings.forEach((warning) => {
+            console.log('Warning: ', chalk(warning.file))
+            console.log(chalk(warning.message))
+            console.log('\r')
+          })
         }
 
         resolve()

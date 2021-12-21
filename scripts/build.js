@@ -2,6 +2,7 @@ import { emptyDirSync, copyFileSync, rootResolvePath } from './utils.js'
 import { getWebpackConfig } from '../webpack.config.js'
 import webpack from 'webpack'
 import path from 'path'
+import chalk from 'chalk'
 
 const BUILD_MODE = 'build'
 const BUILD_TARGET_DES = 'build'
@@ -35,11 +36,19 @@ const packRenderer = () => {
         const info = stats.toJson()
 
         if (stats.hasErrors()) {
-          console.error(info.errors)
+          info.errors.forEach((error) => {
+            console.log('Error: ', chalk(error.file))
+            console.log(chalk(error.message))
+            console.log('\r')
+          })
         }
 
         if (stats.hasWarnings()) {
-          console.warn(info.warnings)
+          info.warnings.forEach((warning) => {
+            console.log('Warning: ', chalk(warning.file))
+            console.log(chalk(warning.message))
+            console.log('\r')
+          })
         }
 
         console.log('【pack web】 complete!')
