@@ -50,6 +50,7 @@ const packRenderer = () => {
             console.log('\r')
           })
         }
+
         console.log('【pack web】 complete!')
 
         resolve()

@@ -9,6 +9,7 @@ import chalk from 'chalk'
 const BUILD_MODE = 'release'
 const BUILD_TARGET_DES = 'release'
 const resolvePathInDes = (...paths) => path.join(BUILD_TARGET_DES, ...paths)
+
 const empty = () => {
   return new Promise((resolve) => {
     emptyDirSync(rootResolvePath(BUILD_TARGET_DES))
