@@ -2,7 +2,7 @@
 export type AnyFunction = (...args: any[]) => any
 
 /**
- * Predicate whether the target is a function.
+ * Predicate whether the target is of type function.
  */
 export type IsFunction<T> = T extends AnyFunction ? true : false
 
