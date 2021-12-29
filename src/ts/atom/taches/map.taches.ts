@@ -25,7 +25,7 @@ export const mapT = <T, V>(
     throw (new TypeError('"mapper" is expected to be type of "Function" or "AtomLike".'))
   }
 }
-interface IMapT_ {
+export interface IMapT_ {
   <T, V>(mapper: AtomLikeOfOutput<Mapper<T, V>> | Mapper<T, V>, target: AtomLikeOfOutput<T>): Data<V>
   <T, V>(mapper: AtomLikeOfOutput<Mapper<T, V>> | Mapper<T, V>): (target: AtomLikeOfOutput<T>) => Data<V>
 }
@@ -109,7 +109,7 @@ export const dynamicMapT = <T, V>(
 
   return outputD
 }
-interface IDynamicMapT_ {
+export interface IDynamicMapT_ {
   <T, V>(mapper: AtomLikeOfOutput<Mapper<T, V>>, target: AtomLikeOfOutput<T>): Data<V>
   <T, V>(mapper: AtomLikeOfOutput<Mapper<T, V>>): (target: AtomLikeOfOutput<T>) => Data<V>
 }
@@ -129,7 +129,7 @@ export const staticMapT = <T, V>(
   }
   return dynamicMapT(replayWithLatest(1, Data.of(mapper)), target)
 }
-interface IStaticMapT_ {
+export interface IStaticMapT_ {
   <T, V>(mapper: Mapper<T, V>, target: AtomLikeOfOutput<T>): Data<V>
   <T, V>(mapper: Mapper<T, V>): (target: AtomLikeOfOutput<T>) => Data<V>
 }
