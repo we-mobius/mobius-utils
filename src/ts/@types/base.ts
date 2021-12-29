@@ -38,3 +38,15 @@ type ClosedDistribution<T> = [T] extends [any] ? T[] : never
  * Predicate whether the target is `Union` type.
  */
 export type IsUnion<T> = ClosedDistribution<T> extends ExpandedDistribution<T> ? false : true
+
+/**
+ * Predicate whether the target is `boolean`.
+ */
+export type IsBoolean<T> = T extends boolean ? true : false
+export type CastBoolean<T> = T extends boolean ? T : boolean
+
+/**
+ * Predicate whether the target is `number`.
+ */
+export type IsNumber<T> = T extends number ? true : false
+export type CastNumber<T> = T extends number ? T : number
