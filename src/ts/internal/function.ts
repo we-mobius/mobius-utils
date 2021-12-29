@@ -23,7 +23,7 @@ export const once = <T extends AnyFunction>(
       result = fn(...args)
       called = true
     }
-    if (called && isFunction(callback)) {
+    if (times >= 2 && isFunction(callback)) {
       callback(times)
     }
     return result
