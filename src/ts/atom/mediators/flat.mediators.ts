@@ -3,10 +3,10 @@ import { looseCurryN } from '../../functional'
 import {
   Data, isData, Mutation, isMutation, isAtomLike
 } from '../../atom'
-import { isMediator, DataMediator, MutationMediator } from './base.mediators'
+import { DataMediator, MutationMediator } from './base.mediators'
 
 import type { Datar } from '../particles'
-import type { Subscription } from '../atoms'
+import type { Subscription, DataLike, MutationLike, AtomLikeOfOutput } from '../atoms'
 import type { MediatorTypeMaker, MediatorType } from './base.mediators'
 
 /******************************************************************************************************
@@ -83,17 +83,13 @@ export class FlatDataMediator<V = any> extends DataMediator<V> {
 
   get isFlatMediator (): true { return true }
 
-  static of<V> (atom: Data<V>, options?: FlatMediatorOptions): FlatDataMediator<V>
+  static of<V> (atom: DataLike<V>, options?: FlatMediatorOptions): FlatDataMediator<V>
   static of<I extends FlatMediatorUnion> (atom: I): I
-  static of<I extends Data<any> | FlatMediatorUnion> (
+  static of<I extends DataLike<any> | FlatMediatorUnion> (
     atom: I, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS
   ): FlatMediatorUnion {
     if (!isAtomLike(atom)) {
       throw (new TypeError('"atom" is expected to be a general Atom or a FlatMediatorUnion.'))
-    }
-    if (isMediator(atom) && !isFlatMediator(atom)) {
-      // throw (new TypeError('"atom" is expected to be a general Atom or a FlatMediatorUnion.'))
-      console.warn('"atom" is expected to be a general Atom or a FlatMediatorUnion.')
     }
     if (isFlatMediator(atom)) {
       return atom
@@ -101,7 +97,7 @@ export class FlatDataMediator<V = any> extends DataMediator<V> {
 
     const _options = { ...DEFAULT_FLAT_MEDIATOR_OPTIONS, ...options }
 
-    return new FlatDataMediator(atom, _options)
+    return new FlatDataMediator(atom as Data<any>, _options)
   }
 
   connect (): void {
@@ -183,17 +179,13 @@ export class FlatMutationMediator<P = any, C = any> extends MutationMediator<P, 
 
   get isFlatMediator (): true { return true }
 
-  static of<P, C> (atom: Mutation<P, C>, options?: FlatMediatorOptions): FlatMutationMediator<P, C>
+  static of<P, C> (atom: MutationLike<P, C>, options?: FlatMediatorOptions): FlatMutationMediator<P, C>
   static of<I extends FlatMediatorUnion> (atom: I): I
-  static of<I extends Mutation<any, any> | FlatMediatorUnion> (
+  static of<I extends MutationLike<any, any> | FlatMediatorUnion> (
     atom: I, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS
   ): FlatMediatorUnion {
     if (!isAtomLike(atom)) {
       throw (new TypeError('"atom" is expected to be a general Atom or a FlatMediatorUnion.'))
-    }
-    if (isMediator(atom) && !isFlatMediator(atom)) {
-      // throw (new TypeError('"atom" is expected to be a general Atom or a FlatMediatorUnion.'))
-      console.warn('"atom" is expected to be a general Atom or a FlatMediatorUnion.')
     }
     if (isFlatMediator(atom)) {
       return atom
@@ -201,7 +193,7 @@ export class FlatMutationMediator<P = any, C = any> extends MutationMediator<P, 
 
     const _options = { ...DEFAULT_FLAT_MEDIATOR_OPTIONS, ...options }
 
-    return new FlatMutationMediator(atom, _options)
+    return new FlatMutationMediator(atom as Mutation<any, any>, _options)
   }
 
   connect (): void {
@@ -267,18 +259,14 @@ export class FlatMediator {
 
   get isFlatMediator (): true { return true }
 
-  static of<V> (atom: Data<V>, options?: FlatMediatorOptions): FlatDataMediator<V>
-  static of<P, C> (atom: Mutation<P, C>, options?: FlatMediatorOptions): FlatMutationMediator<P, C>
+  static of<V> (atom: DataLike<V>, options?: FlatMediatorOptions): FlatDataMediator<V>
+  static of<P, C> (atom: MutationLike<P, C>, options?: FlatMediatorOptions): FlatMutationMediator<P, C>
   static of<I extends FlatMediatorUnion> (atom: I, options?: FlatMediatorOptions): I
-  static of<I extends Data<any> | Mutation<any, any> | FlatMediatorUnion> (
+  static of<I extends DataLike<any> | MutationLike<any, any> | FlatMediatorUnion> (
     atom: I, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS
   ): FlatMediatorUnion {
     if (!isAtomLike(atom)) {
       throw (new TypeError('"atom" is expected to be a general Atom or a FlatMediatorUnion.'))
-    }
-    if (isMediator(atom) && !isFlatMediator(atom)) {
-      // throw (new TypeError('"atom" is expected to be a general Atom or a FlatMediatorUnion.'))
-      console.warn('"atom" is expected to be a general Atom or a FlatMediatorUnion.')
     }
     if (isFlatMediator(atom)) {
       return atom
@@ -297,9 +285,11 @@ export class FlatMediator {
 }
 
 interface IWithValueFlatted {
-  <V = any> (atom: Data<V>, options?: FlatMediatorOptions): FlatDataMediator<V>
-  <P = any, C = any> (atom: Mutation<P, C>, options?: FlatMediatorOptions): FlatMutationMediator<P, C>
+  <V = any> (atom: DataLike<V>, options?: FlatMediatorOptions): FlatDataMediator<V>
+  <P = any, C = any> (atom: MutationLike<P, C>, options?: FlatMediatorOptions): FlatMutationMediator<P, C>
   <I extends FlatMediatorUnion> (atom: I, options?: FlatMediatorOptions): I
+  // catch all overload, used in `pipe` or `compose` or likewise situations.
+  <V = any> (atom: AtomLikeOfOutput<V>, options?: FlatMediatorOptions): AtomLikeOfOutput<V>
 }
 /**
  * Make a flat mediator which will flatten the data and mutation of the given atom.

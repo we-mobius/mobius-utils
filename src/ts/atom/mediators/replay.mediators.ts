@@ -6,13 +6,12 @@ import {
   DEFAULT_SUBSCRIBE_OPTIONS
 } from '../atoms'
 import {
-  isMediator,
   DataMediator, MutationMediator
 } from './base.mediators'
 
 import type { Datar, Mutator } from '../particles'
 import type {
-  SubscribeOptions, AtomLike,
+  SubscribeOptions, DataLike, MutationLike, AtomLikeOfOutput,
   ValueConsumer, DatarConsumer, DataConsumer, DataSubscription,
   TransformationConsumer, MutatorConsumer, MutationConsumer, MutationSubscription
 } from '../atoms'
@@ -93,17 +92,13 @@ export class ReplayDataMediator<V = any> extends DataMediator<V> {
 
   get isReplayMediator (): true { return true }
 
-  static of<V>(atom: Data<V>, options?: ReplayMediatorOptions): ReplayDataMediator<V>
+  static of<V> (atom: DataLike<V>, options?: ReplayMediatorOptions): ReplayDataMediator<V>
   static of<I extends ReplayMediatorUnion>(atom: I, options?: ReplayMediatorOptions): I
-  static of<I extends Data<any> | ReplayMediatorUnion> (
+  static of<I extends DataLike<any> | ReplayMediatorUnion> (
     atom: I, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS
   ): ReplayMediatorUnion {
     if (!isAtomLike(atom)) {
       throw (new TypeError('"atom" is expected to be a general Atom or a ReplayMediatorUnion.'))
-    }
-    if (isMediator(atom) && !isReplayMediator(atom)) {
-      // throw (new TypeError('"atom" is expected to be a general Atom or a ReplayMediatorUnion.'))
-      console.warn('"atom" is expected to be a general Atom or a ReplayMediatorUnion.')
     }
     if (isReplayMediator(atom)) {
       return atom
@@ -113,7 +108,7 @@ export class ReplayDataMediator<V = any> extends DataMediator<V> {
 
     const { autoTrigger } = _options
 
-    const mediator = new ReplayDataMediator(atom, _options)
+    const mediator = new ReplayDataMediator(atom as Data<any>, _options)
 
     if (autoTrigger) {
       atom.trigger()
@@ -221,17 +216,13 @@ export class ReplayMutationMediator<P = any, C = any> extends MutationMediator<P
 
   get isReplayMediator (): true { return true }
 
-  static of<P, C>(atom: Mutation<P, C>, options?: ReplayMediatorOptions): ReplayMutationMediator<P, C>
+  static of<P, C>(atom: MutationLike<P, C>, options?: ReplayMediatorOptions): ReplayMutationMediator<P, C>
   static of<I extends ReplayMediatorUnion>(atom: I, options?: ReplayMediatorOptions): I
-  static of<I extends Mutation<any, any> | ReplayMediatorUnion> (
+  static of<I extends MutationLike<any, any> | ReplayMediatorUnion> (
     atom: I, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS
   ): ReplayMediatorUnion {
     if (!isAtomLike(atom)) {
       throw (new TypeError('"atom" is expected to be a general Atom or a ReplayMediatorUnion.'))
-    }
-    if (isMediator(atom) && !isReplayMediator(atom)) {
-      // throw (new TypeError('"atom" is expected to be a general Atom or a ReplayMediatorUnion.'))
-      console.warn('"atom" is expected to be a general Atom or a ReplayMediatorUnion.')
     }
     if (isReplayMediator(atom)) {
       return atom
@@ -241,7 +232,7 @@ export class ReplayMutationMediator<P = any, C = any> extends MutationMediator<P
 
     const { autoTrigger } = _options
 
-    const mediator = new ReplayMutationMediator(atom, _options)
+    const mediator = new ReplayMutationMediator(atom as Mutation<any, any>, _options)
 
     if (autoTrigger) {
       atom.trigger()
@@ -330,18 +321,14 @@ export class ReplayMediator {
 
   get isReplayMediator (): true { return true }
 
-  static of<V> (atom: Data<V>, options?: ReplayMediatorOptions): ReplayDataMediator<V>
-  static of<P, C> (atom: Mutation<P, C>, options?: ReplayMediatorOptions): ReplayMutationMediator<P, C>
+  static of<V> (atom: DataLike<V>, options?: ReplayMediatorOptions): ReplayDataMediator<V>
+  static of<P, C> (atom: MutationLike<P, C>, options?: ReplayMediatorOptions): ReplayMutationMediator<P, C>
   static of<I extends ReplayMediatorUnion> (atom: I, options?: ReplayMediatorOptions): I
-  static of<I extends Data<any> | Mutation<any, any> | ReplayMediatorUnion> (
+  static of<I extends DataLike<any> | MutationLike<any, any> | ReplayMediatorUnion> (
     atom: I, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS
   ): ReplayMediatorUnion {
     if (!isAtomLike(atom)) {
       throw (new TypeError('"atom" is expected to be a general Atom or a ReplayMediatorUnion.'))
-    }
-    if (isMediator(atom) && !isReplayMediator(atom)) {
-      // throw (new TypeError('"atom" is expected to be a general Atom or a ReplayMediatorUnion.'))
-      console.warn('"atom" is expected to be a general Atom or a ReplayMediatorUnion.')
     }
     if (isReplayMediator(atom)) {
       return atom
@@ -360,15 +347,19 @@ export class ReplayMediator {
 }
 
 interface IReplayLatestPartial {
-  <V = any>(atom: Data<V>): ReplayDataMediator<V>
-  <P = any, C = any>(atom: Mutation<P, C>): ReplayMutationMediator<P, C>
+  <V = any>(atom: DataLike<V>): ReplayDataMediator<V>
+  <P = any, C = any>(atom: MutationLike<P, C>): ReplayMutationMediator<P, C>
   <I extends ReplayMediatorUnion>(atom: I): I
+  // catch all overload, used in `pipe` or `compose` or likewise situations.
+  <V = any> (atom: AtomLikeOfOutput<V>): AtomLikeOfOutput<V>
 }
 interface IReplayLatest {
   (replayTime: number): IReplayLatestPartial
-  <V = any>(replayTime: number, atom: Data<V>): ReplayDataMediator<V>
-  <P = any, C = any>(replayTime: number, atom: Mutation<P, C>): ReplayMutationMediator<P, C>
+  <V = any>(replayTime: number, atom: DataLike<V>): ReplayDataMediator<V>
+  <P = any, C = any>(replayTime: number, atom: MutationLike<P, C>): ReplayMutationMediator<P, C>
   <I extends ReplayMediatorUnion> (replayTime: number, atom: I): I
+  // catch all overload, used in `pipe` or `compose` or likewise situations.
+  <V = any>(replayTime: number, atom: AtomLikeOfOutput<V>): AtomLikeOfOutput<V>
 }
 /**
  * Make a replay mediator with specified replayTime but without autoTrigger.
