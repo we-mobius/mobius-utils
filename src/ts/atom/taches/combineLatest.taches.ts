@@ -6,12 +6,16 @@ import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
 import type { Vacuo, Terminator } from '../metas'
 import type { AtomLikeOfOutput } from '../atoms'
+import type { IsTuple } from '../../@types/index'
 
 type StringRecord<V> = Record<string, V>
 
 interface ICombineLatestT {
   <V extends Array<AtomLikeOfOutput<any>>>(
-    ...sources: V | [V]
+    ...sources: [[...V]]
+  ): Data<ExtractAtomValueInArray<V>>
+  <V extends Array<AtomLikeOfOutput<any>>>(
+    ...sources: [...V]
   ): Data<ExtractAtomValueInArray<V>>
   <V extends StringRecord<AtomLikeOfOutput<any>>>(
     sources: V
@@ -31,10 +35,6 @@ export const combineLatestT: ICombineLatestT = (...sources: any[]): any => {
   }
 }
 
-type IsTuple<T> =
-  T extends readonly any[] ?
-    number extends T['length'] ? false : true
-    : false
 type ExtractAtomValueInArray<V> = IsTuple<V> extends false ? (
   V extends Array<infer I> ? I extends AtomLikeOfOutput<any> ? I['meta'] : V : V
 ) :
@@ -49,11 +49,19 @@ type ExtractAtomValueInArray<V> = IsTuple<V> extends false ? (
           : V
       )
 
+export interface IArrayCombineLatestT {
+  <V extends Array<AtomLikeOfOutput<any>>>(
+    ...sources: [[...V]]
+  ): Data<ExtractAtomValueInArray<V>>
+  <V extends Array<AtomLikeOfOutput<any>>>(
+    ...sources: [...V]
+  ): Data<ExtractAtomValueInArray<V>>
+}
 /**
  * @see {@link combineLatestT}
  */
-export const arrayCombineLatestT = <V extends Array<AtomLikeOfOutput<any>>>(
-  ...sources: V | [V]
+export const arrayCombineLatestT: IArrayCombineLatestT = <V extends Array<AtomLikeOfOutput<any>>>(
+  ...sources: [...V] | [[...V]]
 ): Data<ExtractAtomValueInArray<V>> => {
   let preparedSources: Array<AtomLikeOfOutput<any>> = []
 
