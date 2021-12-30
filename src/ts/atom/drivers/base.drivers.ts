@@ -6,8 +6,7 @@ import { binaryTweenPipeAtom } from '../helpers'
 
 import type { AtomLike, Mutation, AtomLikeOfOutput, AtomLikeOfInput } from '../atoms'
 import type { ReplayDataMediator, ReplayMutationMediator } from '../mediators'
-
-type AnyStringRecord = Record<string, any>
+import type { AnyStringRecord } from '../../@types/index'
 
 /************************************************************************************************
  *
@@ -224,8 +223,15 @@ export const connectDriverInterfaces: IConnectDriverInterfaces = (up: any, down:
   }
 }
 
-type ConnectedInputs<Target> = {
+type ConnectedInputsRecord<Target> = {
   [K in keyof Target]+?: Target[K] extends AtomLikeOfOutput<infer V> ? V | AtomLikeOfOutput<V> : never
+}
+type ConnectedInputs<Target> = {
+  [K in keyof Target]+?: Target[K] extends AtomLikeOfOutput<infer V> ? (
+    V | AtomLikeOfOutput<V>
+  ) : Target[K] extends AnyStringRecord | undefined ? (
+    ConnectedInputsRecord<NonNullable<Target[K]>>
+  ) : (Target[K] | AtomLikeOfOutput<Target[K]>)
 }
 type ConnectedOutputs<Target> = {
   [K in keyof Target]+?: Target[K] extends AtomLikeOfOutput<infer V> ? AtomLikeOfInput<V> : never
