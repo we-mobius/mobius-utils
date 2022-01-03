@@ -28,16 +28,19 @@ export const tweenAtom = (upstreamAtom: AtomLike, downstreamAtom: AtomLike): Ato
     } else {
       throw (new TypeError('Unexpected type of Atom detected!'))
     }
+
     return [upstreamAtom, tweenAtom, downstreamAtom]
   }
 }
 
-export const tweenAtoms = <T extends AtomLike[]>(...args: T | [T]): T => {
+export function tweenAtoms <T extends AtomLike[]> (atoms: [...T]): AtomLike[]
+export function tweenAtoms <T extends AtomLike[]> (...atoms: [...T]): AtomLike[]
+export function tweenAtoms <T extends AtomLike[]> (...atoms: [[...T]] | [...T]): AtomLike[] {
   let _atoms: AtomLike[]
-  if (args.length === 1 && isArray<AtomLike>(args[0])) {
-    _atoms = args[0]
+  if (atoms.length === 1 && isArray<AtomLike>(atoms[0])) {
+    _atoms = atoms[0]
   } else {
-    _atoms = args as AtomLike[]
+    _atoms = atoms as AtomLike[]
   }
 
   const tweenedAtoms = _atoms.reduce((acc, cur, idx, arr) => {
@@ -48,7 +51,7 @@ export const tweenAtoms = <T extends AtomLike[]>(...args: T | [T]): T => {
     return acc
   }, [_atoms[0]])
 
-  return tweenedAtoms as T
+  return tweenedAtoms
 }
 
 /**
@@ -64,19 +67,22 @@ export const tweenAtoms = <T extends AtomLike[]>(...args: T | [T]): T => {
  * @param downstreamAtom Atom, i.e. Data | Mutation
  * @return downstreamAtom
  */
-export const binaryTweenPipeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
+export function binaryTweenPipeAtom <T extends AtomLike[]> (atoms: [...T]): AtomLike[]
+export function binaryTweenPipeAtom <T extends AtomLike[]> (...atoms: [...T]): AtomLike[]
+export function binaryTweenPipeAtom <T extends AtomLike[]> (...atoms: [[...T]] | [...T]): AtomLike[] {
   let _atoms: AtomLike[]
-  if (args.length === 1 && isArray<AtomLike>(args[0])) {
-    _atoms = args[0]
+  if (atoms.length === 1 && isArray<AtomLike>(atoms[0])) {
+    _atoms = atoms[0]
   } else {
-    _atoms = args as AtomLike[]
+    _atoms = atoms as AtomLike[]
   }
 
   // 只取前两项
   const [upstreamAtom, downstreamAtom] = _atoms.slice(0, 2)
   const tweenedAtoms = tweenAtom(upstreamAtom, downstreamAtom)
   pipeAtom(...tweenedAtoms)
-  return tweenedAtoms as T
+
+  return tweenedAtoms
 }
 
 /**
@@ -92,51 +98,59 @@ export const binaryTweenPipeAtom = <T extends AtomLike[]>(...args: T | [T]): T =
  * @param upstreamAtom Atom, i.e. Data | Mutation
  * @return downstreamAtom
  */
-export const binaryTweenComposeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
+export function binaryTweenComposeAtom <T extends AtomLike[]> (atoms: [...T]): AtomLike[]
+export function binaryTweenComposeAtom <T extends AtomLike[]> (...atoms: [...T]): AtomLike[]
+export function binaryTweenComposeAtom <T extends AtomLike[]> (...atoms: [[...T]] | [...T]): AtomLike[] {
   let _atoms: AtomLike[]
-  if (args.length === 1 && isArray<AtomLike>(args[0])) {
-    _atoms = args[0]
+  if (atoms.length === 1 && isArray<AtomLike>(atoms[0])) {
+    _atoms = atoms[0]
   } else {
-    _atoms = args as AtomLike[]
+    _atoms = atoms as AtomLike[]
   }
 
   // 只取最后两项
   const [downstreamAtom, upstreamAtom] = _atoms.slice(-2)
   const tweenedAtoms = tweenAtom(downstreamAtom, upstreamAtom)
   composeAtom(...tweenedAtoms)
-  return tweenedAtoms as T
+
+  return tweenedAtoms
 }
 
 /**
  * 将 n 个 Atom 顺序进行补间连接
  */
-export const nAryTweenPipeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
+export function nAryTweenPipeAtom <T extends AtomLike[]> (atoms: [...T]): AtomLike[]
+export function nAryTweenPipeAtom <T extends AtomLike[]> (...atoms: [...T]): AtomLike[]
+export function nAryTweenPipeAtom <T extends AtomLike[]> (...atoms: [[...T]] | [...T]): AtomLike[] {
   let _atoms: AtomLike[]
-  if (args.length === 1 && isArray<AtomLike>(args[0])) {
-    _atoms = args[0]
+  if (atoms.length === 1 && isArray<AtomLike>(atoms[0])) {
+    _atoms = atoms[0]
   } else {
-    _atoms = args as AtomLike[]
+    _atoms = atoms as AtomLike[]
   }
 
   const tweenedAtoms = tweenAtoms(..._atoms)
   pipeAtom(...tweenedAtoms)
-  return tweenedAtoms as T
+
+  return tweenedAtoms
 }
 export const tweenPipeAtom = nAryTweenPipeAtom
 
 /**
  * 将 n 个 Atom 逆序进行补间连接
  */
-export const nAryTweenComposeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
+export function nAryTweenComposeAtom <T extends AtomLike[]> (atoms: [...T]): AtomLike[]
+export function nAryTweenComposeAtom <T extends AtomLike[]> (...atoms: [...T]): AtomLike[]
+export function nAryTweenComposeAtom <T extends AtomLike[]> (...atoms: [[...T]] | [...T]): AtomLike[] {
   let _atoms: AtomLike[]
-  if (args.length === 1 && isArray<AtomLike>(args[0])) {
-    _atoms = args[0]
+  if (atoms.length === 1 && isArray<AtomLike>(atoms[0])) {
+    _atoms = atoms[0]
   } else {
-    _atoms = args as AtomLike[]
+    _atoms = atoms as AtomLike[]
   }
 
   const tweenedAtoms = tweenAtoms(..._atoms)
   composeAtom(...tweenedAtoms)
-  return tweenedAtoms as T
+  return tweenedAtoms
 }
 export const tweenComposeAtom = nAryTweenComposeAtom

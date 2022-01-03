@@ -4,13 +4,17 @@ import type { AtomLike } from '../atoms'
 
 /**
  * Recursively pipe atoms.
+ *
+ * @see {@link composeAtom}
  */
-export const pipeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
+export function pipeAtom <T extends AtomLike[]> (atoms: [...T]): T
+export function pipeAtom <T extends AtomLike[]> (...atoms: [...T]): T
+export function pipeAtom <T extends AtomLike[]> (...atoms: [[...T]] | [...T]): T {
   let _atoms: AtomLike[]
-  if (args.length === 1 && isArray<AtomLike>(args[0])) {
-    _atoms = args[0]
+  if (atoms.length === 1 && isArray<AtomLike>(atoms[0])) {
+    _atoms = atoms[0]
   } else {
-    _atoms = args as AtomLike[]
+    _atoms = atoms as AtomLike[]
   }
 
   _atoms.reverse().forEach((atom, index, all) => {
@@ -24,13 +28,17 @@ export const pipeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
 
 /**
  * Recursively compose atoms.
+ *
+ * @see {@link pipeAtom}
  */
-export const composeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
+export function composeAtom <T extends AtomLike[]> (atoms: [...T]): T
+export function composeAtom <T extends AtomLike[]> (...atoms: [...T]): T
+export function composeAtom <T extends AtomLike[]> (...atoms: [[...T]] | [...T]): T {
   let _atoms: AtomLike[]
-  if (args.length === 1 && isArray<AtomLike>(args[0])) {
-    _atoms = args[0]
+  if (atoms.length === 1 && isArray<AtomLike>(atoms[0])) {
+    _atoms = atoms[0]
   } else {
-    _atoms = args as AtomLike[]
+    _atoms = atoms as AtomLike[]
   }
 
   _atoms.forEach((atom, index, all) => {
@@ -38,5 +46,6 @@ export const composeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
       atom.beObservedBy(all[index - 1])
     }
   })
+
   return _atoms as T
 }

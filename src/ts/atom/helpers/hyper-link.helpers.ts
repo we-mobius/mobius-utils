@@ -5,62 +5,74 @@ import { liftAtom } from './lift-link.helpers'
 
 import type { AtomLike } from '../atoms'
 
-export const binaryHyperPipeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
-  let _atoms: AtomLike[]
-  if (args.length === 1 && isArray<AtomLike>(args[0])) {
-    _atoms = args[0]
+export function binaryHyperPipeAtom <T extends any[]> (targets: [...T]): AtomLike[]
+export function binaryHyperPipeAtom <T extends any[]> (...targets: [...T]): AtomLike[]
+export function binaryHyperPipeAtom <T extends any[]> (...targets: [[...T]] | [...T]): AtomLike[] {
+  let _targets: any[]
+  if (targets.length === 1 && isArray(targets[0])) {
+    _targets = targets[0]
   } else {
-    _atoms = args as AtomLike[]
+    _targets = targets
   }
 
   // 只取前两项
-  let atoms = _atoms.slice(0, 2).map<AtomLike>(liftAtom)
+  let atoms: AtomLike[] = _targets.slice(0, 2).map(liftAtom)
   atoms = tweenAtoms(atoms)
   pipeAtom(atoms)
-  return atoms as T
+
+  return atoms
 }
 
-export const binaryHyperComposeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
-  let _atoms: AtomLike[]
-  if (args.length === 1 && isArray<AtomLike>(args[0])) {
-    _atoms = args[0]
+export function binaryHyperComposeAtom <T extends any[]> (targets: [...T]): AtomLike[]
+export function binaryHyperComposeAtom <T extends any[]> (...targets: [...T]): AtomLike[]
+export function binaryHyperComposeAtom <T extends any[]> (...targets: [[...T]] | [...T]): AtomLike[] {
+  let _targets: any[]
+  if (targets.length === 1 && isArray(targets[0])) {
+    _targets = targets[0]
   } else {
-    _atoms = args as AtomLike[]
+    _targets = targets
   }
 
   // 只取最后两项
-  let atoms = _atoms.slice(-2).map<AtomLike>(liftAtom)
+  let atoms: AtomLike[] = _targets.slice(-2).map(liftAtom)
   atoms = tweenAtoms(atoms)
   composeAtom(atoms)
+
   return atoms as T
 }
 
-export const nAryHyperPipeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
-  let _atoms: AtomLike[]
-  if (args.length === 1 && isArray<AtomLike>(args[0])) {
-    _atoms = args[0]
+export function nAryHyperPipeAtom <T extends any[]> (targets: [...T]): AtomLike[]
+export function nAryHyperPipeAtom <T extends any[]> (...targets: [...T]): AtomLike[]
+export function nAryHyperPipeAtom <T extends any[]> (...targets: [[...T]] | [...T]): AtomLike[] {
+  let _targets: any[]
+  if (targets.length === 1 && isArray(targets[0])) {
+    _targets = targets[0]
   } else {
-    _atoms = args as AtomLike[]
+    _targets = targets
   }
 
-  let atoms = _atoms.map<AtomLike>(liftAtom)
+  let atoms: AtomLike[] = _targets.map(liftAtom)
   atoms = tweenAtoms(atoms)
   pipeAtom(atoms)
-  return atoms as T
+
+  return atoms
 }
 export const hyperPipeAtom = nAryHyperPipeAtom
 
-export const nAryHyperComposeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
-  let _atoms: AtomLike[]
-  if (args.length === 1 && isArray<AtomLike>(args[0])) {
-    _atoms = args[0]
+export function nAryHyperComposeAtom <T extends any[]> (targets: [...T]): AtomLike[]
+export function nAryHyperComposeAtom <T extends any[]> (...targets: [...T]): AtomLike[]
+export function nAryHyperComposeAtom <T extends any[]> (...targets: [[...T]] | [...T]): AtomLike[] {
+  let _targets: any[]
+  if (targets.length === 1 && isArray(targets[0])) {
+    _targets = targets[0]
   } else {
-    _atoms = args as AtomLike[]
+    _targets = targets
   }
 
-  let atoms = _atoms.map<AtomLike>(liftAtom)
+  let atoms: AtomLike[] = _targets.map(liftAtom)
   atoms = tweenAtoms(atoms)
   composeAtom(atoms)
-  return atoms as T
+
+  return atoms
 }
 export const hyperComposeAtom = nAryHyperComposeAtom

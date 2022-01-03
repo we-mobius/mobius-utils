@@ -6,14 +6,11 @@ import { pipeAtom, composeAtom } from './normal-link.helpers'
 import type { Mutator } from '../particles'
 import type { AtomLike } from '../atoms'
 
-interface ILiftAtom {
-  <A extends AtomLike>(target: A): A
-  <A, B>(target: Mutator<A, B>): Mutation<A, B>
-  <R>(target: (...args: any[]) => R): Mutation<any, R>
-  <A>(target: A): A
-}
-
-export const liftAtom: ILiftAtom = (target: any): any => {
+export function liftAtom <A extends AtomLike> (target: A): A
+export function liftAtom <A, B> (target: Mutator<A, B>): Mutation<A, B>
+export function liftAtom <R> (target: (...args: any[]) => R): Mutation<any, R>
+export function liftAtom <A> (target: A): Data<A>
+export function liftAtom (target: any): any {
   if (isAtomLike(target)) {
     return target
   } else if (isMutator(target)) {
@@ -25,59 +22,70 @@ export const liftAtom: ILiftAtom = (target: any): any => {
   }
 }
 
-export const binaryLiftPipeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
-  let _atoms: AtomLike[]
-  if (args.length === 1 && isArray<AtomLike>(args[0])) {
-    _atoms = args[0]
+export function binaryLiftPipeAtom <T extends any[]> (targets: [...T]): AtomLike[]
+export function binaryLiftPipeAtom <T extends any[]> (...targets: [...T]): AtomLike[]
+export function binaryLiftPipeAtom <T extends any[]> (...targets: [[...T]] | [...T]): AtomLike[] {
+  let _targets: any[]
+  if (targets.length === 1 && isArray(targets[0])) {
+    _targets = targets[0]
   } else {
-    _atoms = args as AtomLike[]
+    _targets = targets
   }
 
   // 只取前两项
-  const liftedAtoms = _atoms.slice(0, 2).map<AtomLike>(liftAtom)
+  const liftedAtoms = _targets.slice(0, 2).map(liftAtom)
   pipeAtom(...liftedAtoms)
 
-  return liftedAtoms as T
+  return liftedAtoms
 }
 
-export const binaryLiftComposeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
-  let _atoms: AtomLike[]
-  if (args.length === 1 && isArray<AtomLike>(args[0])) {
-    _atoms = args[0]
+export function binaryLiftComposeAtom <T extends any[]> (targets: [...T]): AtomLike[]
+export function binaryLiftComposeAtom <T extends any[]> (...targets: [...T]): AtomLike[]
+export function binaryLiftComposeAtom <T extends any[]> (...targets: [[...T]] | [...T]): AtomLike[] {
+  let _targets: any[]
+  if (targets.length === 1 && isArray(targets[0])) {
+    _targets = targets[0]
   } else {
-    _atoms = args as AtomLike[]
+    _targets = targets
   }
 
   // 只取最后两项
-  const liftedAtoms = _atoms.slice(-2).map<AtomLike>(liftAtom)
+  const liftedAtoms = _targets.slice(-2).map(liftAtom)
   composeAtom(...liftedAtoms)
-  return liftedAtoms as T
+
+  return liftedAtoms
 }
 
-export const nAryLiftPipeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
-  let _atoms: AtomLike[]
-  if (args.length === 1 && isArray<AtomLike>(args[0])) {
-    _atoms = args[0]
+export function nAryLiftPipeAtom <T extends any[]> (targets: [...T]): AtomLike[]
+export function nAryLiftPipeAtom <T extends any[]> (...targets: [...T]): AtomLike[]
+export function nAryLiftPipeAtom <T extends any[]> (...targets: [[...T]] | [...T]): AtomLike[] {
+  let _targets: any[]
+  if (targets.length === 1 && isArray(targets[0])) {
+    _targets = targets[0]
   } else {
-    _atoms = args as AtomLike[]
+    _targets = targets
   }
 
-  const liftedAtoms = _atoms.map<AtomLike>(liftAtom)
+  const liftedAtoms = _targets.map(liftAtom)
   pipeAtom(...liftedAtoms)
-  return liftedAtoms as T
+
+  return liftedAtoms
 }
 export const liftPipeAtom = nAryLiftPipeAtom
 
-export const nAryLiftComposeAtom = <T extends AtomLike[]>(...args: T | [T]): T => {
-  let _atoms: AtomLike[]
-  if (args.length === 1 && isArray<AtomLike>(args[0])) {
-    _atoms = args[0]
+export function nAryLiftComposeAtom <T extends any[]> (targets: [...T]): AtomLike[]
+export function nAryLiftComposeAtom <T extends any[]> (...targets: [...T]): AtomLike[]
+export function nAryLiftComposeAtom <T extends any[]> (...targets: [[...T]] | [...T]): AtomLike[] {
+  let _targets: any[]
+  if (targets.length === 1 && isArray(targets[0])) {
+    _targets = targets[0]
   } else {
-    _atoms = args as AtomLike[]
+    _targets = targets
   }
 
-  const liftedAtoms = _atoms.map<AtomLike>(liftAtom)
+  const liftedAtoms = _targets.map(liftAtom)
   composeAtom(liftedAtoms)
-  return liftedAtoms as T
+
+  return liftedAtoms
 }
 export const liftComposeAtom = nAryLiftComposeAtom
