@@ -73,7 +73,7 @@ export class WXRequestEngine<
   get environment (): BiuRequestSupportEnvironments { return 'wxmina' }
   sendRequest (): this {
     const { wxmina } = WXMINA_ENV_CONTEXTS
-    const { dataParser, dataType: originDataType } = this._options
+    const { dataParser, dataType: originalDataType } = this._options
     const preparedOptions = prepareWXRequestOptions(this._options)
 
     // use validated "dataType"
@@ -96,13 +96,13 @@ export class WXRequestEngine<
         if (responseType === 'text' && dataType === 'json') {
           return data
         } else if (responseType === 'text' && dataType === '其他') {
-          if (originDataType === 'json' || originDataType === 'custom') {
+          if (originalDataType === 'json' || originalDataType === 'custom') {
             return dataParser(data)
           } else {
             return data
           }
         } else if (responseType === 'arraybuffer') {
-          if (originDataType === 'custom') {
+          if (originalDataType === 'custom') {
             return dataParser(data)
           } else {
             return data

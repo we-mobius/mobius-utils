@@ -52,14 +52,14 @@ export interface MutationOptions<P = any, C = any, Contexts extends any[] = any[
   lift?: TransformationLiftOptions
   mutator?: MutatorOptions
   isLifted?: boolean
-  originTransformation?: null | MutatorOriginTransformationUnion<P, C, Contexts>
+  originalTransformation?: null | MutatorOriginTransformationUnion<P, C, Contexts>
 }
 export const DEFAULT_MUTATION_OPTIONS: Required<MutationOptions<any, any, any[]>> = {
   ...DEFAULT_BASEATOM_OPTIONS,
   lift: DEFAULT_TRANSFORMATION_LIFT_OPTIONS,
   mutator: DEFAULT_MUTATOR_OPTIONS,
   isLifted: false,
-  originTransformation: null
+  originalTransformation: null
 }
 
 export type MutatorConsumer<P = any, C = any> =
@@ -153,7 +153,7 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   ): Mutation<P, C> {
     return new Mutation(
       Mutator.ofLift(transformation, options.lift),
-      { ...options, isLifted: true, originTransformation: transformation }
+      { ...options, isLifted: true, originalTransformation: transformation }
     )
   }
 
@@ -162,7 +162,7 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   ): Mutation<P, C> {
     return new Mutation(
       Mutator.ofLiftBoth(transformation),
-      { ...options, isLifted: true, originTransformation: transformation }
+      { ...options, isLifted: true, originalTransformation: transformation }
     )
   }
 
@@ -171,7 +171,7 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   ): Mutation<P, C> {
     return new Mutation(
       Mutator.ofLiftLeft(transformation),
-      { ...options, isLifted: true, originTransformation: transformation }
+      { ...options, isLifted: true, originalTransformation: transformation }
     )
   }
 
@@ -180,7 +180,7 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   ): Mutation<P, C> {
     return new Mutation(
       Mutator.ofLiftRight(transformation),
-      { ...options, isLifted: true, originTransformation: transformation }
+      { ...options, isLifted: true, originalTransformation: transformation }
     )
   }
 
@@ -192,15 +192,15 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   /**
    * Transformation of Mutator of Mutation.
    *
-   * If the transformation is lifted, the origin transformation will
+   * If the transformation is lifted, the original transformation will
    *   be returned as first choice instead of lifted transformation.
    */
   get transformation (): Mutator<P, C>['transformation'] {
     return this._mutator.transformation
   }
 
-  get originTransformation (): MutatorOriginTransformationUnion<P, C> | null {
-    return this._options.originTransformation
+  get originalTransformation (): MutatorOriginTransformationUnion<P, C> | null {
+    return this._options.originalTransformation
   }
 
   /**

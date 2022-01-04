@@ -54,7 +54,7 @@ type FlatMediatorUnion
  *
  */
 export class FlatDataMediator<V = any> extends DataMediator<V> {
-  private readonly _originAtom: Data<V>
+  private readonly _originalAtom: Data<V>
   private _connection: { unsubscribe: () => void } | null
   private _subscription: Subscription | null
   private readonly _options: Required<FlatMediatorOptions>
@@ -67,7 +67,7 @@ export class FlatDataMediator<V = any> extends DataMediator<V> {
 
     this._options = { ...DEFAULT_FLAT_MEDIATOR_OPTIONS, ...options }
 
-    this._originAtom = atom
+    this._originalAtom = atom
     this._connection = null
     this._subscription = null
 
@@ -101,7 +101,7 @@ export class FlatDataMediator<V = any> extends DataMediator<V> {
   }
 
   connect (): void {
-    this._subscription = this._originAtom.subscribe(({ value }: Datar<V>) => {
+    this._subscription = this._originalAtom.subscribe(({ value }: Datar<V>) => {
       // If there is a exist connection, disconnect it.
       this.disconnect()
       if (isData(value)) {
@@ -150,7 +150,7 @@ export class FlatDataMediator<V = any> extends DataMediator<V> {
  *
  */
 export class FlatMutationMediator<P = any, C = any> extends MutationMediator<P, C> {
-  private readonly _originAtom: Mutation<P, C>
+  private readonly _originalAtom: Mutation<P, C>
   private _connection: { unsubscribe: () => void } | null
   private _subscription: Subscription | null
   private readonly _options: FlatMediatorOptions
@@ -163,7 +163,7 @@ export class FlatMutationMediator<P = any, C = any> extends MutationMediator<P, 
 
     this._options = { ...DEFAULT_FLAT_MEDIATOR_OPTIONS, ...options }
 
-    this._originAtom = atom
+    this._originalAtom = atom
     this._connection = null
     this._subscription = null
 
@@ -203,7 +203,7 @@ export class FlatMutationMediator<P = any, C = any> extends MutationMediator<P, 
       if (isData(value)) {
         // Mutation -> tempData -> extract value(Data) -> newMutation(this._atom)
         const subscription2 = this._atom.observe(value)
-        const subscription1 = tempData.observe(this._originAtom)
+        const subscription1 = tempData.observe(this._originalAtom)
         this._connection = {
           unsubscribe: () => {
             subscription1.unsubscribe()
@@ -215,7 +215,7 @@ export class FlatMutationMediator<P = any, C = any> extends MutationMediator<P, 
         const tempData2 = Data.empty<P>()
         const subscription3 = this._atom.observe(tempData2)
         const subscription2 = tempData2.observe(value)
-        const subscription1 = tempData.observe(this._originAtom)
+        const subscription1 = tempData.observe(this._originalAtom)
         this._connection = {
           unsubscribe: () => {
             subscription1.unsubscribe()
