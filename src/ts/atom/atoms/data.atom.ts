@@ -135,11 +135,12 @@ export class Data<V = any> extends BaseAtom implements AtomLike {
    * @param consumer The consumer will be invoked by "trigger" method when there is a adequate value.
    * @param options
    * @param [options.isExtracted = false] Whether to extract the value from the datar before it be passed to consumer.
-   * @return { DataSubscription<V> } DataSubscription<V>
    */
-  // TODO: how can i narrow consumer's type by `options.isExtracted`?
-  // subscribe (consumer: DatarConsumer<V>, options?: { isExtracted: false }): DataSubscription<V>
-  // subscribe (consumer: ValueConsumer<V>, options?: { isExtracted: true }): DataSubscription<V>
+  subscribe (consumer: DatarConsumer<V>): DataSubscription<V>
+  subscribe (consumer: DatarConsumer<V>, options: SubscribeOptions & { isExtracted: false }): DataSubscription<V>
+  subscribe (consumer: ValueConsumer<V>, options: SubscribeOptions & { isExtracted: true }): DataSubscription<V>
+  // NOTE: catch all overload
+  subscribe (consumer: DataConsumer<V>, options?: SubscribeOptions): DataSubscription<V>
   subscribe (consumer: DataConsumer<V>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS): DataSubscription<V> {
     const { isExtracted } = { ...DEFAULT_SUBSCRIBE_OPTIONS, ...options }
     let proxyConsumer: DatarConsumer<V>

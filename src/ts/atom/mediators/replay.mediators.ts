@@ -147,6 +147,11 @@ export class ReplayDataMediator<V = any> extends DataMediator<V> {
     })
   }
 
+  subscribe (consumer: DatarConsumer<V>): DataSubscription<V>
+  subscribe (consumer: DatarConsumer<V>, options: SubscribeOptions & { isExtracted: false }): DataSubscription<V>
+  subscribe (consumer: ValueConsumer<V>, options: SubscribeOptions & { isExtracted: true }): DataSubscription<V>
+  // NOTE: catch all overload
+  subscribe (consumer: DataConsumer<V>, options?: SubscribeOptions): DataSubscription<V>
   subscribe (
     consumer: DataConsumer<V>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS
   ): DataSubscription<V> {
@@ -271,6 +276,11 @@ export class ReplayMutationMediator<P = any, C = any> extends MutationMediator<P
     })
   }
 
+  subscribe (consumer: MutatorConsumer<P, C>): MutationSubscription<P, C>
+  subscribe (consumer: MutatorConsumer<P, C>, options: SubscribeOptions & { isExtracted: false }): MutationSubscription<P, C>
+  subscribe (consumer: TransformationConsumer<P, C>, options: SubscribeOptions & { isExtracted: true }): MutationSubscription<P, C>
+  // NOTE: catch all overload
+  subscribe (consumer: MutationConsumer<P, C>, options?: SubscribeOptions): MutationSubscription<P, C>
   subscribe (
     consumer: MutationConsumer<P, C>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS
   ): MutationSubscription<P, C> {

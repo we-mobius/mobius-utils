@@ -13,8 +13,8 @@ import type { Datar, Mutator, MutatorTransformation } from '../particles'
 import type {
   Trigger, AtomTriggerRegisterOptions, TriggerController,
   AtomLike, BaseAtom, Data, Mutation, SubscribeOptions,
-  ValueConsumer, DataConsumer, DataSubscription,
-  TransformationConsumer, MutationConsumer, MutationSubscription
+  ValueConsumer, DatarConsumer, DataConsumer, DataSubscription,
+  TransformationConsumer, MutatorConsumer, MutationConsumer, MutationSubscription
 } from '../atoms'
 
 /******************************************************************************************************
@@ -183,6 +183,11 @@ export abstract class DataMediator<V = any> extends BaseMediator<Data<V>> implem
     return this._atom.value
   }
 
+  subscribe (consumer: DatarConsumer<V>): DataSubscription<V>
+  subscribe (consumer: DatarConsumer<V>, options: SubscribeOptions & { isExtracted: false }): DataSubscription<V>
+  subscribe (consumer: ValueConsumer<V>, options: SubscribeOptions & { isExtracted: true }): DataSubscription<V>
+  // NOTE: catch all overload
+  subscribe (consumer: DataConsumer<V>, options?: SubscribeOptions): DataSubscription<V>
   subscribe (
     consumer: DataConsumer<V>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS
   ): DataSubscription<V> {
@@ -248,6 +253,11 @@ export abstract class MutationMediator<P = any, C = any> extends BaseMediator<Mu
     return this._atom.transformation
   }
 
+  subscribe (consumer: MutatorConsumer<P, C>): MutationSubscription<P, C>
+  subscribe (consumer: MutatorConsumer<P, C>, options: SubscribeOptions & { isExtracted: false }): MutationSubscription<P, C>
+  subscribe (consumer: TransformationConsumer<P, C>, options: SubscribeOptions & { isExtracted: true }): MutationSubscription<P, C>
+  // NOTE: catch all overload
+  subscribe (consumer: MutationConsumer<P, C>, options?: SubscribeOptions): MutationSubscription<P, C>
   subscribe (
     consumer: MutationConsumer<P, C>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS
   ): MutationSubscription<P, C> {

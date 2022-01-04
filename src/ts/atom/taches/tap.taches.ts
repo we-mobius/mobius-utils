@@ -1,7 +1,7 @@
 import { isPlainObject, isString } from '../../internal/base'
 import { curryN } from '../../functional'
 
-import type { AtomLikeOfOutput } from '../atoms'
+import type { AtomLikeOfOutput, Data } from '../atoms'
 
 /**
  * Do something with the target, then pass target through.
@@ -33,7 +33,7 @@ type Level = keyof typeof levelDict
 /**
  * @see {@link tapT}
  */
-export const tapValueT = <V extends AtomLikeOfOutput<any>>(
+export const tapValueT = <V extends Data<any>>(
   name: string | { name?: string, level: Level },
   target: V
 ): V => {
@@ -58,7 +58,7 @@ export const tapValueT = <V extends AtomLikeOfOutput<any>>(
       warn: '#CF8030', // orange
       error: '#CF3030' // red
     }
-    target.subscribe(({ value }: any) => {
+    target.subscribe(({ value }) => {
       let stringified = ''
       try {
         stringified = JSON.stringify(value)
@@ -76,8 +76,8 @@ export const tapValueT = <V extends AtomLikeOfOutput<any>>(
   }, target)
 }
 interface ITapValueT_ {
-  <V extends AtomLikeOfOutput<any>>(name: string | { name?: string, level: Level }, target: V): V
-  <V extends AtomLikeOfOutput<any>>(name: string | { name?: string, level: Level}): (target: V) => V
+  <V extends Data<any>>(name: string | { name?: string, level: Level }, target: V): V
+  <V extends Data<any>>(name: string | { name?: string, level: Level}): (target: V) => V
 }
 /**
  * @see {@link tapValueT}

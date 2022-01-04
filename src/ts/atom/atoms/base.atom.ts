@@ -8,7 +8,7 @@ import type { Data } from './data.atom'
 import type { Mutation } from './mutation.atom'
 import type { DataMediator, MutationMediator } from '../mediators'
 
-import type { First, Last } from '../../@types/index'
+import type { AnyFunction, CastAny, First, Last } from '../../@types/index'
 
 /******************************************************************************************************
  *
@@ -27,9 +27,6 @@ export enum AtomType {
  *
  ******************************************************************************************************/
 
-type AnyFunction = (...args: any[]) => any
-type CastAny<T> = T extends AnyFunction ? T : AnyFunction
-
 export interface AtomLike {
   isAtom: boolean
   subscribe: (consumer: (particle: any, atom?: any) => void, options?: any) => Subscription
@@ -43,6 +40,7 @@ export interface AtomLike {
 }
 export type DataLike<V = any> = Data<V> | DataMediator<V>
 export type MutationLike<P = any, C = any> = Mutation<P, C> | MutationMediator<P, C>
+
 /**
  * AtomLike that can take any as input and any as output.
  */
@@ -56,15 +54,15 @@ export type AtomLikeOfInput<I = any> = Data<I> | DataMediator<I> | Mutation<I, a
  */
 export type AtomLikeOfOutput<O = any> = Data<O> | DataMediator<O> | Mutation<any, O> | MutationMediator<any, O>
 
+export const isAtomLike = (tar: any): tar is AtomLike => isObject(tar) && tar.isAtom
+export const isDataLike = <V = any>(tar: any): tar is DataLike<V> => isObject(tar) && tar.isData
+export const isMutationLike = <P = any, C = any>(tar: any): tar is MutationLike<P, C> => isObject(tar) && tar.isMutation
+
 /**
  * @param tar anything
  * @return { boolean } whether the target is an Atom instance
  */
 export const isAtom = (tar: any): tar is BaseAtom => isObject(tar) && tar.isAtom
-
-export const isAtomLike = (tar: any): tar is AtomLike => isObject(tar) && tar.isAtom
-export const isDataLike = <V = any>(tar: any): tar is DataLike<V> => isObject(tar) && tar.isData
-export const isMutationLike = <P = any, C = any>(tar: any): tar is MutationLike<P, C> => isObject(tar) && tar.isMutation
 
 /******************************************************************************************************
  *

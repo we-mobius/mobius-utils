@@ -209,11 +209,12 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
    * @param consumer The consumer will be invoked by "trigger" method when there is a adequate value.
    * @param options
    * @param [options.isExtracted = false] Whether to extract the value from the datar before it be passed to consumer.
-   * @return { MutationSubscription<P, C> } MutationSubscription<P, C>
    */
-  // TODO: how can i narrow consumer's type by `options.isExtracted`?
-  // subscribe (consumer: MutatorConsumer<P, C>, options?: { isExtracted: false }): MutationSubscription<P, C>
-  // subscribe (consumer: TransformationConsumer<P, C>, options?: { isExtracted: true }): MutationSubscription<P, C>
+  subscribe (consumer: MutatorConsumer<P, C>): MutationSubscription<P, C>
+  subscribe (consumer: MutatorConsumer<P, C>, options: SubscribeOptions & { isExtracted: false }): MutationSubscription<P, C>
+  subscribe (consumer: TransformationConsumer<P, C>, options: SubscribeOptions & { isExtracted: true }): MutationSubscription<P, C>
+  // NOTE: catch all overload
+  subscribe (consumer: MutationConsumer<P, C>, options?: SubscribeOptions): MutationSubscription<P, C>
   subscribe (consumer: MutationConsumer<P, C>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS): MutationSubscription<P, C> {
     const { isExtracted } = { ...DEFAULT_SUBSCRIBE_OPTIONS, ...options }
     let proxyConsumer: MutatorConsumer<P, C>

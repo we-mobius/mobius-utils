@@ -1,4 +1,6 @@
 
+export type Cast<T, SafeT> = T extends SafeT ? T : SafeT
+
 /**
  * Predicate whether the target is `undefined`.
  */
