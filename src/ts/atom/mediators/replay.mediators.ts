@@ -1,4 +1,4 @@
-import { isObject, isNumber } from '../../internal/base'
+import { isUndefined, isObject, isNumber, isFunction } from '../../internal/base'
 import { curry } from '../../functional'
 
 import {
@@ -11,7 +11,7 @@ import {
 
 import type { Datar, Mutator } from '../particles'
 import type {
-  SubscribeOptions, DataLike, MutationLike, AtomLikeOfOutput,
+  SubscribeOptions, AtomLike, DataLike, MutationLike, AtomLikeOfOutput,
   ValueConsumer, DatarConsumer, DataConsumer, DataSubscription,
   TransformationConsumer, MutatorConsumer, MutationConsumer, MutationSubscription
 } from '../atoms'
@@ -172,9 +172,23 @@ export class ReplayDataMediator<V = any> extends DataMediator<V> {
     return subscription
   }
 
+  unsubscribe (target: DataConsumer<V> | DataSubscription<V> | AtomLike): boolean {
+    const subscription = (isFunction(target) || isAtomLike(target)) ? this._atom.getSubscription(target) : target
+    let unsubscribed = false
+    if (!isUndefined(subscription)) {
+      unsubscribed = this._consumers.delete(subscription.proxyConsumer) && this._atom.unsubscribe(subscription)
+    }
+    return unsubscribed
+  }
+
+  unsubscribeAll (): boolean {
+    this._consumers.clear()
+    return this._atom.unsubscribeAll()
+  }
+
   // !!! important
-  beObservedBy (mutation: Mutation<V, any>): DataSubscription<V> {
-    return mutation.observe(this as unknown as Data<any>)
+  beObservedBy (mutation: MutationLike<V, any>): DataSubscription<V> {
+    return mutation.observe(this as unknown as DataLike<any>)
   }
 
   release (): void {
@@ -301,9 +315,23 @@ export class ReplayMutationMediator<P = any, C = any> extends MutationMediator<P
     return subscription
   }
 
+  unsubscribe (target: MutationConsumer<P, C> | MutationSubscription<P, C> | AtomLike): boolean {
+    const subscription = (isFunction(target) || isAtomLike(target)) ? this._atom.getSubscription(target) : target
+    let unsubscribed = false
+    if (!isUndefined(subscription)) {
+      unsubscribed = this._consumers.delete(subscription.proxyConsumer) && this._atom.unsubscribe(subscription)
+    }
+    return unsubscribed
+  }
+
+  unsubscribeAll (): boolean {
+    this._consumers.clear()
+    return this._atom.unsubscribeAll()
+  }
+
   // !!! important
-  beObservedBy (data: Data<C>): MutationSubscription<P, C> {
-    return data.observe(this as unknown as Mutation<any, any>)
+  beObservedBy (data: DataLike<C>): MutationSubscription<P, C> {
+    return data.observe(this as unknown as MutationLike<any, any>)
   }
 
   release (): void {

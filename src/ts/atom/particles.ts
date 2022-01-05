@@ -4,7 +4,7 @@ import { Vain } from './vain'
 import { VACUO, isVacuo } from './metas'
 
 import type { Vacuo } from './metas'
-import type { Data, Mutation } from './atoms'
+import type { DataLike, MutationLike } from './atoms'
 
 /******************************************************************************************************
  *                                                Particles
@@ -203,9 +203,9 @@ export class Datar<V = any> extends Particle {
    *
    * @param mutator the mutator to be applied
    * @param args exists for the symmetry of Mutator.run
-   * @return { MutatorOfDatar<V>['transformation'] } transformation function of specified mutator
+   * @return transformation function of specified mutator
    */
-  run <M extends Mutator<V, any>>(mutator: M, data?: Data<V>, ...args: any[]): M['transformation'] {
+  run <M extends Mutator<V, any>>(mutator: M, data?: DataLike<V>, ...args: any[]): M['transformation'] {
     if (!isMutator(mutator)) {
       throw (new TypeError('"mutator" is expected to be type of "Mutator".'))
     }
@@ -237,7 +237,7 @@ export const DEFAULT_MUTATOR_OPTIONS: Required<MutatorOptions> = {
 }
 
 export type MutatorTransformation<P = any, C = any, Contexts extends any[] = any[]> =
-  (prev: Chaos | Datar<P>, cur: Datar<C>, mutation?: Mutation<P, C>, ...contexts: Contexts) => C
+  (prev: Chaos | Datar<P>, cur: Datar<C>, mutation?: MutationLike<P, C>, ...contexts: Contexts) => C
 type DatarOfMutator<V = any> = Datar<V> | Chaos
 
 /**
@@ -247,11 +247,11 @@ export const isValidDatarOfMutator = <V = any>(tar: any): tar is DatarOfMutator<
   isChaos(tar) || isDatar(tar)
 
 export type LiftBothTransformation<P = any, C = any, Contexts extends any[] = any[]> =
-  (prev: Vacuo | P, cur: C, mutation?: Mutation<P, C>, ...contexts: Contexts) => C
+  (prev: Vacuo | P, cur: C, mutation?: MutationLike<P, C>, ...contexts: Contexts) => C
 export type LiftLeftTransformation<P = any, C = any, Contexts extends any[] = any[]> =
-  (prev: Vacuo | P, cur: Datar<C>, mutation?: Mutation<P, C>, ...contexts: Contexts) => C
+  (prev: Vacuo | P, cur: Datar<C>, mutation?: MutationLike<P, C>, ...contexts: Contexts) => C
 export type LiftRightTransformation<P = any, C = any, Contexts extends any[] = any[]> =
-  (prev: Chaos | Datar<P>, cur: C, mutation?: Mutation<P, C>, ...contexts: Contexts) => C
+  (prev: Chaos | Datar<P>, cur: C, mutation?: MutationLike<P, C>, ...contexts: Contexts) => C
 export type MutatorOriginTransformationUnion<P = any, C = any, Contexts extends any[] = any[]>
   = MutatorTransformation<P, C, Contexts>
   | LiftBothTransformation<P, C, Contexts>
@@ -462,9 +462,9 @@ export class Mutator<P = any, C = any> extends Particle {
    *
    * @param datar the datar to be passed to the transformation as 2nd parameter
    * @param args the rest of the arguments (3rd and after) to be passed to the transformation
-   * @return { ReturnType<MT> } Return type of transformation
+   * @return Return type of transformation
    */
-  run (datar: Datar<C>, mutation?: Mutation<P, C>, ...args: any[]): ReturnType<MutatorTransformation<P, C>> {
+  run (datar: Datar<C>, mutation?: MutationLike<P, C>, ...args: any[]): C {
     if (!isDatar(datar)) {
       throw (new TypeError('"datar" is expected to be type of "Datar".'))
     }

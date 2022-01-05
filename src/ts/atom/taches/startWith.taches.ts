@@ -77,7 +77,7 @@ export const dynamicStartWithT = <V>(
       targetQueue: V[]
     } = { start: undefined, target: undefined, targetQueue: [] }
 
-    return (prev: Vacuo | WrappedStart | WrappedTarget | PrivateData, cur: any, mutation?: typeof startM): V | Terminator => {
+    return (prev, cur, mutation): V | Terminator => {
       if (isVacuo(prev)) return TERMINATOR
       if (isVacuo(prev.value)) return TERMINATOR
 

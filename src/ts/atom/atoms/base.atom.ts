@@ -8,7 +8,7 @@ import type { Data } from './data.atom'
 import type { Mutation } from './mutation.atom'
 import type { DataMediator, MutationMediator } from '../mediators'
 
-import type { AnyFunction, CastAny, First, Last } from '../../@types/index'
+import type { AnyFunction, AnyStringRecord, CastAny, First, Last, UndefinedableByKeys } from '../../@types/index'
 
 /******************************************************************************************************
  *
@@ -29,10 +29,24 @@ export enum AtomType {
 
 export interface AtomLike {
   isAtom: boolean
+  atomType: AtomType
+  particleName: string
+  metaName: string
+  particle: Particle
+  meta: any
+  options: AnyStringRecord
+  consumers: Set<AnyFunction>
   subscribe: (consumer: (particle: any, atom?: any) => void, options?: any) => Subscription
+  getSubscriptionByConsumer: (consumer: (particle: any, atom?: any) => void) => Subscription | undefined
+  getSubscriptionByHostAtom: (hostAtom: AtomLike) => Subscription | undefined
+  getSubscription: (consumerOrHostAtom: ((particle: any, atom?: any) => void) | AtomLike) => Subscription | undefined
+  unsubscribe: (target: ((particle: any, atom?: any) => void) | Subscription | AtomLike) => boolean
+  unsubscribeAll: () => boolean
   trigger: (particle?: any) => void
-  observe: (atom?: any) => void
-  beObservedBy: (atom?: any) => void
+  observe: (atom?: any) => Subscription
+  unobserve: (atom?: any) => boolean
+  unobserveAll: () => boolean
+  beObservedBy: (atom?: any) => Subscription
   pipe: <FNS extends AnyFunction[] = AnyFunction[]>
   (...fns: FNS) => FNS extends [] ? [] : ReturnType<CastAny<Last<FNS>>>
   compose: <FNS extends AnyFunction[] = AnyFunction[]>
@@ -170,14 +184,19 @@ export abstract class BaseAtom extends Vain {
  *
  */
 export interface SubscribeOptions {
+  hostAtom?: AtomLike | null
   isExtracted?: boolean
 }
-export const DEFAULT_SUBSCRIBE_OPTIONS: Required<SubscribeOptions> = {
+export const DEFAULT_SUBSCRIBE_OPTIONS: UndefinedableByKeys<Required<SubscribeOptions>, 'hostAtom'> = {
+  hostAtom: undefined,
   isExtracted: false
 }
 export interface Subscription {
+  hostAtom?: AtomLike
+  subscribeOptions: SubscribeOptions
+  originalConsumer: AnyFunction
   proxyConsumer: (particle: any, atom?: any) => void
-  unsubscribe: () => void
+  unsubscribe: () => boolean
 }
 
 /**

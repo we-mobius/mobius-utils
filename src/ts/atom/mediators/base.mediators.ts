@@ -4,7 +4,7 @@ import { pipe, compose } from '../../functional'
 import { Vain } from '../vain'
 import {
   isAtom, DEFAULT_ATOM_TRIGGER_REGISTER_OPTIONS,
-  isData, isMutation,
+  isData, isMutation, isDataLike, isMutationLike,
   DEFAULT_SUBSCRIBE_OPTIONS,
   GC_DATA, GC_MUTATION
 } from '../atoms'
@@ -12,7 +12,7 @@ import {
 import type { Datar, Mutator, MutatorTransformation } from '../particles'
 import type {
   Trigger, AtomTriggerRegisterOptions, TriggerController,
-  AtomLike, BaseAtom, Data, Mutation, SubscribeOptions,
+  AtomLike, BaseAtom, Data, Mutation, DataLike, MutationLike, SubscribeOptions,
   ValueConsumer, DatarConsumer, DataConsumer, DataSubscription,
   TransformationConsumer, MutatorConsumer, MutationConsumer, MutationSubscription
 } from '../atoms'
@@ -27,7 +27,7 @@ import type {
  * @param tar anything
  * @return whether the target is an Mediator instance
  */
-export const isMediator = <BA extends BaseAtom>(tar: any): tar is BaseMediator<BA> => isObject(tar) && tar.isMediator
+export const isMediator = <BA extends BaseAtom | AtomLike>(tar: any): tar is BaseMediator<BA> => isObject(tar) && tar.isMediator
 /**
  * @param tar anything
  * @return whether the target is an Data Mediator instance
@@ -60,7 +60,7 @@ export type MediatorType = string & _MediatorTypeSymbol
 /**
  *
  */
-export abstract class BaseMediator<BA extends BaseAtom> extends Vain {
+export abstract class BaseMediator<BA extends BaseAtom | AtomLike> extends Vain {
   _atom: BA
 
   constructor (atom: BA) {
@@ -155,9 +155,9 @@ export abstract class BaseMediator<BA extends BaseAtom> extends Vain {
   }
 
   release (): void {
-    if (isData(this._atom)) {
+    if (isDataLike(this._atom)) {
       this._atom = GC_DATA as unknown as BA
-    } else if (isMutation(this._atom)) {
+    } else if (isMutationLike(this._atom)) {
       this._atom = GC_MUTATION as unknown as BA
     } else {
       throw (new TypeError('Invalid atom type!'))
@@ -200,6 +200,26 @@ export abstract class DataMediator<V = any> extends BaseMediator<Data<V>> implem
     return this._atom.subscribeValue(consumer, options)
   }
 
+  getSubscriptionByConsumer (consumer: DataConsumer<V>): DataSubscription<V> | undefined {
+    return this._atom.getSubscriptionByConsumer(consumer)
+  }
+
+  getSubscriptionByHostAtom (hostAtom: AtomLike): DataSubscription<V> | undefined {
+    return this._atom.getSubscriptionByHostAtom(hostAtom)
+  }
+
+  getSubscription (consumerOrHostAtom: DataConsumer<V> | AtomLike): DataSubscription<V> | undefined {
+    return this._atom.getSubscription(consumerOrHostAtom)
+  }
+
+  unsubscribe (target: DataConsumer<V> | DataSubscription<V> | AtomLike): boolean {
+    return this._atom.unsubscribe(target)
+  }
+
+  unsubscribeAll (): boolean {
+    return this._atom.unsubscribeAll()
+  }
+
   trigger (datar?: Datar<V>): void {
     return this._atom.trigger(datar)
   }
@@ -208,17 +228,25 @@ export abstract class DataMediator<V = any> extends BaseMediator<Data<V>> implem
     return this._atom.triggerValue(value)
   }
 
-  observe (mutation: Mutation<any, V>): ReturnType<(typeof mutation)['subscribe']> {
+  observe (mutation: MutationLike<any, V>): MutationSubscription<any, V> {
     return this._atom.observe(mutation)
   }
 
-  beObservedBy (mutation: Mutation<V, any>): DataSubscription<V> {
+  unobserve (mutation: MutationLike<any, V>): boolean {
+    return this._atom.unobserve(mutation)
+  }
+
+  unobserveAll (): boolean {
+    return this._atom.unobserveAll()
+  }
+
+  beObservedBy (mutation: MutationLike<V, any>): DataSubscription<V> {
     return this._atom.beObservedBy(mutation)
   }
 
   mutate <P>(
-    mutator: Mutator<P, V> | Mutation<P, V> | MutatorTransformation<P, V> | ((...args: any[]) => V),
-    mutation?: Mutation<P, V>
+    mutator: MutationLike<P, V> | Mutator<P, V> | MutatorTransformation<P, V> | ((...args: any[]) => V),
+    mutation?: MutationLike<P, V>
   ): this {
     this._atom.mutate(mutator, mutation)
     return this
@@ -278,17 +306,45 @@ export abstract class MutationMediator<P = any, C = any> extends BaseMediator<Mu
     return this._atom.triggerTransformation(transformation)
   }
 
-  observe (data: Data<P>): ReturnType<(typeof data)['subscribe']> {
+  getSubscriptionByConsumer (consumer: MutationConsumer<P, C>): MutationSubscription<P, C> | undefined {
+    return this._atom.getSubscriptionByConsumer(consumer)
+  }
+
+  getSubscriptionByHostAtom (hostAtom: AtomLike): MutationSubscription<P, C> | undefined {
+    return this._atom.getSubscriptionByHostAtom(hostAtom)
+  }
+
+  getSubscription (consumerOrHostAtom: MutationConsumer<P, C> | AtomLike): MutationSubscription<P, C> | undefined {
+    return this._atom.getSubscription(consumerOrHostAtom)
+  }
+
+  unsubscribe (target: MutationConsumer<P, C> | MutationSubscription<P, C> | AtomLike): boolean {
+    return this._atom.unsubscribe(target)
+  }
+
+  unsubscribeAll (): boolean {
+    return this._atom.unsubscribeAll()
+  }
+
+  observe (data: DataLike<P>): DataSubscription<P> {
     return this._atom.observe(data)
   }
 
-  beObservedBy (data: Data<C>): MutationSubscription<P, C> {
+  unobserve (data: DataLike<P>): boolean {
+    return this._atom.unobserve(data)
+  }
+
+  unobserveAll (): boolean {
+    return this._atom.unobserveAll()
+  }
+
+  beObservedBy (data: DataLike<C>): MutationSubscription<P, C> {
     // return this._atom.beObservedBy(...args) as ReturnType<I['beObservedBy']>
     // NOTE: for type support
     return this._atom.beObservedBy(data)
   }
 
-  mutate (datar: Data<P> | Datar<P> | P, data?: Data<P>): this {
+  mutate (datar: DataLike<P> | Datar<P> | P, data?: DataLike<P>): this {
     this._atom.mutate(datar, data)
     return this
   }

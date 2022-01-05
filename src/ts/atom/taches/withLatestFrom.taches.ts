@@ -117,9 +117,7 @@ withLatestFromTacheFactory(<T, S>(): Mutation<WrappedTarget<T> | WrappedSource<S
       source: S | undefined
     } = { target: undefined, source: undefined }
 
-    return (
-      prev: Vacuo | WrappedTarget<T> | WrappedSource<S> | PrivateData, _: any, mutation?: typeof withLatestFromM
-    ): [S, T | undefined] | Terminator => {
+    return (prev, _, mutation): [S, T | undefined] | Terminator => {
       if (isVacuo(prev)) return TERMINATOR
       if (isVacuo(prev.value)) return TERMINATOR
 

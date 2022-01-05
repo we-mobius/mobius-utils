@@ -1,4 +1,4 @@
-import { isNil, isFunction, isObject, isPlainObject, isEmpty } from '../../internal/base'
+import { isNil, isFunction, isObject, isPlainObject, isEmpty, isUndefined } from '../../internal/base'
 import { syncScheduler, asyncScheduler } from '../../external/scheduler'
 
 import { isPausor, isTerminator } from '../metas'
@@ -7,11 +7,10 @@ import {
   DEFAULT_TRANSFORMATION_LIFT_OPTIONS, DEFAULT_MUTATOR_OPTIONS
 } from '../particles'
 import {
-  AtomType, BaseAtom,
+  AtomType, BaseAtom, isAtomLike, isDataLike,
   DEFAULT_BASEATOM_OPTIONS,
   DEFAULT_SUBSCRIBE_OPTIONS, DEFAULT_ATOM_TRIGGER_REGISTER_OPTIONS
 } from './base.atom'
-import { isData } from './data.atom'
 
 import type { Vacuo } from '../metas'
 import type {
@@ -20,12 +19,12 @@ import type {
   MutatorOriginTransformationUnion
 } from '../particles'
 import type {
-  AtomLike,
+  AtomLike, DataLike,
   BaseAtomOptions,
   SubscribeOptions, Subscription,
   AtomTriggerRegisterOptions, TriggerController, InternalTrigger, Trigger
 } from './base.atom'
-import type { Data } from './data.atom'
+import type { DataSubscription } from './data.atom'
 
 /******************************************************************************************************
  *
@@ -80,6 +79,8 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   private readonly _options: Required<MutationOptions<P, C>>
   private _mutator: Mutator<P, C>
   private readonly _consumers: Set<MutatorConsumer<P, C>>
+  private readonly _subscriptions: Set<MutationSubscription<P, C>>
+  private readonly _observations: Map<DataLike<P>, DataSubscription<P>>
 
   constructor (mutator: Mutator<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS) {
     super()
@@ -93,6 +94,8 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
 
     this._mutator = mutator
     this._consumers = new Set()
+    this._subscriptions = new Set()
+    this._observations = new Map()
   }
 
   get type (): AtomType { return AtomType.Mutation }
@@ -216,7 +219,8 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   // NOTE: catch all overload
   subscribe (consumer: MutationConsumer<P, C>, options?: SubscribeOptions): MutationSubscription<P, C>
   subscribe (consumer: MutationConsumer<P, C>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS): MutationSubscription<P, C> {
-    const { isExtracted } = { ...DEFAULT_SUBSCRIBE_OPTIONS, ...options }
+    const preparedOptions = { ...DEFAULT_SUBSCRIBE_OPTIONS, ...options }
+    const { isExtracted } = preparedOptions
     let proxyConsumer: MutatorConsumer<P, C>
     if (isExtracted) {
       /**
@@ -236,12 +240,19 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
     }
 
     this._consumers.add(proxyConsumer)
-    return {
+
+    const subscription = {
+      subscribeOptions: preparedOptions,
+      originalConsumer: consumer,
       proxyConsumer: proxyConsumer,
       unsubscribe: () => {
-        return this._consumers.delete(proxyConsumer)
+        const unsubscribed = this._consumers.delete(proxyConsumer) && this._subscriptions.delete(subscription)
+        return unsubscribed
       }
     }
+    this._subscriptions.add(subscription)
+
+    return subscription
   }
 
   /**
@@ -254,6 +265,75 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
     consumer: TransformationConsumer<P, C>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS
   ): MutationSubscription<P, C> {
     return this.subscribe(consumer, { ...DEFAULT_SUBSCRIBE_OPTIONS, ...options, isExtracted: true })
+  }
+
+  /**
+   * Given a consumer, find and return the subscription.
+   */
+  getSubscriptionByConsumer (consumer: MutationConsumer<P, C>): MutationSubscription<P, C> | undefined {
+    let subscriptionFound: MutationSubscription<P, C> | undefined
+    this._subscriptions.forEach(subscription => {
+      if (subscription.originalConsumer === consumer || subscription.proxyConsumer === consumer) {
+        subscriptionFound = subscription
+      }
+    })
+    return subscriptionFound
+  }
+
+  /**
+   * Given a hostAtom, find and return the subscription.
+   */
+  getSubscriptionByHostAtom (hostAtom: AtomLike): MutationSubscription<P, C> | undefined {
+    let subscriptionFound: MutationSubscription<P, C> | undefined
+    this._subscriptions.forEach(subscription => {
+      if (subscription.hostAtom === hostAtom) {
+        subscriptionFound = subscription
+      }
+    })
+    return subscriptionFound
+  }
+
+  /**
+   * Given a consumer or atom, find and return the subscription.
+   */
+  getSubscription (consumerOrHostAtom: MutationConsumer<P, C> | AtomLike): MutationSubscription<P, C> | undefined {
+    if (isFunction(consumerOrHostAtom)) {
+      return this.getSubscriptionByConsumer(consumerOrHostAtom)
+    } else if (isAtomLike(consumerOrHostAtom)) {
+      return this.getSubscriptionByHostAtom(consumerOrHostAtom)
+    } else {
+      throw (new TypeError('Unexpected type of "consumerOrHostAtom".'))
+    }
+  }
+
+  /**
+   * Given a consumer or subscription, unsubscribe it.
+   */
+  unsubscribe (target: MutationConsumer<P, C> | MutationSubscription<P, C> | AtomLike): boolean {
+    if (isFunction(target) || isAtomLike(target)) {
+      let unsubscribed = false
+      const subscription = this.getSubscription(target)
+      if (!isUndefined(subscription)) {
+        unsubscribed = subscription.unsubscribe()
+      }
+      return unsubscribed
+    } else if (isFunction(target.unsubscribe)) {
+      const unsubscribed = target.unsubscribe()
+      return unsubscribed
+    } else {
+      throw (new TypeError('Unexpected type of "target".'))
+    }
+  }
+
+  /**
+   * Unsubscribe all subscriptions.
+   */
+  unsubscribeAll (): boolean {
+    const unsubscribed: boolean[] = []
+    this._subscriptions.forEach((subscription) => {
+      unsubscribed.push(subscription.unsubscribe())
+    })
+    return unsubscribed.every((unsubscribed) => unsubscribed)
   }
 
   /**
@@ -304,13 +384,33 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
    *
    * @param mutation data -> current mutation (-> other data)
    */
-  observe (data: Data<P>): ReturnType<(typeof data)['subscribe']> {
-    if (!isData(data)) {
-      throw (new TypeError('"Mutation" can only observe a "Data"!'))
+  observe (data: DataLike<P>): DataSubscription<P> {
+    if (!isDataLike(data)) {
+      throw (new TypeError('"Mutation" can only observe a "Data".'))
     }
-    return data.subscribe((_datar: (typeof data)['datar'], _data: typeof data) => {
+    const subscription = data.subscribe((_datar: (typeof data)['datar'], _data: typeof data) => {
       this.mutate(_datar, _data)
+    }, {
+      hostAtom: this
     })
+    return subscription
+  }
+
+  unobserve (data: DataLike<P>): boolean {
+    const observation = this._observations.get(data)
+    let unobserved = false
+    if (!isUndefined(observation)) {
+      unobserved = observation.unsubscribe()
+    }
+    return unobserved
+  }
+
+  unobserveAll (): boolean {
+    const unobserved: boolean[] = []
+    this._observations.forEach((observation) => {
+      unobserved.push(observation.unsubscribe())
+    })
+    return unobserved.every((unobserved) => unobserved)
   }
 
   /**
@@ -320,8 +420,9 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
    *
    * @param mutation (other data ->) current mutation -> data
    */
-  beObservedBy (data: Data<C>): MutationSubscription<P, C> {
-    return data.observe(this)
+  beObservedBy (data: DataLike<C>): MutationSubscription<P, C> {
+    const subscription = data.observe(this)
+    return subscription
     // return this.subscribe((mutator, mutation) => {
     //   data.mutate(mutator, mutation)
     // })
@@ -342,21 +443,21 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   // mutate <DV>(datar: Datar<OrBaseMeta<DV>>, data: Data<DV>): Mutation<P, C>
   // mutate <DV>(datar: Data<DV>, data: Data<DV>): Mutation<P, C>
   // mutate <DV>(datar: OrBaseMeta<DV>, data: Data<DV>): Mutation<P, C>
-  mutate (datar: Data<P> | Datar<P> | P, data?: Data<P>): this {
+  mutate (datar: DataLike<P> | Datar<P> | P, data?: DataLike<P>): this {
     let _datar: Datar<P>
     if (isDatar<P>(datar)) {
       _datar = datar
-    } else if (isData<P>(datar)) {
+    } else if (isDataLike<P>(datar)) {
       _datar = datar.datar
     } else {
       _datar = Datar.of(datar)
     }
 
-    let _data: Data<P> | undefined
+    let _data: DataLike<P> | undefined
     if (isNil(data)) {
-      _data = isData(datar) ? datar : _data
+      _data = isDataLike(datar) ? datar : _data
     } else {
-      if (isData(data)) {
+      if (isDataLike(data)) {
         _data = data
       } else {
         throw (new TypeError('"data" is expected to be type of "Data".'))

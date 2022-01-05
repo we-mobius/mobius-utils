@@ -6,7 +6,7 @@ import { replayWithLatest } from '../mediators'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
 import type { Vacuo, Terminator } from '../metas'
-import type { AtomLikeOfOutput } from '../atoms'
+import type { AtomLikeOfOutput, MutationLike } from '../atoms'
 
 interface WrappedTo<T> {
   type: 'to'
@@ -169,7 +169,7 @@ switchTacheFactory(<F, T>(): Mutation<WrappedFrom<F> | WrappedTo<T>, T| Terminat
       to: T | undefined
     } = { from: undefined, to: undefined }
 
-    return (prev: Vacuo | WrappedFrom<F> | WrappedTo<T> | PrivateData, cur: any, mutation?: typeof switchM): T | Terminator => {
+    return (prev, cur, mutation): T | Terminator => {
       if (isVacuo(prev)) return TERMINATOR
       if (isVacuo(prev.value)) return TERMINATOR
 
