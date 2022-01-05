@@ -1,7 +1,7 @@
 import { isPlainObject, isString } from '../../internal/base'
 import { curryN } from '../../functional'
 
-import type { AtomLikeOfOutput, Data } from '../atoms'
+import type { DataLike } from '../atoms'
 
 /**
  * Do something with the target, then pass target through.
@@ -33,7 +33,7 @@ type Level = keyof typeof levelDict
 /**
  * @see {@link tapT}
  */
-export const tapValueT = <V extends Data<any>>(
+export const tapValueT = <V extends DataLike<any>>(
   name: string | { name?: string, level: Level },
   target: V
 ): V => {
@@ -76,8 +76,8 @@ export const tapValueT = <V extends Data<any>>(
   }, target)
 }
 interface ITapValueT_ {
-  <V extends Data<any>>(name: string | { name?: string, level: Level }, target: V): V
-  <V extends Data<any>>(name: string | { name?: string, level: Level}): (target: V) => V
+  <V extends DataLike<any>>(name: string | { name?: string, level: Level }, target: V): V
+  <V extends DataLike<any>>(name: string | { name?: string, level: Level}): (target: V) => V
 }
 /**
  * @see {@link tapValueT}
