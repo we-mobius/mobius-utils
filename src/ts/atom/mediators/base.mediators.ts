@@ -3,16 +3,19 @@ import { pipe, compose } from '../../functional'
 
 import { Vain } from '../vain'
 import {
-  isAtom, DEFAULT_ATOM_TRIGGER_REGISTER_OPTIONS,
-  isData, isMutation, isDataLike, isMutationLike,
+  DEFAULT_ATOM_TRIGGER_REGISTER_OPTIONS,
+  isAtomLike, isDataLike, isMutationLike,
   DEFAULT_SUBSCRIBE_OPTIONS,
   GC_DATA, GC_MUTATION
 } from '../atoms'
 
-import type { Datar, Mutator, MutatorTransformation } from '../particles'
+import { AnyStringRecord } from '../../@types/index'
+import type { Particle, Datar, Mutator, MutatorTransformation } from '../particles'
 import type {
+  AtomType,
   Trigger, AtomTriggerRegisterOptions, TriggerController,
-  AtomLike, BaseAtom, Data, Mutation, DataLike, MutationLike, SubscribeOptions,
+  AtomLike, BaseAtom, Data, Mutation, DataLike, MutationLike,
+  DataOptions, MutationOptions, SubscribeOptions,
   ValueConsumer, DatarConsumer, DataConsumer, DataSubscription,
   TransformationConsumer, MutatorConsumer, MutationConsumer, MutationSubscription
 } from '../atoms'
@@ -27,7 +30,7 @@ import type {
  * @param tar anything
  * @return whether the target is an Mediator instance
  */
-export const isMediator = <BA extends BaseAtom | AtomLike>(tar: any): tar is BaseMediator<BA> => isObject(tar) && tar.isMediator
+export const isMediator = <BA extends BaseAtom & AtomLike>(tar: any): tar is BaseMediator<BA> => isObject(tar) && tar.isMediator
 /**
  * @param tar anything
  * @return whether the target is an Data Mediator instance
@@ -60,10 +63,10 @@ export type MediatorType = string & _MediatorTypeSymbol
 /**
  *
  */
-export abstract class BaseMediator<BA extends BaseAtom | AtomLike> extends Vain {
-  _atom: BA
+export abstract class BaseMediator<A extends BaseAtom & AtomLike> extends Vain {
+  _atom: A
 
-  constructor (atom: BA) {
+  constructor (atom: A) {
     super()
     if (new.target === BaseMediator) {
       throw new Error('Mediator class can not be instantiated!')
@@ -76,6 +79,9 @@ export abstract class BaseMediator<BA extends BaseAtom | AtomLike> extends Vain 
    *                                    Mediator's propertys and methods
    ******************************************************************************************************/
 
+  /**
+   *
+   */
   get isMediator (): true { return true }
 
   abstract get mediatorType (): MediatorType
@@ -84,23 +90,25 @@ export abstract class BaseMediator<BA extends BaseAtom | AtomLike> extends Vain 
    *                                    Atom's propertys and methods
    ******************************************************************************************************/
 
-  get atom (): BA { return this._atom }
+  /**
+   *
+   */
+  get atom (): A { return this._atom }
 
-  get atomType (): BA['atomType'] { return this._atom.atomType }
+  get atomType (): AtomType { return this._atom.atomType }
 
-  get particleName (): BA['particleName'] { return this._atom.particleName }
-  get particle (): BA['particle'] { return this._atom.particle }
-  get metaName (): BA['metaName'] { return this._atom.metaName }
-  get meta (): BA['meta'] { return this._atom.meta }
+  get particleName (): string { return this._atom.particleName }
+  get particle (): Particle { return this._atom.particle }
+  get metaName (): string { return this._atom.metaName }
+  get meta (): any { return this._atom.meta }
 
-  get options (): BA['options'] { return this._atom.options }
-  get consumers (): BA['consumers'] { return this._atom.consumers }
+  get options (): AnyStringRecord { return this._atom.options }
 
-  get isAtom (): boolean { return isAtom(this._atom) }
+  get isAtom (): boolean { return isAtomLike(this._atom) }
 
-  get isData (): boolean { return isData(this._atom) }
+  get isData (): boolean { return isDataLike(this._atom) }
 
-  get isMutation (): boolean { return isMutation(this._atom) }
+  get isMutation (): boolean { return isMutationLike(this._atom) }
 
   get isEmpty (): boolean { return isEmpty(this._atom) }
 
@@ -156,9 +164,9 @@ export abstract class BaseMediator<BA extends BaseAtom | AtomLike> extends Vain 
 
   release (): void {
     if (isDataLike(this._atom)) {
-      this._atom = GC_DATA as unknown as BA
+      this._atom = GC_DATA as unknown as A
     } else if (isMutationLike(this._atom)) {
-      this._atom = GC_MUTATION as unknown as BA
+      this._atom = GC_MUTATION as unknown as A
     } else {
       throw (new TypeError('Invalid atom type!'))
     }
@@ -174,7 +182,11 @@ export abstract class BaseMediator<BA extends BaseAtom | AtomLike> extends Vain 
 /**
  *
  */
-export abstract class DataMediator<V = any> extends BaseMediator<Data<V>> implements AtomLike {
+export abstract class DataMediator<V = any> extends BaseMediator<DataLike<V>> implements AtomLike {
+  setOptions<K extends keyof DataOptions>(key: K, value: Required<DataOptions>[K]): void {
+    this._atom.setOptions(key, value)
+  }
+
   get datar (): Datar<V> {
     return this._atom.datar
   }
@@ -272,7 +284,11 @@ export abstract class DataMediator<V = any> extends BaseMediator<Data<V>> implem
 /**
  *
  */
-export abstract class MutationMediator<P = any, C = any> extends BaseMediator<Mutation<P, C>> implements AtomLike {
+export abstract class MutationMediator<P = any, C = any> extends BaseMediator<MutationLike<P, C>> implements AtomLike {
+  setOptions<K extends keyof MutationOptions>(key: K, value: Required<MutationOptions>[K]): void {
+    this._atom.setOptions(key, value)
+  }
+
   get mutator (): Mutator<P, C> {
     return this._atom.mutator
   }

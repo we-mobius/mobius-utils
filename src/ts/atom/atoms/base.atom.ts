@@ -16,6 +16,9 @@ import type { AnyFunction, AnyStringRecord, CastAny, First, Last, UndefinedableB
  *
  ******************************************************************************************************/
 
+/**
+ *
+ */
 export enum AtomType {
   Data = '[atom Data]',
   Mutation = '[atom Mutation]',
@@ -27,6 +30,9 @@ export enum AtomType {
  *
  ******************************************************************************************************/
 
+/**
+ *
+ */
 export interface AtomLike {
   isAtom: boolean
   atomType: AtomType
@@ -35,7 +41,6 @@ export interface AtomLike {
   particle: Particle
   meta: any
   options: AnyStringRecord
-  consumers: Set<AnyFunction>
   subscribe: (consumer: (particle: any, atom?: any) => void, options?: any) => Subscription
   getSubscriptionByConsumer: (consumer: (particle: any, atom?: any) => void) => Subscription | undefined
   getSubscriptionByHostAtom: (hostAtom: AtomLike) => Subscription | undefined
@@ -116,10 +121,9 @@ export abstract class BaseAtom extends Vain {
   abstract get particle (): Particle
   abstract get meta (): any // OrBaseMeta<any>
 
-  get isAtom (): true { return true }
+  get isAtom (): boolean { return true }
 
-  abstract get options (): Record<string, any>
-  abstract get consumers (): Set<any>
+  abstract get options (): AnyStringRecord
 
   abstract setOptions <K extends keyof BaseAtomOptions>(key: keyof BaseAtomOptions, value: BaseAtomOptions[K]): void
 

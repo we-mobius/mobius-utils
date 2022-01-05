@@ -12,7 +12,7 @@ import {
 import type { Vacuo } from '../metas'
 import type { DatarOptions, MutatorTransformation } from '../particles'
 import type {
-  AtomLike, MutationLike,
+  AtomLike, DataLike, MutationLike,
   BaseAtomOptions,
   SubscribeOptions, Subscription,
   AtomTriggerRegisterOptions, TriggerController, InternalTrigger, Trigger
@@ -45,8 +45,8 @@ export const DEFAULT_DATA_OPTIONS: Required<DataOptions> = {
   ...DEFAULT_BASEATOM_OPTIONS,
   ...DEFAULT_DATAR_OPTIONS
 }
-export type DatarConsumer<V = any> = (datar: Datar<V>, data: Data<V>) => void
-export type ValueConsumer<V = any> = (value: V, data: Data<V>) => void
+export type DatarConsumer<V = any> = (datar: Datar<V>, data: DataLike<V>) => void
+export type ValueConsumer<V = any> = (value: V, data: DataLike<V>) => void
 export type DataConsumer<V = any> = DatarConsumer<V> | ValueConsumer<V>
 
 export interface DataSubscription<V = any> extends Subscription {
@@ -90,7 +90,6 @@ export class Data<V = any> extends BaseAtom implements AtomLike {
   get meta (): Datar<V>['value'] { return this._datar.value }
 
   get options (): Required<DataOptions> { return this._options }
-  get consumers (): Set<DatarConsumer<V>> { return this._consumers }
 
   /**
    * Set Data's options by key.

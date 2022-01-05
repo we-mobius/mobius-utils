@@ -2,7 +2,7 @@ import { isUndefined, isObject, isNumber, isFunction } from '../../internal/base
 import { curry } from '../../functional'
 
 import {
-  isAtomLike, Data, isData, Mutation, isMutation, Subscription,
+  isAtomLike, isData, isMutation, Subscription,
   DEFAULT_SUBSCRIBE_OPTIONS
 } from '../atoms'
 import {
@@ -70,7 +70,7 @@ export class ReplayDataMediator<V = any> extends DataMediator<V> {
   private _options: Required<ReplayMediatorOptions>
 
   constructor (
-    atom: Data<V>, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS
+    atom: DataLike<V>, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS
   ) {
     super(atom)
 
@@ -81,7 +81,7 @@ export class ReplayDataMediator<V = any> extends DataMediator<V> {
     const { replayTime } = this._options
 
     this.setReplayTime(replayTime)
-    this._subscription = atom.subscribe((val: Datar<V>) => {
+    this._subscription = atom.subscribe((val) => {
       this._history.push(val)
       this._setHistory()
     })
@@ -108,7 +108,7 @@ export class ReplayDataMediator<V = any> extends DataMediator<V> {
 
     const { autoTrigger } = _options
 
-    const mediator = new ReplayDataMediator(atom as Data<any>, _options)
+    const mediator = new ReplayDataMediator(atom, _options)
 
     if (autoTrigger) {
       atom.trigger()
@@ -188,7 +188,7 @@ export class ReplayDataMediator<V = any> extends DataMediator<V> {
 
   // !!! important
   beObservedBy (mutation: MutationLike<V, any>): DataSubscription<V> {
-    return mutation.observe(this as unknown as DataLike<any>)
+    return mutation.observe(this)
   }
 
   release (): void {
@@ -213,7 +213,7 @@ export class ReplayMutationMediator<P = any, C = any> extends MutationMediator<P
   private _options: Required<ReplayMediatorOptions>
 
   constructor (
-    atom: Mutation<P, C>, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS
+    atom: MutationLike<P, C>, options: ReplayMediatorOptions = DEFAULT_REPLAY_MEDIATOR_OPTIONS
   ) {
     super(atom)
 
@@ -224,8 +224,8 @@ export class ReplayMutationMediator<P = any, C = any> extends MutationMediator<P
     const { replayTime } = this._options
 
     this.setReplayTime(replayTime)
-    this._subscription = atom.subscribe((val: Mutator<P, C>) => {
-      this._history.push(val)
+    this._subscription = atom.subscribe((trans) => {
+      this._history.push(trans)
       this._setHistory()
     })
   }
@@ -251,7 +251,7 @@ export class ReplayMutationMediator<P = any, C = any> extends MutationMediator<P
 
     const { autoTrigger } = _options
 
-    const mediator = new ReplayMutationMediator(atom as Mutation<any, any>, _options)
+    const mediator = new ReplayMutationMediator(atom, _options)
 
     if (autoTrigger) {
       atom.trigger()
@@ -331,7 +331,7 @@ export class ReplayMutationMediator<P = any, C = any> extends MutationMediator<P
 
   // !!! important
   beObservedBy (data: DataLike<C>): MutationSubscription<P, C> {
-    return data.observe(this as unknown as MutationLike<any, any>)
+    return data.observe(this)
   }
 
   release (): void {

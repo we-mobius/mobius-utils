@@ -19,7 +19,7 @@ import type {
   MutatorOriginTransformationUnion
 } from '../particles'
 import type {
-  AtomLike, DataLike,
+  AtomLike, DataLike, MutationLike,
   BaseAtomOptions,
   SubscribeOptions, Subscription,
   AtomTriggerRegisterOptions, TriggerController, InternalTrigger, Trigger
@@ -62,9 +62,9 @@ export const DEFAULT_MUTATION_OPTIONS: Required<MutationOptions<any, any, any[]>
 }
 
 export type MutatorConsumer<P = any, C = any> =
-  (mutator: Mutator<P, C>, mutation: Mutation<P, C>) => void
+  (mutator: Mutator<P, C>, mutation: MutationLike<P, C>) => void
 export type TransformationConsumer<P = any, C = any> =
-  (transformation: (cur: Datar<C>, ...args: any[]) => C, mutation: Mutation<P, C>) => void
+  (transformation: (cur: Datar<C>, ...args: any[]) => C, mutation: MutationLike<P, C>) => void
 export type MutationConsumer<P = any, C = any> =
   MutatorConsumer<P, C> | TransformationConsumer<P, C>
 
@@ -107,7 +107,6 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   get meta (): Mutator<P, C>['transformation'] { return this._mutator.transformation }
 
   get options (): Required<MutationOptions<P, C>> { return this._options }
-  get consumers (): Set<MutatorConsumer<P, C>> { return this._consumers }
 
   /**
    * Set Mutation's options by key.

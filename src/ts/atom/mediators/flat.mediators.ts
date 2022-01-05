@@ -5,7 +5,6 @@ import {
 } from '../../atom'
 import { DataMediator, MutationMediator } from './base.mediators'
 
-import type { Datar } from '../particles'
 import type { Subscription, DataLike, MutationLike, AtomLikeOfOutput } from '../atoms'
 import type { MediatorTypeMaker, MediatorType } from './base.mediators'
 
@@ -54,13 +53,13 @@ type FlatMediatorUnion
  *
  */
 export class FlatDataMediator<V = any> extends DataMediator<V> {
-  private readonly _originalAtom: Data<V>
+  private readonly _originalAtom: DataLike<V>
   private _connection: { unsubscribe: () => void } | null
   private _subscription: Subscription | null
   private readonly _options: Required<FlatMediatorOptions>
 
   constructor (
-    atom: Data<V>, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS
+    atom: DataLike<V>, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS
   ) {
     const flattedD = Data.empty<V>()
     super(flattedD)
@@ -97,11 +96,11 @@ export class FlatDataMediator<V = any> extends DataMediator<V> {
 
     const _options = { ...DEFAULT_FLAT_MEDIATOR_OPTIONS, ...options }
 
-    return new FlatDataMediator(atom as Data<any>, _options)
+    return new FlatDataMediator(atom, _options)
   }
 
   connect (): void {
-    this._subscription = this._originalAtom.subscribe(({ value }: Datar<V>) => {
+    this._subscription = this._originalAtom.subscribe(({ value }) => {
       // If there is a exist connection, disconnect it.
       this.disconnect()
       if (isData(value)) {
@@ -150,13 +149,13 @@ export class FlatDataMediator<V = any> extends DataMediator<V> {
  *
  */
 export class FlatMutationMediator<P = any, C = any> extends MutationMediator<P, C> {
-  private readonly _originalAtom: Mutation<P, C>
+  private readonly _originalAtom: MutationLike<P, C>
   private _connection: { unsubscribe: () => void } | null
   private _subscription: Subscription | null
   private readonly _options: FlatMediatorOptions
 
   constructor (
-    atom: Mutation<P, C>, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS
+    atom: MutationLike<P, C>, options: FlatMediatorOptions = DEFAULT_FLAT_MEDIATOR_OPTIONS
   ) {
     const flattedM: Mutation<any, any> = Mutation.ofLiftLeft(prevD => prevD)
     super(flattedM)
@@ -193,12 +192,12 @@ export class FlatMutationMediator<P = any, C = any> extends MutationMediator<P, 
 
     const _options = { ...DEFAULT_FLAT_MEDIATOR_OPTIONS, ...options }
 
-    return new FlatMutationMediator(atom as Mutation<any, any>, _options)
+    return new FlatMutationMediator(atom, _options)
   }
 
   connect (): void {
     const tempData = Data.empty<C>()
-    this._subscription = tempData.subscribe(({ value }: (typeof tempData)['datar']) => {
+    this._subscription = tempData.subscribe(({ value }) => {
       this.disconnect()
       if (isData(value)) {
         // Mutation -> tempData -> extract value(Data) -> newMutation(this._atom)

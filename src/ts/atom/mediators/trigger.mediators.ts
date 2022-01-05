@@ -5,7 +5,9 @@ import {
 } from './base.mediators'
 
 import type { MutatorTransformation } from '../particles'
-import type { AtomTriggerRegisterOptions, Trigger, TriggerController, DataLike, MutationLike, AtomLikeOfOutput } from '../atoms'
+import type {
+  AtomTriggerRegisterOptions, Trigger, TriggerController, DataLike, MutationLike, AtomLikeOfOutput
+} from '../atoms'
 import type { MediatorTypeMaker, MediatorType } from './base.mediators'
 
 /******************************************************************************************************
@@ -58,7 +60,7 @@ type TriggerMutationMediatorMap<P = any, C = any> = Map<MutationTrigger<P, C>, T
 export class TriggerDataMediator<V = any> extends DataMediator<V> {
   private readonly _map: TriggerDataMediatorMap<V>
 
-  constructor (atom: Data<V>) {
+  constructor (atom: DataLike<V>) {
     super(atom)
     this._map = new Map()
   }
@@ -79,7 +81,7 @@ export class TriggerDataMediator<V = any> extends DataMediator<V> {
     if (isTriggerMediator(atom)) {
       return atom
     } else {
-      return new TriggerDataMediator(atom as Data<any>)
+      return new TriggerDataMediator(atom)
     }
   }
 
@@ -148,7 +150,7 @@ export class TriggerDataMediator<V = any> extends DataMediator<V> {
 export class TriggerMutationMediator<P = any, C = any> extends MutationMediator<P, C> {
   private readonly _map: TriggerMutationMediatorMap<P, C>
 
-  constructor (atom: Mutation<P, C>) {
+  constructor (atom: MutationLike<P, C>) {
     super(atom)
     this._map = new Map()
   }
@@ -169,7 +171,7 @@ export class TriggerMutationMediator<P = any, C = any> extends MutationMediator<
     if (isTriggerMediator(atom)) {
       return atom
     } else {
-      return new TriggerMutationMediator(atom as Mutation<any, any>)
+      return new TriggerMutationMediator(atom)
     }
   }
 
