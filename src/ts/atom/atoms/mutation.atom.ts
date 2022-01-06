@@ -441,9 +441,6 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
    * @param data
    * @return { Mutation } Mutation(this)
    */
-  // mutate <DV>(datar: Datar<OrBaseMeta<DV>>, data: Data<DV>): Mutation<P, C>
-  // mutate <DV>(datar: Data<DV>, data: Data<DV>): Mutation<P, C>
-  // mutate <DV>(datar: OrBaseMeta<DV>, data: Data<DV>): Mutation<P, C>
   mutate (datar: DataLike<P> | Datar<P> | P, data?: DataLike<P>): this {
     let _datar: Datar<P>
     if (isDatar<P>(datar)) {

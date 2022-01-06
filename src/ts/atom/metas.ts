@@ -88,6 +88,7 @@ export abstract class BaseMeta extends Vain {
   abstract get metaType (): MetaType
 }
 export type OrBaseMeta<T> = T | BaseMeta
+export type ExcludeTerminator<T> = Exclude<T, Terminator>
 
 /**
  *—————————————————————————————————————————————— Vacuo Meta ————————————————————————————————————————————————————

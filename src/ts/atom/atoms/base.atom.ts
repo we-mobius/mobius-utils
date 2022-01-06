@@ -119,7 +119,7 @@ export abstract class BaseAtom extends Vain {
   abstract get particleName (): string
   abstract get metaName (): string
   abstract get particle (): Particle
-  abstract get meta (): any // OrBaseMeta<any>
+  abstract get meta (): any
 
   get isAtom (): boolean { return true }
 

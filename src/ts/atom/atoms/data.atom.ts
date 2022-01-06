@@ -108,7 +108,7 @@ export class Data<V = any> extends BaseAtom implements AtomLike {
   /**
    * @param value can be a Datar or any other value
    */
-  static of <V>(value: Datar<V> | V, options: DataOptions = {}): Data<V> {
+  static of <V>(value: Datar<V> | V, options: DataOptions = DEFAULT_DATA_OPTIONS): Data<V> {
     // return new Data(isDatar(value) ? value : Datar.of(value, undefined, options), options)
     if (isDatar<V>(value)) {
       return new Data(value, options)
