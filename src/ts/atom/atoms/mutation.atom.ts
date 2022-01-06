@@ -392,6 +392,8 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
     }, {
       hostAtom: this
     })
+    this._observations.set(data, subscription)
+
     return subscription
   }
 
