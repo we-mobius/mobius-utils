@@ -4,6 +4,8 @@ import { looseCurryN } from '../../functional'
 import { Data, Mutation } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
+import type { AnyStringRecord } from '../../@types/index'
+
 // S -> Single, M -> Multi
 
 /******************************************************************************************************
@@ -12,34 +14,30 @@ import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
  *
  ******************************************************************************************************/
 
-type AnyStringRecord = Record<string, any>
-
 /**
  *
  */
-export interface TacheOptions extends AnyStringRecord {
-}
-export interface TacheLevelContexts extends AnyStringRecord {
-}
+export interface TacheOptions extends AnyStringRecord { }
+export interface TacheLevelContexts extends AnyStringRecord { }
 
-const DEFAULT_TACHE_OPTIONS: TacheOptions = {}
-const DEFAULT_TACHE_LEVEL_CONTEXTS: TacheLevelContexts = {}
+export const DEFAULT_TACHE_OPTIONS: Required<TacheOptions> = {}
+export const DEFAULT_TACHE_LEVEL_CONTEXTS: Required<TacheLevelContexts> = {}
 
-type PrepareOptions<O extends TacheOptions = TacheOptions>
-  = (options: O) => O
+type PrepareOptions<Options extends TacheOptions = TacheOptions>
+  = (options: Options) => Options
 type PrepareTacheLevelContexts<TLC extends TacheLevelContexts = TacheLevelContexts>
   = () => TLC
 type PrepareInput<
-  O extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts,
-  S extends any[] = any[], In = any
+  Options extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts,
+  Sources extends any[] = any[], In = any
 >
-  = (tacheOptions: O, tacheLevelContexts: TLC, sources: S) => In
-type PrepareMidpiece<O extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts, In = any, Mid = any>
-  = (tacheOptions: O, tacheLevelContexts: TLC, inputs: In) => Mid
-type PrepareOutput<O extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts, Mid = any, Out = any>
-  = (tacheOptions: O, tacheLevelContexts: TLC, midpiece: Mid) => Out
-type connect<O extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts, In = any, Mid = any, Out = any>
-  = (tacheOptions: O, tacheLevelContexts: TLC, pieces: [In, Mid, Out]) => void
+  = (tacheOptions: Options, tacheLevelContexts: TLC, sources: [...Sources]) => In
+type PrepareMidpiece<Options extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts, In = any, Mid = any>
+  = (tacheOptions: Options, tacheLevelContexts: TLC, inputs: In) => Mid
+type PrepareOutput<Options extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts, Mid = any, Out = any>
+  = (tacheOptions: Options, tacheLevelContexts: TLC, midpiece: Mid) => Out
+type connect<Options extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts, In = any, Mid = any, Out = any>
+  = (tacheOptions: Options, tacheLevelContexts: TLC, pieces: [In, Mid, Out]) => void
 
 const DEFAULT_PREPARE_OPTIONS: PrepareOptions = () => DEFAULT_TACHE_OPTIONS
 const DEFAULT_PREPARE_TACHE_LEVEL_CONTEXTS: PrepareTacheLevelContexts = () => DEFAULT_TACHE_LEVEL_CONTEXTS
@@ -53,18 +51,20 @@ const DEFAULT_CONNET: connect = (tacheOptions, tacheLevelContexts, pieces) => {
 }
 
 export interface GeneralTacheCreateOptions<
-  O extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts,
-  S extends any[] = any[], In = any, Mid = any, Out = any
+  Options extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts,
+  Sources extends any[] = any[], In = any, Mid = any, Out = any
 > {
-  prepareOptions?: PrepareOptions<O>
+  defaultOptions?: Options
+  prepareOptions?: PrepareOptions<Options>
   prepareTacheLevelContexts?: PrepareTacheLevelContexts<TLC>
-  prepareInput?: PrepareInput<O, TLC, S, In>
-  prepareMidpiece?: PrepareMidpiece<O, TLC, In, Mid>
-  prepareOutput?: PrepareOutput<O, TLC, Mid, Out>
-  connect?: connect<O, TLC, In, Mid, Out>
+  prepareInput?: PrepareInput<Options, TLC, Sources, In>
+  prepareMidpiece?: PrepareMidpiece<Options, TLC, In, Mid>
+  prepareOutput?: PrepareOutput<Options, TLC, Mid, Out>
+  connect?: connect<Options, TLC, In, Mid, Out>
 }
 
 export const DEFAULT_GENERAL_TACHE_CREATE_OPTIONS: Required<GeneralTacheCreateOptions<any, any, any, any, any, any>> = {
+  defaultOptions: DEFAULT_TACHE_OPTIONS,
   prepareOptions: DEFAULT_PREPARE_OPTIONS,
   prepareTacheLevelContexts: DEFAULT_PREPARE_TACHE_LEVEL_CONTEXTS,
   prepareInput: DEFAULT_PREPARE_INPUT,
@@ -73,7 +73,7 @@ export const DEFAULT_GENERAL_TACHE_CREATE_OPTIONS: Required<GeneralTacheCreateOp
   connect: DEFAULT_CONNET
 }
 
-export type Tache<S extends any[] = any[], Out = any> = (...sources: S) => Out
+export type Tache<Sources extends any[] = any[], Out = any> = (...sources: [...Sources]) => Out
 
 /**
  * @param createOptions
@@ -81,12 +81,12 @@ export type Tache<S extends any[] = any[], Out = any> = (...sources: S) => Out
  * @return { Tache } tache :: `(...sources: any[]) => ReturnType<PrepareOutput>`
  */
 export const createGeneralTache = <
-  O extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts,
-  S extends any[] = any[], In = any, Mid = any, Out = any
+  Options extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts,
+  Sources extends any[] = any[], In = any, Mid = any, Out = any
 >(
-    createOptions: GeneralTacheCreateOptions<O, TLC, S, In, Mid, Out> | PrepareMidpiece<O, TLC, In, Mid>,
-    tacheOptions: O = DEFAULT_TACHE_OPTIONS as O
-  ): Tache<S, Out> => {
+    createOptions: GeneralTacheCreateOptions<Options, TLC, Sources, In, Mid, Out> | PrepareMidpiece<Options, TLC, In, Mid>,
+    tacheOptions: Options = ({} as unknown as Options)
+  ): Tache<Sources, Out> => {
   if (!isPlainObject(createOptions) && !isFunction(createOptions)) {
     throw (new TypeError('"createOptions" is expected to be type of "PlainObject" | "Function".'))
   }
@@ -94,7 +94,7 @@ export const createGeneralTache = <
     throw (new TypeError('"tacheOptions" is expected to be type of "PlainObject".'))
   }
 
-  let preparedCreateOptions: Required<GeneralTacheCreateOptions<O, TLC, S, In, Mid, Out>>
+  let preparedCreateOptions: Required<GeneralTacheCreateOptions<Options, TLC, Sources, In, Mid, Out>>
 
   if (isFunction(createOptions)) {
     preparedCreateOptions = { ...DEFAULT_GENERAL_TACHE_CREATE_OPTIONS, prepareMidpiece: createOptions }
@@ -103,6 +103,7 @@ export const createGeneralTache = <
   }
 
   const {
+    defaultOptions,
     prepareOptions, prepareTacheLevelContexts,
     prepareInput, prepareMidpiece, prepareOutput, connect
   } = preparedCreateOptions
@@ -113,11 +114,10 @@ export const createGeneralTache = <
   }
   const preparedTacheLevelContexts = { ...DEFAULT_TACHE_LEVEL_CONTEXTS as TLC, ..._tacheLevelContexts }
 
-  const _tacheOptions = prepareOptions(tacheOptions)
-  if (!isPlainObject(_tacheOptions)) {
+  const preparedTacheOptions = prepareOptions({ ...defaultOptions, ...tacheOptions })
+  if (!isPlainObject(preparedTacheOptions)) {
     throw (new TypeError('The returned value of "prepareOptions" is expected to be type of "PlainObject".'))
   }
-  const preparedTacheOptions = { ...DEFAULT_TACHE_OPTIONS as O, ..._tacheOptions }
 
   return (...sources) => {
     const inputs = prepareInput(preparedTacheOptions, preparedTacheLevelContexts, sources)
@@ -129,20 +129,20 @@ export const createGeneralTache = <
 }
 export interface ICreateGeneralTache_ {
   <
-    O extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts,
-    S extends any[] = any[], In = any, Mid = any, Out = any
+    Options extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts,
+    Sources extends any[] = any[], In = any, Mid = any, Out = any
   >(
-    createOptions: GeneralTacheCreateOptions<O, TLC, S, In, Mid, Out> | PrepareMidpiece<O, TLC, In, Mid>,
-    tacheOptions: O
-  ): Tache<S, Out>
+    createOptions: GeneralTacheCreateOptions<Options, TLC, Sources, In, Mid, Out> | PrepareMidpiece<Options, TLC, In, Mid>,
+    tacheOptions: Options
+  ): Tache<Sources, Out>
   <
-    O extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts,
-    S extends any[] = any[], In = any, Mid = any, Out = any
+    Options extends TacheOptions = TacheOptions, TLC extends TacheLevelContexts = TacheLevelContexts,
+    Sources extends any[] = any[], In = any, Mid = any, Out = any
   >(
-    createOptions: GeneralTacheCreateOptions<O, TLC, S, In, Mid, Out> | PrepareMidpiece<O, TLC, In, Mid>
+    createOptions: GeneralTacheCreateOptions<Options, TLC, Sources, In, Mid, Out> | PrepareMidpiece<Options, TLC, In, Mid>
   ): (
-    tacheOptions?: O
-  ) => Tache<S, Out>
+    tacheOptions?: Options
+  ) => Tache<Sources, Out>
 }
 /**
  * @see {@link createGeneralTache}
@@ -152,29 +152,29 @@ export const createGeneralTache_: ICreateGeneralTache_ = looseCurryN(2, createGe
 /**
  * @param tacheMaker partial applied createGeneralTache
  */
-export const useGeneralTache = <O = any, S extends any[] = any[], Out = any>(
-  tacheMaker: (options: O) => Tache<S, Out>, tacheOptions: O, ...sources: S
+export const useGeneralTache = <Options = any, Sources extends any[] = any[], Out = any>(
+  tacheMaker: (options: Options) => Tache<Sources, Out>, tacheOptions: Options, ...sources: Sources
 ): Out => {
   const tache = tacheMaker(tacheOptions)
   const outputs = tache(...sources)
   return outputs
 }
 
-export interface IPartialUseGeneralTache_<O = any, S extends any[] = any[], Out = any> {
-  (tacheOptions: O, ...sources: S): Out
-  (tacheOptions: O): (...sources: S) => Out
+export interface IPartialUseGeneralTache_<Options = any, Sources extends any[] = any[], Out = any> {
+  (tacheOptions: Options, ...sources: Sources): Out
+  (tacheOptions: Options): (...sources: Sources) => Out
 }
 export interface IUseGeneralTache_ {
   // pass all three arguments at one time
-  <O = any, S extends any[] = any[], Out = any>
-  (tacheMaker: (options: O) => Tache<S, Out>, tacheOptions: O, ...sources: S): Out
+  <Options = any, Sources extends any[] = any[], Out = any>
+  (tacheMaker: (options: Options) => Tache<Sources, Out>, tacheOptions: Options, ...sources: Sources): Out
   // pass first two arguments then rest one, first two at one time
-  <O = any, S extends any[] = any[], Out = any>
-  (tacheMaker: (options: O) => Tache<S, Out>, tacheOptions: O): (...sources: S) => Out
+  <Options = any, Sources extends any[] = any[], Out = any>
+  (tacheMaker: (options: Options) => Tache<Sources, Out>, tacheOptions: Options): (...sources: Sources) => Out
   // pass first argument then rest two, rest two at one time
   // or pass all three arguments one by one
-  <O = any, S extends any[] = any[], Out = any>
-  (tacheMaker: (options: O) => Tache<S, Out>): IPartialUseGeneralTache_<O, S, Out>
+  <Options = any, Sources extends any[] = any[], Out = any>
+  (tacheMaker: (options: Options) => Tache<Sources, Out>): IPartialUseGeneralTache_<Options, Sources, Out>
 }
 /**
  * @see {@link useGeneralTache}
