@@ -1,6 +1,6 @@
 {
   "name": "@we-mobius/mobius-utils",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "🧬 Probably the most comprehensive, powerful tools library for JavaScript & TypeScript.",
   "type": "module",
   "typings": "./typings/main.d.ts",
