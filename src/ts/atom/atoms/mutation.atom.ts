@@ -339,7 +339,6 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
    * `Empty mutator` will not be triggered.
    *
    * @param mutator mutator
-   * @return { void } void
    */
   trigger (mutator?: Mutator<P, C>): void {
     const _mutator = mutator ?? this._mutator
@@ -350,13 +349,16 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
 
     if (!isEmpty(_mutator)) {
       const { isAsync } = this._options
-      this._consumers.forEach(consumer => {
-        if (isAsync) {
-          asyncScheduler(() => consumer(_mutator, this))
-        } else {
-          // syncScheduler(() => consumer(_mutator, this))
-          consumer(_mutator, this)
-        }
+      const batchScheduler = isAsync ? asyncScheduler : syncScheduler
+      batchScheduler(() => {
+        this._consumers.forEach(consumer => {
+          if (isAsync) {
+            asyncScheduler(() => consumer(_mutator, this))
+          } else {
+            // syncScheduler(() => consumer(_mutator, this))
+            consumer(_mutator, this)
+          }
+        })
       })
     }
   }
@@ -366,7 +368,6 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
    *   so the `Vacuo` value will not be triggered by `triggerTransformation` method.
    *
    * @param transformation transformation
-   * @return { void } void
    */
   triggerTransformation (transformation?: Mutator<P, C>['transformation']): void {
     if (isNil(transformation)) {

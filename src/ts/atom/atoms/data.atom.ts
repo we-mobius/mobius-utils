@@ -257,7 +257,6 @@ export class Data<V = any> extends BaseAtom implements AtomLike {
    * `Empty datar` will not be triggered.
    *
    * @param datar datar
-   * @return { void } void
    */
   trigger (datar?: Datar<V>): void {
     const _datar = datar ?? this._datar
@@ -267,13 +266,17 @@ export class Data<V = any> extends BaseAtom implements AtomLike {
     }
 
     if (!isEmpty(_datar)) {
-      this._consumers.forEach(consumer => {
-        if (this._options.isAsync) {
-          asyncScheduler(() => consumer(_datar, this))
-        } else {
-          // syncScheduler(() => consumer(_datar, this))
-          consumer(_datar, this)
-        }
+      const { isAsync } = this._options
+      const batchScheduler = isAsync ? asyncScheduler : syncScheduler
+      batchScheduler(() => {
+        this._consumers.forEach(consumer => {
+          if (isAsync) {
+            asyncScheduler(() => consumer(_datar, this))
+          } else {
+            // syncScheduler(() => consumer(_datar, this))
+            consumer(_datar, this)
+          }
+        })
       })
     }
   }
@@ -283,7 +286,6 @@ export class Data<V = any> extends BaseAtom implements AtomLike {
    *   so the `Vacuo` value will not be triggered by `triggerValue` method.
    *
    * @param value value
-   * @return { void } void
    */
   triggerValue (value?: Datar<V>['value']): void {
     if (isNil(value)) {
