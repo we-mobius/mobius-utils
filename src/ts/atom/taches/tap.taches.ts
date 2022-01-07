@@ -66,7 +66,7 @@ export const tapValueT = <V extends DataLike<any>>(
       // do nothing
       }
       console[consoleLevel](
-      `%c ${consoleLevel.toUpperCase()} %c ${initName}: %c ${value as string} %c`,
+      `%c ${consoleLevel.toUpperCase()} %c ${initName}: %c ${value.toString() as string} %c`,
       `background: ${colorDict[consoleLevel]}; padding: 1px; border-radius: 3px 0 0 3px; color: #FFFFFF;`,
       'background: #6600FF; padding: 1px; border-radius: 0 0 0 0; color: #FFFFFF;',
       'background: #66FF00; padding: 1px 10px; border-radius: 0 3px 3px 0; color: #000000;',
