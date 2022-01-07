@@ -1,14 +1,14 @@
 import { isString, isPlainObject, isArray } from '../internal'
 import { curry } from '../functional'
 
-type ClassString = string
-type ClassArray = string[]
-type ClassObject = Record<string, boolean>
-type ClassUnion = ClassString | ClassArray | ClassObject
+export type ClassString = string
+export type ClassArray = string[]
+export type ClassObject = Record<string, boolean>
+export type ClassUnion = ClassString | ClassArray | ClassObject
 
 /**
  * @param str same as value of class attribute on HTML tags
- * @return { ClassString } formatted class string
+ * @return formatted class string
  * @example
  * ```ts
  * 'mobius-base mobius-theme--light' 👉 'mobius-base mobius-theme--light'
@@ -17,21 +17,22 @@ type ClassUnion = ClassString | ClassArray | ClassObject
  * '  .mobius-base   mobius-theme--light  ' 👉 'mobius-base mobius-theme--light'
  * ```
  */
-export const neatenClassStr = (str: string): ClassString => {
+export const neatenClassString = (str: string): ClassString => {
   if (!isString(str)) {
     throw (new TypeError('"str" is expected to be type of String.'))
   }
   // replace '.' to single space
   // replace multiple spaces to single space
   // trim start and end spaces
-  const classStr = str.replace('.', ' ').replace(/\s+/g, ' ').trim()
-  return classStr
+  const classString = str.replace('.', ' ').replace(/\s+/g, ' ').trim()
+  return classString
 }
 
 /**
- * Format target string to standard class string using `neatenClassStr`, then split it to array by space.
+ * Format target string to standard class string using `neatenClassString`, then split it to array by space.
+ *
  * @param str class string
- * @return { ClassArray } array of classnames
+ * @return array of classnames
  * @example
  * ```ts
  * 'mobius-base mobius-theme--light' 👉 ['mobius-base', 'mobius-theme--light']
@@ -40,16 +41,16 @@ export const neatenClassStr = (str: string): ClassString => {
  * '  .mobius-base   mobius-theme--light  ' 👉 ['mobius-base', 'mobius-theme--light']
  * ```
  */
-export const classStrToArr = (str: ClassString): ClassArray => {
+export const classStringToClassArray = (str: ClassString): ClassArray => {
   if (!isString(str)) {
     throw (new TypeError('"str" is expected to be type of String.'))
   }
-  const classArr = neatenClassStr(str).split(' ').filter(s => s.length > 0)
-  return classArr
+  const classArray = neatenClassString(str).split(' ').filter(s => s.length > 0)
+  return classArray
 }
 /**
  * @param arr array of classnames
- * @return { ClassObject } PlainObject which use classname as key and exist of classname as value
+ * @return PlainObject which use classname as key and exist of classname as value
  * @example
  * ```ts
  * ['mobius-base', 'mobius-theme--light']
@@ -60,94 +61,97 @@ export const classStrToArr = (str: ClassString): ClassArray => {
  * }
  * ```
  */
-export const classArrToObj = (arr: ClassArray): ClassObject => {
+export const classArrayToClassObject = (arr: ClassArray): ClassObject => {
   if (!isArray(arr)) {
     throw (new TypeError('"arr" is expected to be type of Array.'))
   }
-  const classObj: ClassObject = {}
+  const classObject: ClassObject = {}
   arr.flat(Infinity).filter(isString).forEach(s => {
-    classObj[s] = true
+    classObject[s] = true
   })
-  return classObj
+  return classObject
 }
 /**
- * Equal to `pipe(classStrToArr, classArrToObj)`.
+ * Equal to `pipe(classStringToClassArray, classArrayToClassObject)`.
+ *
  * @param str class string
- * @return { ClassObject } PlainObject which use classname as key and exist of classname as value
+ * @return PlainObject which use classname as key and exist of classname as value
  */
-export const classStrToObj = (str: ClassString): ClassObject => {
+export const classStringToClassObject = (str: ClassString): ClassObject => {
   if (!isString(str)) {
     throw (new TypeError('"str" is expected to be type of String.'))
   }
-  const classArr = classStrToArr(str)
-  const classObj = classArrToObj(classArr)
-  return classObj
+  const classArray = classStringToClassArray(str)
+  const classObject = classArrayToClassObject(classArray)
+  return classObject
 }
 /**
  * Classname in target object which value is false will be ignored.
+ *
  * @param classObject PlainObject which use classname as key and exist of classname as value
- * @return { ClassArray } array of classnames
+ * @return array of classnames
  */
-export const classObjToArr = (obj: ClassObject): ClassArray => {
+export const classObjectToClassArray = (obj: ClassObject): ClassArray => {
   if (!isPlainObject(obj)) {
     throw (new TypeError('"obj" is expected to be type of PlainObject.'))
   }
-  const classArr: string[] = []
+  const classArray: string[] = []
   Object.entries(obj).filter(([key, value]) => value).forEach(([key, value]) => {
-    classArr.push(key)
+    classArray.push(key)
   })
-  return classArr
+  return classArray
 }
 /**
  * @param arr array of classnames
- * @return { ClassString } class string
+ * @return class string
  */
-export const classArrToStr = (arr: ClassArray): ClassString => {
+export const classArrayToClassString = (arr: ClassArray): ClassString => {
   if (!isArray(arr)) {
     throw (new TypeError('"arr" is expected to be type of Array.'))
   }
-  const classStr = arr.flat(Infinity).filter(isString).filter(s => s.length > 0).join(' ')
-  return classStr
+  const classString = arr.flat(Infinity).filter(isString).filter(s => s.length > 0).join(' ')
+  return classString
 }
 /**
- * Same as `pipe(classObjToArr, classArrToStr)`.
+ * Same as `pipe(classObjectToClassArray, classArrayToClassString)`.
+ *
  * @param classObject PlainObject which use classname as key and exist of classname as value
- * @return { ClassString } class string
+ * @return class string
  */
-export const classObjToStr = (obj: ClassObject): ClassString => {
+export const classObjectToClassString = (obj: ClassObject): ClassString => {
   if (!isPlainObject(obj)) {
     throw (new TypeError('"obj" is expected to be type of PlainObject.'))
   }
-  const classArr = classObjToArr(obj)
-  const classStr = classArrToStr(classArr)
-  return classStr
+  const classArray = classObjectToClassArray(obj)
+  const classString = classArrayToClassString(classArray)
+  return classString
 }
 /**
  * @param tar target, type of classString | classArray | classObject
- * @return { classString } class string
+ * @return class string
  */
-export const toClassStr = (tar: ClassUnion): ClassString => {
+export const toClassString = (tar: ClassUnion): ClassString => {
   if (isString(tar)) {
     return '' + tar
   } else if (isArray(tar)) {
-    return classArrToStr(tar)
+    return classArrayToClassString(tar)
   } else if (isPlainObject(tar)) {
-    return classObjToStr(tar)
+    return classObjectToClassString(tar)
   } else {
     throw (new TypeError('"tar" is expected to be type of String | Array | Object.'))
   }
 }
 /**
  * @param tar target, type of classString | classArray | classObject
- * @return { ClassArray } array of classnames
+ * @return array of classnames
  */
-export const toClassArr = (tar: ClassUnion): ClassArray => {
+export const toClassArray = (tar: ClassUnion): ClassArray => {
   if (isString(tar)) {
-    return classStrToArr(tar)
+    return classStringToClassArray(tar)
   } else if (isArray(tar)) {
     return [...tar.flat(Infinity).filter(isString)]
   } else if (isPlainObject(tar)) {
-    return classObjToArr(tar)
+    return classObjectToClassArray(tar)
   } else {
     throw (new TypeError('"tar" is expected to be type of String | Array | Object.'))
   }
@@ -156,11 +160,11 @@ export const toClassArr = (tar: ClassUnion): ClassArray => {
  * @param tar target, type of classString | classArray | classObject
  * @return { ClassObject } PlainObject which use classname as key and exist of classname as value
  */
-export const toClassObj = (tar: ClassUnion): ClassObject => {
+export const toClassObject = (tar: ClassUnion): ClassObject => {
   if (isString(tar)) {
-    return classStrToObj(tar)
+    return classStringToClassObject(tar)
   } else if (isArray(tar)) {
-    return classArrToObj(tar)
+    return classArrayToClassObject(tar)
   } else if (isPlainObject(tar)) {
     return { ...tar }
   } else {
@@ -171,16 +175,16 @@ export const toClassObj = (tar: ClassUnion): ClassObject => {
  * Curried.
  * @param target string | array | object
  * @param cls target, type of classString | classArray | classObject
- * @return { ClassUnion } classString | classArray | classObject
+ * @return classString | classArray | classObject
  */
 export const formatClassTo = curry(
   (target: string | any[] | Record<any, any>, cls: ClassUnion): typeof cls => {
     if (isString(target)) {
-      return toClassStr(cls)
+      return toClassString(cls)
     } else if (isArray(target)) {
-      return toClassArr(cls)
+      return toClassArray(cls)
     } else if (isPlainObject(target)) {
-      return toClassObj(cls)
+      return toClassObject(cls)
     } else {
       throw (new TypeError('"target" is expected to be type of String | Array | Object.'))
     }
@@ -191,27 +195,27 @@ export const formatClassTo = curry(
  * Curried.
  * @param prefix classname prefix
  * @param cls class, type of classString | classArray | classObject
- * @return { ClassUnion } typeof param class, says classString | classArray | classObject
+ * @return typeof param class, says classString | classArray | classObject
  */
 export const prefixClassWith = curry((prefix: string, cls: ClassUnion): typeof cls => {
   if (isString(cls)) {
-    const classArr = classStrToArr(cls).map(item =>
+    const classArray = classStringToClassArray(cls).map(item =>
       item.indexOf(prefix) === 0 ? item : `${prefix}${item}`
     )
-    const classStr = classArrToStr(classArr)
-    return classStr
+    const classString = classArrayToClassString(classArray)
+    return classString
   } else if (isArray(cls)) {
-    const classArr = cls.map(item =>
+    const classArray = cls.map(item =>
       item.indexOf(prefix) === 0 ? item : `${prefix}${item}`
     )
-    return classArr
+    return classArray
   } else if (isPlainObject(cls)) {
-    const classObj: ClassObject = {}
+    const classObject: ClassObject = {}
     Object.entries(cls).forEach(([key, value]) => {
       const _key = key.indexOf(prefix) === 0 ? key : `${prefix}${key}`
-      classObj[_key] = value
+      classObject[_key] = value
     })
-    return classObj
+    return classObject
   } else {
     throw (new Error('"cls"(aka. class) is expected to be type of String | Array | Object.'))
   }
@@ -220,33 +224,33 @@ export const prefixClassWith = curry((prefix: string, cls: ClassUnion): typeof c
  * Curried.
  * @param prefix classname prefix
  * @param cls class, type of classString | classArray | classObject
- * @return { ClassUnion } typeof param class, says classString | classArray | classObject
+ * @return typeof param class, says classString | classArray | classObject
  */
 export const removePrefixOfClass = curry((prefix: string, cls: ClassUnion): typeof cls => {
   if (isString(cls)) {
-    const classArr = classStrToArr(cls).map(item => {
+    const classArray = classStringToClassArray(cls).map(item => {
       if (item.indexOf(prefix) === 0) {
         return item.slice(prefix.length)
       }
       return item
     })
-    const classStr = classArrToStr(classArr)
-    return classStr
+    const classString = classArrayToClassString(classArray)
+    return classString
   } else if (isArray(cls)) {
-    const classArr = cls.map(item => {
+    const classArray = cls.map(item => {
       if (item.indexOf(prefix) === 0) {
         return item.slice(prefix.length)
       }
       return item
     })
-    return classArr
+    return classArray
   } else if (isPlainObject(cls)) {
-    const classObj: ClassObject = {}
+    const classObject: ClassObject = {}
     Object.entries(cls).forEach(([key, value]) => {
       const _key = key.indexOf(prefix) === 0 ? key.slice(prefix.length) : key
-      classObj[_key] = value
+      classObject[_key] = value
     })
-    return classObj
+    return classObject
   } else {
     throw (new Error('"cls"(aka. class) is expected to be type of String | Array | Object.'))
   }
@@ -256,11 +260,11 @@ export const removePrefixOfClass = curry((prefix: string, cls: ClassUnion): type
  * Curried.
  * @param added class, type of classString | classArray | classObject
  * @param target class, type of classString | classArray | classObject
- * @return { ClassUnion } typeof param class, says classString | classArray | classObject
+ * @return typeof param class, says classString | classArray | classObject
  */
 export const addClass = curry((added: ClassUnion, target: ClassUnion): typeof target => {
-  const addedClassObj = toClassObj(added)
-  const targetClassObj = toClassObj(target)
+  const addedClassObj = toClassObject(added)
+  const targetClassObj = toClassObject(target)
   const resClassObj = { ...targetClassObj, ...addedClassObj }
   return formatClassTo(target, resClassObj)
 })
@@ -268,14 +272,14 @@ export const addClass = curry((added: ClassUnion, target: ClassUnion): typeof ta
  * Curried.
  * @param removed class, type of classString | classArray | classObject
  * @param target class, type of classString | classArray | classObject
- * @return { ClassUnion } typeof param class, says classString | classArray | classObject
+ * @return typeof param class, says classString | classArray | classObject
  */
 export const removeClass = curry((removed: ClassUnion, target: ClassUnion): typeof target => {
-  const removedClassObj = toClassObj(removed)
+  const removedClassObj = toClassObject(removed)
   Object.keys(removedClassObj).forEach(key => {
     removedClassObj[key] = false
   })
-  const targetClassObj = toClassObj(target)
+  const targetClassObj = toClassObject(target)
   const resClassObj = { ...targetClassObj, ...removedClassObj }
   return formatClassTo(target, resClassObj)
 })
@@ -283,11 +287,11 @@ export const removeClass = curry((removed: ClassUnion, target: ClassUnion): type
  * Curried.
  * @param toggled class, type of classString | classArray | classObject
  * @param target class, type of classString | classArray | classObject
- * @return { ClassUnion } typeof param class, says classString | classArray | classObject
+ * @return typeof param class, says classString | classArray | classObject
  */
 export const toggleClass = curry((toggled: ClassUnion, target: ClassUnion): typeof target => {
-  const toggledClassArr = toClassArr(toggled)
-  const targetClassObj = toClassObj(target)
+  const toggledClassArr = toClassArray(toggled)
+  const targetClassObj = toClassObject(target)
   toggledClassArr.forEach(cls => {
     targetClassObj[cls] = !targetClassObj[cls]
   })
@@ -298,7 +302,7 @@ type Replaced = Record<string, string> | Array<string | string[]> | string
  * Curried.
  * @param replaced class, type of classString | classArray | classObject
  * @param target class, type of classString | classArray | classObject
- * @return { ClassUnion } typeof param class, says classString | classArray | classObject
+ * @return typeof param class, says classString | classArray | classObject
  */
 export const replaceClass = curry((replaced: Replaced, target: ClassUnion): typeof target => {
   if (isArray(replaced)) {
@@ -321,7 +325,7 @@ export const replaceClass = curry((replaced: Replaced, target: ClassUnion): type
         }
         return formatted
       })
-    const targetClassObj = toClassObj(target)
+    const targetClassObj = toClassObject(target)
     replacedArr.forEach(([from, to]) => {
       if (!isString(from) || !isString(to)) {
         return
@@ -336,7 +340,7 @@ export const replaceClass = curry((replaced: Replaced, target: ClassUnion): type
     })
     return formatClassTo(target, targetClassObj)
   } else if (isPlainObject(replaced)) {
-    const targetClassObj = toClassObj(target)
+    const targetClassObj = toClassObject(target)
     Object.entries(replaced).forEach(([from, to]) => {
       if (!isString(from) || !isString(to)) {
         return
@@ -360,11 +364,11 @@ export const replaceClass = curry((replaced: Replaced, target: ClassUnion): type
  * Curried.
  * @param contained class, type of classString | classArray | classObject
  * @param target class, type of classString | classArray | classObject
- * @return { boolean } whether target class contains contained class
+ * @return whether target class contains contained class
  */
 export const containClass = curry((contained, target) => {
-  const containedClassArr = toClassArr(contained)
-  const targetClassArr = toClassArr(target)
+  const containedClassArr = toClassArray(contained)
+  const targetClassArr = toClassArray(target)
   return containedClassArr.every(item => targetClassArr.includes(item))
 })
 
@@ -373,12 +377,12 @@ export const containClass = curry((contained, target) => {
 // const classObj = { 'mobius-add': true, del: false }
 
 // console.log('【Type transformation】')
-// console.log(classStrToArr(classStr))
-// console.log(classArrToObj(classArr))
-// console.log(classStrToObj(classStr))
-// console.log(classObjToArr(classObj))
-// console.log(classArrToStr(classArr))
-// console.log(classObjToStr(classObj))
+// console.log(classStringToClassArray(classStr))
+// console.log(classArrayToClassObject(classArr))
+// console.log(classStringToClassObject(classStr))
+// console.log(classObjectToClassArray(classObj))
+// console.log(classArrayToClassString(classArr))
+// console.log(classObjectToClassString(classObj))
 // console.log('【prefix】')
 // console.log(prefixClassWith('mobius-', classStr))
 // console.log(prefixClassWith('mobius-', classArr))
