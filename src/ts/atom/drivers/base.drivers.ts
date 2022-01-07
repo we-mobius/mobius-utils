@@ -4,9 +4,9 @@ import { isAtomLike, Data } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { binaryTweenPipeAtom } from '../helpers'
 
+import type { AnyStringRecord } from '../../@types/index'
 import type { AtomLike, Mutation, AtomLikeOfOutput, AtomLikeOfInput } from '../atoms'
 import type { ReplayDataMediator, ReplayMutationMediator } from '../mediators'
-import type { AnyStringRecord } from '../../@types/index'
 
 /************************************************************************************************
  *
@@ -32,9 +32,9 @@ export interface DriverInstance extends AnyStringRecord {
   outputs?: AnyStringRecord
 }
 
-const DEFAULT_DRIVER_OPTIONS = {}
-const DEFAULT_DRIVER_LEVEL_CONTEXTS = { inputs: {}, outputs: {} }
-const DEFAULT_SINGLETON_LEVEL_CONTEXTS = { inputs: {}, outputs: {} }
+export const DEFAULT_DRIVER_OPTIONS: Required<DriverOptions> = {}
+export const DEFAULT_DRIVER_LEVEL_CONTEXTS: Required<DriverLevelContexts> = { inputs: {}, outputs: {} }
+export const DEFAULT_SINGLETON_LEVEL_CONTEXTS: Required<DriverSingletonLevelContexts> = { inputs: {}, outputs: {} }
 
 type PrepareDriverSingletonLevelContexts<
   Options extends DriverOptions = DriverOptions,
@@ -49,6 +49,7 @@ export interface GeneralDriverCreateOptions<
   DSLC extends DriverSingletonLevelContexts = DriverSingletonLevelContexts,
   Instance extends DriverInstance = DriverInstance
 > {
+  defaultOptions?: Options
   prepareOptions?: (options: Options) => Options
   prepareDriverLevelContexts?: () => DLC
   prepareSingletonLevelContexts?: PrepareDriverSingletonLevelContexts<Options, DLC, DSLC>
@@ -60,6 +61,7 @@ export interface GeneralDriverCreateOptions<
 }
 
 const DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS: Required<GeneralDriverCreateOptions<any, any, any, any>> = {
+  defaultOptions: DEFAULT_DRIVER_OPTIONS,
   prepareOptions: (options) => options,
   prepareDriverLevelContexts: () => DEFAULT_DRIVER_LEVEL_CONTEXTS,
   prepareSingletonLevelContexts: (options, driverLevelContexts) => DEFAULT_SINGLETON_LEVEL_CONTEXTS,
@@ -94,7 +96,7 @@ export const createGeneralDriver = <
   }
 
   const {
-    prepareOptions, prepareDriverLevelContexts, prepareSingletonLevelContexts, prepareInstance
+    defaultOptions, prepareOptions, prepareDriverLevelContexts, prepareSingletonLevelContexts, prepareInstance
   } = preparedCreateOptions
 
   const _driverLevelContexts = prepareDriverLevelContexts()
@@ -106,20 +108,19 @@ export const createGeneralDriver = <
   }
 
   /**
-   * @param [options = DEFAULT_DRIVER_OPTIONS] In order to clarify the role of each configuration item,
-   *                                           the configuration is best to be in object format.
+   * @param options In order to clarify the role of each configuration item,
+   *                the configuration is best to be in object format.
    * @return { DriverMaker } DriverFactory
    */
-  const driverFactory = (options: Options = DEFAULT_DRIVER_OPTIONS as Options): Instance => {
+  const driverFactory = (options: Options = defaultOptions): Instance => {
     if (!isPlainObject(options)) {
       throw (new TypeError('"options" is expected to be type of "PlainObject".'))
     }
 
-    const _options = prepareOptions(options)
-    if (!isPlainObject(_options)) {
+    const preparedOptions = prepareOptions({ ...defaultOptions, ...options })
+    if (!isPlainObject(preparedOptions)) {
       throw (new TypeError('The returned value of "prepareOptions" is expected to be type of "PlainObject".'))
     }
-    const preparedOptions = { ...DEFAULT_DRIVER_OPTIONS as Options, ..._options }
 
     const _singletonLevelContexts = prepareSingletonLevelContexts(preparedOptions, preparedDriverLevelContexts)
     if (!isPlainObject(_singletonLevelContexts)) {
