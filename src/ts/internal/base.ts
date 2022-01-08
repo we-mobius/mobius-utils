@@ -6,6 +6,7 @@ import type { Observable } from 'rxjs'
 /**
  * 进行类型检测的常用手段包括：
  *   - typeof: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof
+ *             https://tc39.es/ecma262/#sec-typeof-operator
  *   - instanceof: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/instanceof
  *   - toString: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/toString
  */
@@ -16,7 +17,7 @@ export type NonPrimative = object
 
 // @refer https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#Data_types
 export const isUndefined = (tar: any): tar is undefined =>
-  Object.prototype.toString.call((tar)) === '[object Undefined]'
+  Object.prototype.toString.call(tar) === '[object Undefined]'
 // @refer https://stackoverflow.com/a/52097700
 export const isDefined = <T>(variable: T): variable is T => typeof variable !== 'undefined'
 export const isBoolean = (tar: any): tar is boolean =>
@@ -31,6 +32,9 @@ export const isSymbol = (tar: any): tar is symbol =>
   Object.prototype.toString.call(tar) === '[object Symbol]'
 export const isNull = (tar: any): tar is null =>
   Object.prototype.toString.call((tar)) === '[object Null]'
+export const isPrimative = (tar: any): tar is Primative =>
+  isString(tar) || isNumber(tar) || isBoolean(tar) || isBigint(tar) || isSymbol(tar) || isNull(tar) || isUndefined(tar)
+export const isNonPrimative = (tar: any): tar is NonPrimative => !isPrimative(tar)
 
 /**
  * Predicate whether the target is a Object, use `instanceof` operator to check.
