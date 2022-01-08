@@ -31,11 +31,11 @@ export const completeStateD = filterT((v: string): boolean => v === 'complete', 
 export const completeStateRD = ReplayMediator.of(completeStateD, { autoTrigger: true })
 completeStateD.setOptions('isAsync', true)
 
-export const windowResizeD = webEnv ? createDataFromEvent<Event>({ target: window, type: 'resize' })[0] : Data.empty<Event>()
+export const windowResizeD = webEnv ? createDataFromEvent<UIEvent>({ target: window, type: 'resize' })[0] : Data.empty<UIEvent>()
 export const windowResizeRD = ReplayMediator.of(windowResizeD, { autoTrigger: true })
 windowResizeD.setOptions('isAsync', true)
 if (webEnv) {
-  windowResizeD.mutate(() => ({ type: 'resize', target: window } as unknown as Event))
+  windowResizeD.mutate(() => ({ type: 'resize', target: window } as unknown as UIEvent))
 }
 
 export const windowD = webEnv ? Data.of(window) : Data.empty<typeof window>()
