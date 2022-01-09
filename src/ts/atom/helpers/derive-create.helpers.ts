@@ -3,9 +3,10 @@ import {
   isEventTarget, isObservable, isIterable,
   asIs
 } from '../../internal/base'
-import { compose } from '../../functional'
+import { pipe } from '../../functional'
 import { createDataWithTrigger, createMutationWithTrigger } from './hybrid-create.helpers'
 
+import type { SynthesizeEvent } from '../../@types'
 import type { InternalTrigger, Trigger } from '../atoms'
 import type { Observable, Subscription } from 'rxjs'
 
@@ -18,7 +19,7 @@ import type { Observable, Subscription } from 'rxjs'
 /**
  *
  */
-interface IterableTriggerCreateOptions<V, R> {
+interface IterableTriggerCreateOptions<V = any, R = any> {
   iterable: Iterable<V>
   autoStart?: boolean
   repeatable?: boolean
@@ -42,7 +43,10 @@ export const createIterableTrigger = <V = any, R = V>(options: IterableTriggerCr
     throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
 
-  const { iterable, autoStart, repeatable, handler } = { ...DEFAULT_ITERABLE_TRIGGER_CREATE_OPTIONS, ...options }
+  const preparedOptions: Required<IterableTriggerCreateOptions<V, R>> = {
+    ...DEFAULT_ITERABLE_TRIGGER_CREATE_OPTIONS, ...options
+  }
+  const { iterable, autoStart, repeatable, handler } = preparedOptions
 
   if (!isIterable(iterable)) {
     throw (new TypeError('"iterable" is expected to be type of "Iterable".'))
@@ -94,8 +98,8 @@ export const createIterableTrigger = <V = any, R = V>(options: IterableTriggerCr
     }
   }
 }
-export const createDataFromIterable = compose(createDataWithTrigger, createIterableTrigger)
-export const createMutationFromIterable = compose(createMutationWithTrigger, createIterableTrigger)
+export const createDataFromIterable = pipe(createIterableTrigger, createDataWithTrigger)
+export const createMutationFromIterable = pipe(createIterableTrigger, createMutationWithTrigger)
 
 /************************************************************************************************************************
  *
@@ -106,14 +110,14 @@ export const createMutationFromIterable = compose(createMutationWithTrigger, cre
 /**
  *
  */
-interface EventTriggerCreateOptions<R> {
-  target: EventTarget
+interface EventTriggerCreateOptions<Target extends EventTarget = EventTarget, Returned = Event> {
+  target: Target
   type: string
   autoStart?: boolean
-  handler?: (arg: Event, ...args: any[]) => R
+  handler?: (event: SynthesizeEvent<Target>, ...args: any[]) => Returned
 }
 
-const DEFAULT_EVENT_TRIGGER_CREATE_OPTIONS: Omit<Required<EventTriggerCreateOptions<any>>, 'target' | 'type'> = {
+const DEFAULT_EVENT_TRIGGER_CREATE_OPTIONS: Omit<Required<EventTriggerCreateOptions<any, any>>, 'target' | 'type'> = {
   autoStart: true,
   handler: asIs
 }
@@ -124,12 +128,16 @@ const DEFAULT_EVENT_TRIGGER_CREATE_OPTIONS: Omit<Required<EventTriggerCreateOpti
  * @param [options.autoStart = true] indicate if the event will be listened automatically
  * @param [options.handler = asIs] will be apply to event argument before it passed to trigger
  */
-export const createEventTrigger = <R = any>(options: EventTriggerCreateOptions<R>): Trigger<R> => {
+export const createEventTrigger = <Target extends EventTarget = EventTarget, Returned = Event>(
+  options: EventTriggerCreateOptions<Target, Returned>
+): Trigger<Returned> => {
   if (!isPlainObject(options)) {
     throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
-
-  const { target, type, autoStart, handler } = { ...DEFAULT_EVENT_TRIGGER_CREATE_OPTIONS, ...options }
+  const preparedOptions: Required<EventTriggerCreateOptions<Target, Returned>> = {
+    ...DEFAULT_EVENT_TRIGGER_CREATE_OPTIONS, ...options
+  }
+  const { target, type, autoStart, handler } = preparedOptions
 
   if (!isFunction(handler)) {
     throw (new TypeError('"handler" is expected to be type of "Function".'))
@@ -140,9 +148,9 @@ export const createEventTrigger = <R = any>(options: EventTriggerCreateOptions<R
   }
 
   return internalTrigger => {
-    const listener: EventListenerOrEventListenerObject = e => {
-      internalTrigger(handler(e))
-    }
+    const listener = ((event: SynthesizeEvent<Target>) => {
+      internalTrigger(handler(event))
+    }) as unknown as EventListener
 
     const listen = (): void => {
       target.addEventListener(type, listener)
@@ -167,8 +175,8 @@ export const createEventTrigger = <R = any>(options: EventTriggerCreateOptions<R
     }
   }
 }
-export const createDataFromEvent = compose(createDataWithTrigger, createEventTrigger)
-export const createMutationFromEvent = compose(createMutationWithTrigger, createEventTrigger)
+export const createDataFromEvent = pipe(createEventTrigger, createDataWithTrigger)
+export const createMutationFromEvent = pipe(createEventTrigger, createMutationWithTrigger)
 
 /************************************************************************************************************************
  *
@@ -179,7 +187,7 @@ export const createMutationFromEvent = compose(createMutationWithTrigger, create
 /**
  *
  */
-interface IntervalTriggerCreateOptions<R> {
+interface IntervalTriggerCreateOptions<R = number> {
   start?: number
   step?: number
   interval?: number
@@ -203,12 +211,14 @@ const DEFAULT_INTERVAL_TRIGGER_CREATE_OPTIONS: Required<IntervalTriggerCreateOpt
  * @param [options.handler = asIs] will be apply to interval value before it passed to trigger
  * @return Trigger
  */
-export const createIntervalTrigger = <R = any>(options: IntervalTriggerCreateOptions<R>): Trigger<R> => {
+export const createIntervalTrigger = <R = number>(options: IntervalTriggerCreateOptions<R>): Trigger<R> => {
   if (!isPlainObject(options)) {
     throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
-
-  const { start, step, interval, autoStart, handler } = { ...DEFAULT_INTERVAL_TRIGGER_CREATE_OPTIONS, ...options }
+  const preparedOptions: Required<IntervalTriggerCreateOptions<R>> = {
+    ...DEFAULT_INTERVAL_TRIGGER_CREATE_OPTIONS, ...options
+  }
+  const { start, step, interval, autoStart, handler } = preparedOptions
 
   if (!isFunction(handler)) {
     throw (new TypeError('"handler" is expected to be type of "Function".'))
@@ -258,8 +268,8 @@ export const createIntervalTrigger = <R = any>(options: IntervalTriggerCreateOpt
     }
   }
 }
-export const createDataFromInterval = compose(createDataWithTrigger, createIntervalTrigger)
-export const createMutationFromInterval = compose(createMutationWithTrigger, createIntervalTrigger)
+export const createDataFromInterval = pipe(createIntervalTrigger, createDataWithTrigger)
+export const createMutationFromInterval = pipe(createIntervalTrigger, createMutationWithTrigger)
 
 /************************************************************************************************************************
  *
@@ -270,10 +280,10 @@ export const createMutationFromInterval = compose(createMutationWithTrigger, cre
 /**
  *
  */
-interface TimeoutTriggerCreateOptions<R> {
+interface TimeoutTriggerCreateOptions<R = number> {
   timeout: number
   autoStart?: boolean
-  handler?: (...args: any[]) => R
+  handler?: (arg: number, ...args: any[]) => R
 }
 
 const DEFAULT_TIMEOUT_TRIGGER_CREATE_OPTIONS: Omit<Required<TimeoutTriggerCreateOptions<any>>, 'timeout'> = {
@@ -286,12 +296,14 @@ const DEFAULT_TIMEOUT_TRIGGER_CREATE_OPTIONS: Omit<Required<TimeoutTriggerCreate
  * @param [options.autoStart = true] indicate if the timeout will auto start
  * @param [options.handler = asIs] result of its execution will be passed to trigger
  */
-export const createTimeoutTrigger = <R = any>(options: TimeoutTriggerCreateOptions<R>): Trigger<R> => {
+export const createTimeoutTrigger = <R = number>(options: TimeoutTriggerCreateOptions<R>): Trigger<R> => {
   if (!isPlainObject(options)) {
     throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
-
-  const { timeout, autoStart, handler } = { ...DEFAULT_TIMEOUT_TRIGGER_CREATE_OPTIONS, ...options }
+  const preparedOptions: Required<TimeoutTriggerCreateOptions<R>> = {
+    ...DEFAULT_TIMEOUT_TRIGGER_CREATE_OPTIONS, ...options
+  }
+  const { timeout, autoStart, handler } = preparedOptions
 
   if (!isNumber(timeout)) {
     throw (new TypeError('"timeout" is expected to be type of "Number".'))
@@ -311,7 +323,7 @@ export const createTimeoutTrigger = <R = any>(options: TimeoutTriggerCreateOptio
     try {
       timeoutStates.timer = setTimeout(() => {
         internalTriggers.forEach(trigger => {
-          trigger(handler())
+          trigger(handler(timeout))
         })
       }, timeout)
     } catch (error) {
@@ -344,8 +356,8 @@ export const createTimeoutTrigger = <R = any>(options: TimeoutTriggerCreateOptio
     }
   }
 }
-export const createDataFromTimeout = compose(createDataWithTrigger, createTimeoutTrigger)
-export const createMutationFromTimeout = compose(createMutationWithTrigger, createTimeoutTrigger)
+export const createDataFromTimeout = pipe(createTimeoutTrigger, createDataWithTrigger)
+export const createMutationFromTimeout = pipe(createTimeoutTrigger, createMutationWithTrigger)
 
 /************************************************************************************************************************
  *
@@ -356,7 +368,7 @@ export const createMutationFromTimeout = compose(createMutationWithTrigger, crea
 /**
  *
  */
-interface ObservableTriggerCreateOptions<V, R> {
+interface ObservableTriggerCreateOptions<V = any, R = any> {
   observable: Observable<V>
   autoStart?: boolean
   handler?: (arg: V, ...args: any[]) => R
@@ -376,7 +388,10 @@ export const createObservableTrigger = <V = any, R = V>(options: ObservableTrigg
     throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
 
-  const { observable, autoStart, handler } = { ...DEFAULT_OBSERVABLE_TRIGGER_CREATE_OPTIONS, ...options }
+  const preparedOptions: Required<ObservableTriggerCreateOptions<V, R>> = {
+    ...DEFAULT_OBSERVABLE_TRIGGER_CREATE_OPTIONS, ...options
+  }
+  const { observable, autoStart, handler } = preparedOptions
 
   if (!isObservable(observable)) {
     throw (new TypeError('"observable" is expected to be type of "Observable" which implements the "subscribe" method.'))
@@ -425,8 +440,8 @@ export const createObservableTrigger = <V = any, R = V>(options: ObservableTrigg
     }
   }
 }
-export const createDataFromObservable = compose(createDataWithTrigger, createObservableTrigger)
-export const createMutationFromObservable = compose(createMutationWithTrigger, createObservableTrigger)
+export const createDataFromObservable = pipe(createObservableTrigger, createDataWithTrigger)
+export const createMutationFromObservable = pipe(createObservableTrigger, createMutationWithTrigger)
 
 /************************************************************************************************************************
  *
@@ -437,12 +452,12 @@ export const createMutationFromObservable = compose(createMutationWithTrigger, c
 /**
  *
  */
-type emitFunction<P extends any[]> = (...args: P) => void
-interface FunctionTriggerCreateOptions<P extends any[], R> {
-  agent: (emitFunction: emitFunction<P>) => void
+type emitFunction<P extends any[]> = (...args: [...P]) => void
+interface FunctionTriggerCreateOptions<P extends any[] = any[], R = any> {
+  agent: (emitFunction: emitFunction<[...P]>) => void
   autoBind?: boolean
   autoStart?: boolean
-  handler?: (...args: P) => R
+  handler?: (...args: [...P]) => R
 }
 const DEFAULT_FUNCTION_TRIGGER_CREATE_OPTIONS: Omit<Required<FunctionTriggerCreateOptions<any[], any>>, 'agent'> = {
   autoBind: true,
@@ -492,8 +507,10 @@ export const createFunctionTrigger = <P extends any[] = any[], R = any>(options:
   if (!isPlainObject(options)) {
     throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
-
-  const { agent, autoBind, autoStart, handler } = { ...DEFAULT_FUNCTION_TRIGGER_CREATE_OPTIONS, ...options }
+  const preparedOptions: Required<FunctionTriggerCreateOptions<P, R>> = {
+    ...DEFAULT_FUNCTION_TRIGGER_CREATE_OPTIONS, ...options
+  }
+  const { agent, autoBind, autoStart, handler } = preparedOptions
 
   if (!isFunction(agent)) {
     throw (new TypeError('"agent" is expected to be type of "Function".'))
@@ -537,13 +554,13 @@ export const createFunctionTrigger = <P extends any[] = any[], R = any>(options:
     }
   }
 }
-export const createDataFromFunction = compose(createDataWithTrigger, createFunctionTrigger)
-export const createMutationFromFunction = compose(createMutationWithTrigger, createFunctionTrigger)
+export const createDataFromFunction = pipe(createFunctionTrigger, createDataWithTrigger)
+export const createMutationFromFunction = pipe(createFunctionTrigger, createMutationWithTrigger)
 
-interface FunctionTriggerAgent<P extends any[], R> {
-  agent: (emitFunction: emitFunction<P>) => void
-  handler: (...args: P) => R
-  emit?: emitFunction<P>
+interface FunctionTriggerAgent<P extends any[] = any[], R = any> {
+  agent: (emitFunction: emitFunction<[...P]>) => void
+  handler: (...args: [...P]) => R
+  emit?: emitFunction<[...P]>
   isBound: boolean
 }
 /**
@@ -555,14 +572,14 @@ interface FunctionTriggerAgent<P extends any[], R> {
  * createFunctionTrigger({ ...createFunctionTriggerAgent(handler), ...otherOptions })
  * ```
  */
-export const createFunctionTriggerAgent = <P extends any[], R>(
-  handler: (...args: P) => R
-): FunctionTriggerAgent<P, R> => {
-  const agentCollection: FunctionTriggerAgent<P, R> = {
+export const createFunctionTriggerAgent = <P extends any[] = any[], R = any>(
+  handler: (...args: [...P]) => R
+): FunctionTriggerAgent<[...P], R> => {
+  const agentCollection: FunctionTriggerAgent<[...P], R> = {
     handler: handler,
     isBound: false,
     emit: undefined,
-    agent: (innerEmit: emitFunction<P>): void => {
+    agent: (innerEmit: emitFunction<[...P]>): void => {
       agentCollection.emit = innerEmit
       agentCollection.isBound = true
     }
