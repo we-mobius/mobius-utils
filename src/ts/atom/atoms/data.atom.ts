@@ -53,6 +53,9 @@ export interface DataSubscription<V = any> extends Subscription {
   proxyConsumer: DatarConsumer<V>
 }
 
+export type DataTriggerAccepted<V = any> = V | Datar<V>
+export type DataTrigger<V = any> = Trigger<DataTriggerAccepted<V>>
+
 /**
  *
  */
@@ -422,7 +425,7 @@ export class Data<V = any> extends BaseAtom implements AtomLike {
    * @return { TriggerController } TriggerController
    */
   registerTrigger (
-    trigger: Trigger<V | Datar<V>>, options: AtomTriggerRegisterOptions = DEFAULT_ATOM_TRIGGER_REGISTER_OPTIONS
+    trigger: DataTrigger<V>, options: AtomTriggerRegisterOptions = DEFAULT_ATOM_TRIGGER_REGISTER_OPTIONS
   ): TriggerController {
     if (isNil(trigger)) {
       throw (new TypeError('"trigger" is required.'))
@@ -436,7 +439,7 @@ export class Data<V = any> extends BaseAtom implements AtomLike {
 
     const { forceWrap } = { ...DEFAULT_ATOM_TRIGGER_REGISTER_OPTIONS, ...options }
 
-    const internalTrigger: InternalTrigger<V | Datar<V>> = (accepted, ...args) => {
+    const internalTrigger: InternalTrigger<DataTriggerAccepted<V>> = (accepted, ...args) => {
       if (forceWrap) {
         return this.trigger(...[Datar.of(accepted), ...args])
       }

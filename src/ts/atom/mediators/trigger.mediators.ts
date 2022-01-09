@@ -1,12 +1,12 @@
 import { isObject } from '../../internal/base'
-import { isAtomLike, Data, isData, Mutation, isMutation } from '../atoms'
+import { isAtomLike, isData, isMutation } from '../atoms'
 import {
   DataMediator, MutationMediator
 } from './base.mediators'
 
-import type { MutatorTransformation } from '../particles'
 import type {
-  AtomTriggerRegisterOptions, Trigger, TriggerController, DataLike, MutationLike, AtomLikeOfOutput
+  AtomTriggerRegisterOptions, TriggerController, DataLike, MutationLike,
+  DataTrigger, MutationTrigger
 } from '../atoms'
 import type { MediatorTypeMaker, MediatorType } from './base.mediators'
 
@@ -43,8 +43,6 @@ export type TriggerMediatorUnion
   = TriggerDataMediator<any>
   | TriggerMutationMediator<any, any>
 
-type DataTrigger<V = any> = Trigger<V>
-type MutationTrigger<P = any, C = any> = Trigger<MutatorTransformation<P, C>>
 type TriggerDataMediatorMap<V = any> = Map<DataTrigger<V>, TriggerController>
 type TriggerMutationMediatorMap<P = any, C = any> = Map<MutationTrigger<P, C>, TriggerController>
 

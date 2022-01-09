@@ -6,8 +6,7 @@ import {
   FlatMediator
 } from '../mediators'
 
-import type { MutatorTransformation } from '../particles'
-import type { Trigger, TriggerController } from '../atoms'
+import type { TriggerController, DataTrigger, MutationTrigger } from '../atoms'
 import type {
   TriggerMediatorOptions, ReplayMediatorOptions, FlatMediatorOptions,
   TriggerDataMediator, TriggerMutationMediator,
@@ -137,7 +136,7 @@ export const createMutationWithFlatMediator_ = looseCurryN(0, createMutationWith
  *
  */
 export const createDataWithTrigger = <V = any>(
-  trigger: Trigger<V>,
+  trigger: DataTrigger<V>,
   options: TriggerMediatorOptions = {}
 ): [Data<V>, TriggerDataMediator<V>, typeof options, typeof trigger, TriggerController] => {
   const [data, mediator] = createDataWithTriggerMediator<V>(options)
@@ -149,7 +148,7 @@ export const createDataWithTrigger_ = looseCurryN(1, createDataWithTrigger)
  *
  */
 export const createMutationWithTrigger = <P = any, C = any>(
-  trigger: Trigger<MutatorTransformation<P, C>>,
+  trigger: MutationTrigger<P, C>,
   options: TriggerMediatorOptions = {}
 ): [Mutation<P, C>, TriggerMutationMediator<P, C>, typeof options, typeof trigger, TriggerController] => {
   const [mutation, mediator] = createMutationWithTriggerMediator<P, C>(options)

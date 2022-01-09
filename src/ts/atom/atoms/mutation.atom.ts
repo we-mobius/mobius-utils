@@ -72,6 +72,9 @@ export interface MutationSubscription<P = any, C = any> extends Subscription {
   proxyConsumer: MutatorConsumer<P, C>
 }
 
+export type MutationTriggerAccepted<P = any, C = any> = Mutator<P, C> | ((...args: any[]) => C) | C
+export type MutationTrigger<P = any, C = any> = Trigger<MutationTriggerAccepted<P, C>>
+
 /**
  *
  */
@@ -496,7 +499,7 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
    * @return { TriggerController } TriggerController
    */
   registerTrigger (
-    trigger: Trigger<Mutator<P, C> | ((...args: any[]) => C) | C>,
+    trigger: MutationTrigger<P, C>,
     options: AtomTriggerRegisterOptions = DEFAULT_ATOM_TRIGGER_REGISTER_OPTIONS
   ): TriggerController {
     if (isNil(trigger)) {
@@ -511,7 +514,7 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
 
     const { forceWrap } = { ...DEFAULT_ATOM_TRIGGER_REGISTER_OPTIONS, ...options }
 
-    const internalTrigger: InternalTrigger<Mutator<P, C> | ((...args: any[]) => C) | C> = (acceptValue, ...args) => {
+    const internalTrigger: InternalTrigger<MutationTriggerAccepted<P, C>> = (acceptValue, ...args) => {
       if (forceWrap) {
         return this.trigger(...[Mutator.of(() => acceptValue), ...args])
       }
