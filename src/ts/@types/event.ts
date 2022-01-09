@@ -3,4 +3,4 @@
 // A: Because the rest part of the codebase other than external will use these generics.
 
 export type SynthesizeEvent<Patch> = Event & { target: Patch }
-export type EventHandler<Target extends EventTarget = EventTarget> = (event: SynthesizeEvent<Target>) => void
+export type EventHandler<Target extends EventTarget | null = EventTarget | null> = (event: SynthesizeEvent<Target>) => void

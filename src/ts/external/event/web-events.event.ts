@@ -1,6 +1,11 @@
 import { Data, createDataFromEvent, ReplayMediator, filterT } from '../../atom'
 import { isInWebEnvironment } from '../environment'
 
+import type { SynthesizeEvent } from '../../@types'
+
+export type SyntheticDocumentEvent = SynthesizeEvent<Document>
+export type SyntheticWindowEvent = SynthesizeEvent<Window & typeof globalThis>
+
 const webEnv = isInWebEnvironment()
 
 // @refer https://zh.javascript.info/onload-ondomcontentloaded
@@ -8,13 +13,13 @@ const webEnv = isInWebEnvironment()
 
 export const domLoadedD = webEnv
   ? createDataFromEvent({ target: document, type: 'DOMContentLoaded' })[0]
-  : Data.empty<Event>()
+  : Data.empty<SyntheticDocumentEvent>()
 export const domLoadedRD = ReplayMediator.of(domLoadedD, { autoTrigger: true })
 domLoadedD.setOptions('isAsync', true)
 
 export const windowLoadedD = webEnv
   ? createDataFromEvent({ target: window, type: 'load' })[0]
-  : Data.empty<Event>()
+  : Data.empty<SyntheticWindowEvent>()
 export const windowLoadedRD = ReplayMediator.of(windowLoadedD, { autoTrigger: true })
 windowLoadedD.setOptions('isAsync', true)
 
@@ -44,10 +49,10 @@ if (webEnv) {
   windowResizeD.mutate(() => ({ type: 'resize', target: window } as unknown as UIEvent))
 }
 
-export const windowD = webEnv ? Data.of(window) : Data.empty<typeof window>()
+export const windowD = webEnv ? Data.of(window) : Data.empty<Window & typeof globalThis>()
 export const windowRD = ReplayMediator.of(windowD, { autoTrigger: true })
 windowD.setOptions('isAsync', true)
 
-export const documentD = webEnv ? Data.of(document) : Data.empty<typeof document>()
+export const documentD = webEnv ? Data.of(document) : Data.empty<Document>()
 export const documentRD = ReplayMediator.of(documentD, { autoTrigger: true })
 documentD.setOptions('isAsync', true)

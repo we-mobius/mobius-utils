@@ -110,7 +110,7 @@ export const createMutationFromIterable = pipe(createIterableTrigger, createMuta
 /**
  *
  */
-interface EventTriggerCreateOptions<Target extends EventTarget = EventTarget, Returned = Event> {
+interface EventTriggerCreateOptions<Target extends EventTarget | null = EventTarget | null, Returned = SynthesizeEvent<Target>> {
   target: Target
   type: string
   autoStart?: boolean
@@ -128,7 +128,7 @@ const DEFAULT_EVENT_TRIGGER_CREATE_OPTIONS: Omit<Required<EventTriggerCreateOpti
  * @param [options.autoStart = true] indicate if the event will be listened automatically
  * @param [options.handler = asIs] will be apply to event argument before it passed to trigger
  */
-export const createEventTrigger = <Target extends EventTarget = EventTarget, Returned = Event>(
+export const createEventTrigger = <Target extends EventTarget | null = EventTarget | null, Returned = SynthesizeEvent<Target>>(
   options: EventTriggerCreateOptions<Target, Returned>
 ): Trigger<Returned> => {
   if (!isPlainObject(options)) {

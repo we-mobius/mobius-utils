@@ -8,13 +8,13 @@ import {
 import type { SynthesizeEvent, EventHandler } from '../../@types'
 import type { TriggerController, TriggerMediatorOptions, DataTrigger } from '../../atom'
 
-type EventHandlerBatch<Target extends EventTarget = EventTarget, Returned = Event> = [
+type EventHandlerBatch<Target extends EventTarget | null = EventTarget | null, Returned = SynthesizeEvent<Target>> = [
   EventHandler<Target>, Data<Returned>, TriggerDataMediator<Returned>, TriggerMediatorOptions, DataTrigger<Returned>, TriggerController
 ]
 /**
  * @see {@link makeGeneralEventHandler}
  */
-export const makeEventHandler = <Target extends EventTarget = EventTarget, Returned = Event>(
+export const makeEventHandler = <Target extends EventTarget | null = EventTarget | null, Returned = SynthesizeEvent<Target>>(
   handler?: (event: SynthesizeEvent<Target>) => Returned
 ): [...EventHandlerBatch<Target, Returned>] => {
   const defaultHandler = (event: SynthesizeEvent<Target>): SynthesizeEvent<Target> => event
@@ -24,7 +24,7 @@ export const makeEventHandler = <Target extends EventTarget = EventTarget, Retur
   return [agent.emit!, ...collection]
 }
 
-type GeneralEventHandlerBatch<Target extends EventTarget = EventTarget, Returned = Event> = [
+type GeneralEventHandlerBatch<Target extends EventTarget | null = EventTarget | null, Returned = SynthesizeEvent<Target>> = [
   ReplayDataMediator<EventHandler<Target>>, EventHandler<Target>,
   Data<Returned>, TriggerDataMediator<Returned>,
   TriggerMediatorOptions, DataTrigger<Returned>, TriggerController
@@ -32,7 +32,7 @@ type GeneralEventHandlerBatch<Target extends EventTarget = EventTarget, Returned
 /**
  * @see {@link makeEventHandler}
  */
-export function makeGeneralEventHandler <Target extends EventTarget = EventTarget, Returned = Event> (
+export function makeGeneralEventHandler <Target extends EventTarget | null = EventTarget | null, Returned = SynthesizeEvent<Target>> (
   handler?: (event: SynthesizeEvent<Target>) => Returned
 ): [...GeneralEventHandlerBatch<Target, Returned>] {
   const eventHandlerCollection = makeEventHandler(handler)
