@@ -2,20 +2,16 @@ import { isPlainObject, isFunction } from '../internal/base'
 import {
   isVacuo, TERMINATOR,
   Mutation, Data, isAtomLike,
-  pipeAtom, dataToData,
-  filterT_, pluckT,
-  createDataFromFunction, createDataFromEvent, createFunctionTriggerAgent,
+  pipeAtom,
+  filterT, pluckT,
+  createDataFromEvent,
   binaryTweenPipeAtom
 } from '../atom'
-import { completeStateRD } from './event'
-import { makeCustomEvent } from './dom'
+import { makeCustomEvent } from './event'
 
 import type {
   Terminator,
-  AtomLikeOfOutput, AtomLikeOfInput,
-  ReplayDataMediator,
-  Trigger, TriggerController,
-  TriggerDataMediator, TriggerMediatorOptions
+  AtomLikeOfOutput, AtomLikeOfInput
 } from '../atom'
 
 const GLOBAL_VARS = new Map()
@@ -29,122 +25,107 @@ export const globalVar = <V = any>(key: any, value?: V): V => {
   return GLOBAL_VARS.get(key)
 }
 
-type EventHandler = (event: Event) => void
-
-/**
- * @see {@link makeGeneralEventHandler}
- */
-export const makeEventHandler = <R = Event>(
-  handler?: (event: Event) => R
-): [EventHandler, Data<R>, TriggerDataMediator<R>, TriggerMediatorOptions, Trigger<R>, TriggerController] => {
-  const defaultHandler = (event: Event): Event => event
-  const agent = createFunctionTriggerAgent<[event: Event], R>(handler ?? defaultHandler as any)
-  const collection = createDataFromFunction<R>({ ...agent })
-
-  return [agent.emit!, ...collection]
+interface MessageDetail extends Record<string, any> {
+  from?: string | undefined
+  to?: string | undefined
 }
-
-/**
- * @see {@link makeEventHandler}
- */
-export const makeGeneralEventHandler = <R = Event>(
-  handler?: (event: Event) => R
-): [ReplayDataMediator<EventHandler>, EventHandler, Data<R>, TriggerDataMediator<R>, TriggerMediatorOptions, Trigger<R>, TriggerController] => {
-  const eventHandlerCollection = makeEventHandler(handler)
-  const [eventHandler] = eventHandlerCollection
-  const eventHandlerRD = dataToData(() => eventHandler, completeStateRD)
-  return [eventHandlerRD, ...eventHandlerCollection]
-}
-
-type MessageDetail = Record<string, any>
 type MessageOptions = EventInit
 interface FormattedMessage { detail: MessageDetail, options?: MessageOptions }
 type Message = FormattedMessage | MessageDetail
 
-type MessageType = 'Onymous' | 'Anonymous'
+type MessageType = 'onymous' | 'anonymous'
+/**
+ * Format for sending messages.
+ */
 interface MessageGate { type: MessageType, message: Message }
-
+/**
+ * The format of the send message.
+ */
 interface SendedMessage { type: string, detail: MessageDetail, options: EventInit }
-type ReceivedMessage = CustomEvent<MessageDetail> & { eventType: string }
+/**
+ * Custom message event, specify the format of `event.detail` property.
+ */
+type MessageReceivedEvent = CustomEvent<MessageDetail & { eventType: string }>
+
+/**
+ * Format message to standard form for sending.
+ */
+const formatMessage = (message: any): Required<FormattedMessage> => {
+  if (isPlainObject(message)) {
+    const { detail, options } = message
+    if (detail !== undefined) {
+      return { detail, options: options ?? {} }
+    } else {
+      return { detail: message, options: {} }
+    }
+  } else {
+    return { detail: { data: message }, options: {} }
+  }
+}
 
 class ElementBasedMessageProxy {
   element: Element
-  // proxy's default name
+  /**
+   * proxy's default name
+   */
   name: string
-  // proxy's default event type
+  /**
+   * proxy's default event type
+   */
   type: string
 
+  /**
+   * Mutate `messageGateD` to send message.
+   */
   messageGateD: Data<MessageGate>
 
+  /**
+   * Sended messages will be gathered in `sendedD`.
+   */
   sendedD: Data<SendedMessage>
 
-  broadReceiver: Data<ReceivedMessage>
-  onymousReceiver: Data<ReceivedMessage>
-  anonymousReceiver: Data<ReceivedMessage>
+  broadReceiver: Data<MessageReceivedEvent>
+  onymousReceiver: Data<MessageReceivedEvent>
+  anonymousReceiver: Data<MessageReceivedEvent>
 
   constructor (element: Element, type: string, name: string) {
     this.element = element
     this.type = type
     this.name = name
 
-    const [data] = createDataFromEvent({ target: element, type })
+    const [receivedD] = createDataFromEvent<Element, MessageReceivedEvent>({ target: element, type })
 
     this.messageGateD = Data.empty<MessageGate>()
-
-    const formatMessage = (message: any): Required<FormattedMessage> => {
-      if (isPlainObject(message)) {
-        const { detail, options } = message
-        if (detail !== undefined) {
-          return { detail, options: options ?? {} }
-        } else {
-          return { detail: message, options: {} }
-        }
-      } else {
-        return { detail: { data: message }, options: {} }
-      }
-    }
-
-    const onymousSendM = Mutation.ofLiftBoth<MessageGate, SendedMessage | Terminator>((prev) => {
+    const sendM = Mutation.ofLiftBoth<MessageGate, SendedMessage | Terminator>((prev) => {
       if (isVacuo(prev)) return TERMINATOR
 
       const { type: messageType, message } = prev
+      const { detail, options } = formatMessage(message)
 
-      if (messageType === 'Anonymous') {
-        return TERMINATOR
-      } else {
-        const { detail, options } = formatMessage(message)
+      if (messageType === 'onymous') {
         detail.from = name
-        element.dispatchEvent(makeCustomEvent(type, detail, options))
-        return { type, detail, options }
-      }
-    })
-    const anonymousSendM = Mutation.ofLiftBoth<MessageGate, SendedMessage | Terminator>((prev) => {
-      if (isVacuo(prev)) return TERMINATOR
-
-      const { type: messageType, message } = prev
-      if (messageType === 'Onymous') {
-        return TERMINATOR
-      } else {
-        const { detail, options } = formatMessage(message)
+      } else if (messageType === 'anonymous') {
         detail.from = undefined
-        element.dispatchEvent(makeCustomEvent(type, detail, options))
-        return { type, detail, options }
+      } else {
+        throw (new TypeError('"messageType" is expected to be "onymous" | "anonymous".'))
       }
+
+      element.dispatchEvent(makeCustomEvent(type, detail, options))
+      return { type, detail, options }
     })
     const sendedD = Data.empty<SendedMessage>()
-    pipeAtom(this.messageGateD, onymousSendM, sendedD)
-    pipeAtom(this.messageGateD, anonymousSendM, sendedD)
+    pipeAtom(this.messageGateD, sendM, sendedD)
     this.sendedD = sendedD
 
-    const namedReceiver = filterT_(prev => prev.detail.to === name, data)
-    this.broadReceiver = data
+    const namedReceiver = filterT(prev => prev.detail.to === name, receivedD)
+    this.broadReceiver = receivedD
     this.onymousReceiver = namedReceiver
-    this.anonymousReceiver = filterT_(prev => prev.detail.from === undefined, data)
+    this.anonymousReceiver = filterT(prev => prev.detail.from === undefined, receivedD)
   }
 
-  customizeReveiver (predicate: (target: ReceivedMessage) => boolean): Data<ReceivedMessage> {
+  customizeReveiver (predicate: (target: MessageReceivedEvent) => boolean): Data<MessageReceivedEvent> {
     if (isFunction(predicate)) {
-      return filterT_(predicate, this.broadReceiver)
+      return filterT(predicate, this.broadReceiver)
     } else if (isPlainObject(predicate)) {
       // TODO
       console.warn("TODO: PlainObject type of predicate as customizeReveiver's argument, you got a broadReceiver instead.")
@@ -165,7 +146,7 @@ class ElementBasedMessageProxy {
   // TODO: sendAnonymous
   // TODO: sendOnymous
 
-  receive (handler: ((message: ReceivedMessage) => void) | AtomLikeOfInput<ReceivedMessage>): void {
+  receive (handler: ((message: MessageReceivedEvent) => void) | AtomLikeOfInput<MessageReceivedEvent>): void {
     if (isAtomLike(handler)) {
       binaryTweenPipeAtom(this.broadReceiver, handler)
     } else if (isFunction(handler)) {
