@@ -19,18 +19,6 @@ export const injectScript = (
   return script
 }
 
-const DEFAULT_CUSTOM_EVENT_DEFAULT: Record<string, unknown> = {}
-/**
- * "event.detail" is always of type object which has an "eventType" property in it,
- *   "eventType"'s value equals to name of custom type.
- */
-export const makeCustomEvent = <D extends Record<string, unknown>>(
-  type: string,
-  detail: D = DEFAULT_CUSTOM_EVENT_DEFAULT as D,
-  options: EventInit = {}
-): CustomEvent<{ eventType: string } & D> =>
-    new CustomEvent(type, { ...options, detail: { eventType: type, ...detail } })
-
 /**
  * @param selector element's id or selector
  * @param interval polling interval (in ms)
