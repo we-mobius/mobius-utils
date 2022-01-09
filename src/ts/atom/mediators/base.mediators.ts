@@ -9,7 +9,7 @@ import {
   GC_DATA, GC_MUTATION
 } from '../atoms'
 
-import { AnyStringRecord } from '../../@types/index'
+import { AnyStringRecord } from '../../@types'
 import type { Particle, Datar, Mutator, MutatorTransformation } from '../particles'
 import type {
   AtomType,

@@ -1,4 +1,4 @@
-export * from './@types/index'
+export * from './@types'
 
 export * from './internal'
 export * from './functional'

@@ -13,7 +13,7 @@ import {
 import { isRequestEngineClass } from './engine.request'
 import { initializeBiutor } from './initialize.request'
 
-import type { AnyStringRecord } from '../../@types/index'
+import type { AnyStringRecord } from '../../@types'
 import type { ResponseUnion, ErrorResponseData } from '../response'
 import type { BiuRequestSupportEnvironments } from './const.request'
 import type { ConstructorOfRequestEngine } from './engine.request'

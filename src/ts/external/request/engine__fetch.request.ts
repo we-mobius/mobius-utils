@@ -3,7 +3,7 @@ import { errorToResponse } from '../response'
 import { RequestEngine } from './engine.request'
 import { WEB_ENV_CONTEXTS } from '../environment'
 
-import type { AnyStringRecord, AnyFunction } from '../../@types/index'
+import type { AnyStringRecord, AnyFunction } from '../../@types'
 import type { ErrorResponseData, ErrorResponse } from '../response'
 import type { BiuRequestSupportEnvironments } from './const.request'
 import type { BiuOptions } from './base.request'

@@ -1,6 +1,6 @@
 import { isFunction, isNormalFunction, isAsyncFunction } from './base'
 
-import type { AnyFunction } from '../@types/index'
+import type { AnyFunction } from '../@types'
 
 type LooseArray<T extends any[]> = [...T, ...any[]]
 

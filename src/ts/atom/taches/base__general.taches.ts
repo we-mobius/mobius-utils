@@ -4,7 +4,7 @@ import { looseCurryN } from '../../functional'
 import { Data, Mutation } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
-import type { AnyStringRecord } from '../../@types/index'
+import type { AnyStringRecord } from '../../@types'
 
 // S -> Single, M -> Multi
 

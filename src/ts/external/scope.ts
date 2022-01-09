@@ -7,7 +7,7 @@ import {
   binaryTweenPipeAtom
 } from '../atom'
 
-import type { AnyFunction } from '../@types/index'
+import type { AnyFunction } from '../@types'
 
 /*********************************************************************************************************************
  *

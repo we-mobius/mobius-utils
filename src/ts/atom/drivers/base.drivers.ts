@@ -4,7 +4,7 @@ import { isAtomLike, Data } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { binaryTweenPipeAtom } from '../helpers'
 
-import type { AnyStringRecord } from '../../@types/index'
+import type { AnyStringRecord } from '../../@types'
 import type { AtomLike, Mutation, AtomLikeOfOutput, AtomLikeOfInput } from '../atoms'
 import type { ReplayDataMediator, ReplayMutationMediator } from '../mediators'
 

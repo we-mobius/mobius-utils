@@ -1,7 +1,7 @@
 import { isObject, isPlainObject } from '../../internal/base'
 import { isResponse, dataToResponse } from '../response'
 
-import type { AnyStringRecord, ConstructorOf } from '../../@types/index'
+import type { AnyStringRecord, ConstructorOf } from '../../@types'
 import type { BiuRequestSupportEnvironments } from './const.request'
 import type { ResponseUnion, ErrorResponseData } from '../response'
 import type { BiuOptions } from './base.request'

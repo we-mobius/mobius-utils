@@ -1,7 +1,7 @@
 import { isNormalFunction } from './base'
 import { curry, looseCurryN } from '../functional/helpers'
 
-import type { AnyFunctionOfReturn, InvertBoolean, CastBoolean } from '../@types/index'
+import type { AnyFunctionOfReturn, InvertBoolean, CastBoolean } from '../@types'
 
 /**
  * Convert any value to `true` or `false`.

@@ -6,7 +6,7 @@ import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
 import type { Vacuo, Terminator } from '../metas'
 import type { AtomLikeOfOutput } from '../atoms'
-import type { IsTuple } from '../../@types/index'
+import type { IsTuple } from '../../@types'
 
 type StringRecord<V> = Record<string, V>
 

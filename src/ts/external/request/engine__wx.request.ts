@@ -3,7 +3,7 @@ import { WXMINA_ENV_CONTEXTS } from '../environment'
 import { errorToResponse } from '../response'
 import { RequestEngine } from './engine.request'
 
-import type { AnyStringRecord } from '../../@types/index'
+import type { AnyStringRecord } from '../../@types'
 import type { ErrorResponseData, ErrorResponse } from '../response'
 import type { BiuRequestSupportEnvironments } from './const.request'
 import type { BiuOptions } from './base.request'

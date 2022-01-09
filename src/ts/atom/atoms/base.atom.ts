@@ -8,7 +8,7 @@ import type { Data } from './data.atom'
 import type { Mutation } from './mutation.atom'
 import type { DataMediator, MutationMediator } from '../mediators'
 
-import type { AnyFunction, AnyStringRecord, CastAny, First, Last, UndefinedableByKeys } from '../../@types/index'
+import type { AnyFunction, AnyStringRecord, CastAny, First, Last, UndefinedableByKeys } from '../../@types'
 
 /******************************************************************************************************
  *

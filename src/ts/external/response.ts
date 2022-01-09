@@ -3,7 +3,7 @@
 
 import { isNumber, isString, isPlainObject, isError } from '../internal/base'
 
-import type { AnyStringRecord } from '../@types/index'
+import type { AnyStringRecord } from '../@types'
 
 export interface ResponseCode {
   code: number

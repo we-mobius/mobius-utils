@@ -5,7 +5,7 @@ import {
   createFunctionTriggerAgent, createDataFromFunction
 } from '../../atom'
 
-import type { SynthesizeEvent, EventHandler } from '../../@types/index'
+import type { SynthesizeEvent, EventHandler } from '../../@types'
 import type { TriggerController, TriggerMediatorOptions, DataTrigger } from '../../atom'
 
 type EventHandlerBatch<Target extends EventTarget = EventTarget, Returned = Event> = [
