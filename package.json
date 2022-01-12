@@ -14,12 +14,15 @@
       "node": "./release/modules/esm/main.js",
       "default": "./release/modules/esm/main.js"
     },
+
     "./es": "./release/modules/es/main.js",
     "./es/*": "./release/modules/es/*",
     "./es-js/*": "./release/modules/es/*.js",
+
     "./ts": "./src/main.ts",
     "./ts/*": "./src/ts/*.ts",
     "./ts-js/*": "./src/ts/*.js",
+
     "./esm": "./release/modules/esm/main.js",
     "./umd": {
       "require": "./release/modules/umd/main.cjs",
@@ -28,6 +31,7 @@
       "default": "./release/modules/umd/main.js"
     },
     "./cjs": "./release/modules/cjs/main.cjs",
+
     "./src/*": "./src/*",
     "./src-ts/*": "./src/*.ts",
     "./src-js/*": "./src/*.js",
@@ -38,6 +42,7 @@
     "./esm/*": "./release/modules/esm/*",
     "./cjs/*": "./release/modules/cjs/*",
     "./umd/*": "./release/modules/umd/*",
+
     "./package.json": "./package.json"
   },
   "typesVersions": {
@@ -76,6 +81,7 @@
   },
   "keywords": [
     "mobius",
+    "library",
     "utils",
     "functional",
     "reactive",

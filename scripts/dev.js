@@ -15,33 +15,45 @@ emptyDirSync(rootResolvePath(BUILD_TARGET_DES))
 // ref: https://github.com/webpack/webpack-dev-server/blob/master/examples/api/simple/server.js
 // ref: https://webpack.js.org/configuration/dev-server/
 const webpackConfig = getWebpackConfig({ mode: BUILD_MODE })
-console.info('【webpackConfig】' + JSON.stringify(webpackConfig))
+// console.info('【webpackConfig】' + JSON.stringify(webpackConfig))
 const devServerOptions = {
   headers: { 'Access-Control-Allow-Origin': '*' },
   https: false,
-  writeToDisk: true,
+  static: true,
   compress: true,
+  host: '127.0.0.1',
   port: 3000,
   open: true, // browser extension development do not need to open the page
   hot: true,
-  clientLogLevel: 'trace',
-  watchOptions: {
-    aggregateTimeout: 1000
-    // ignored: /node_modules/
+  client: {
+    logging: 'warn',
+    overlay: {
+      errors: true,
+      warnings: false
+    }
   },
-  disableHostCheck: true
+  devMiddleware: {
+    writeToDisk: true
+  },
+  watchFiles: {
+    options: {
+      aggregateTimeout: 1000
+      // ignored: /node_modules/
+    }
+  },
+  historyApiFallback: true
 }
-console.info('【devServerOptions】' + JSON.stringify(devServerOptions))
+// console.info('【devServerOptions】' + JSON.stringify(devServerOptions))
 
 const [webConfig] = webpackConfig
 // refer: https://github.com/webpack-contrib/webpack-hot-middleware#multi-compiler-mode
-Object.entries(webConfig.entry).forEach(([key, value]) => {
-  webConfig.entry[key] = [
-    `webpack-hot-middleware/client?path=${devServerOptions.https ? 'https' : 'http'}://localhost:${devServerOptions.port}/__webpack_hmr&name=${key}`,
-    'webpack/hot/dev-server',
-    value
-  ]
-})
+// Object.entries(webConfig.entry).forEach(([key, value]) => {
+//   webConfig.entry[key] = [
+//     `webpack-hot-middleware/client?path=${devServerOptions.https ? 'https' : 'http'}://localhost:${devServerOptions.port}/__webpack_hmr&name=${key}`,
+//     'webpack/hot/dev-server',
+//     value
+//   ]
+// })
 
 let hotMiddleware
 const startWeb = () => {
@@ -79,23 +91,20 @@ const startWeb = () => {
       console.log('【MobiusCopyPlugin】 extra files copyed!')
     })
 
-    // init the devServer
     const server = new WebpackDevServer(
-      compiler,
       {
         ...devServerOptions,
-        // quiet: true,
-        before (app, ctx) {
-          app.use(hotMiddleware)
-          ctx.middleware.waitUntilValid(() => {
+        onBeforeSetupMiddleware (devServer) {
+          devServer.app.use(hotMiddleware)
+          devServer.middleware.waitUntilValid(() => {
             resolve()
           })
         }
-      }
+      },
+      compiler
     )
 
-    // launch the devServer
-    server.listen(devServerOptions.port, '127.0.0.1', () => {
+    server.startCallback(() => {
       console.info(`Starting server on http://localhost:${devServerOptions.port}`)
     })
   })

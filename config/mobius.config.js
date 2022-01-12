@@ -109,6 +109,7 @@ export const getMobiusConfig = () => ({
   publicPath: PUBLIC_PATH,
   template: {
     index: {
+      title: 'Index Page',
       ...commonTemplate
     }
   }
