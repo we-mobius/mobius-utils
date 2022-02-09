@@ -27,7 +27,7 @@ export type Nilable<T> = T | null | undefined
 
 export type NonUndefinedable<T> = Exclude<T, undefined>
 export type NonNullable<T> = Exclude<T, null>
-export type NonNilable<T> = NonNullable<T>
+export type NonNilable<T> = Exclude<T, null | undefined>
 
 /**
  * Predicate whether the target is `never`.
