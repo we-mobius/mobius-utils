@@ -13,6 +13,8 @@ export * from './environment'
 export * from './event'
 export * from './dom'
 
+export * from './callback'
+
 export * from './app'
 export * from './scope'
 
