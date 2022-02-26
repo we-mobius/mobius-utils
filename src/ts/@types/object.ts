@@ -35,15 +35,43 @@ export type RecursiveRequiredRecord<T> = {
 }
 
 /**
- * Given a type `{ a?: string, b: number }`, return `'a'`.
+ * Same as `Partial`.
+ *
+ * @see {@link Partial}
  */
-export type OptionalPropertyOf<T extends EmptyInterface> = Exclude<{
-  [K in keyof T]: T extends Record<K, T[K]> ? never : K
-}[keyof T], undefined>
+export type Optional<Target> = Partial<Target>
+
+/**
+ * Given a type `{ a?: string, b: number }`, return `'a'`.
+ *
+ * @see {@link RequiredPropertiesOf}, {@link FlipOptional}
+ */
+export type OptionalPropertiesOf<Target extends EmptyInterface> = Exclude<{
+  [K in keyof Target]: Target extends Record<K, Target[K]> ? never : K
+}[keyof Target], undefined>
 
 /**
  * Given a type `{ a?: string, b: number }`, return `'b'`.
+ *
+ * @see {@link OptionalPropertiesOf}, {@link FlipOptional}
  */
-export type RequiredPropertyOf<T extends EmptyInterface> = Exclude<{
-  [K in keyof T]: T extends Record<K, T[K]> ? K : never
-}[keyof T], undefined>
+export type RequiredPropertiesOf<Target extends EmptyInterface> = Exclude<{
+  [K in keyof Target]: Target extends Record<K, Target[K]> ? K : never
+}[keyof Target], undefined>
+
+/**
+ * Given a type `{ a?: string, b: number }`, return `{ a: string, b?: number }`.
+ *
+ * @see {@link FilpRequired}
+ * @refer Solution is refer to https://stackoverflow.com/questions/57593022/reverse-required-and-optional-properties
+ */
+export type FlipOptional<Target> = (
+  Required<Pick<Target, OptionalPropertiesOf<Target>>> & Optional<Omit<Target, OptionalPropertiesOf<Target>>>
+) extends infer O ? { [K in keyof O]: O[K] } : never
+
+/**
+ * Same as `FilpOptional`.
+ *
+ * @see {@link FlipOptional}
+ */
+export type FilpRequired<Target> = FlipOptional<Target>
