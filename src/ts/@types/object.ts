@@ -4,6 +4,8 @@ import type {
   NonUndefinedable, NonNullable, NonNilable
 } from './base'
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface EmptyInterface {}
 export type AnyStringRecord = Record<string, any>
 
 export type UndefinedableByKeys<Target, Keys> = {

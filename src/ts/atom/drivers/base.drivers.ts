@@ -4,7 +4,7 @@ import { isAtomLike, Data } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { binaryTweenPipeAtom } from '../helpers'
 
-import type { AnyStringRecord } from '../../@types'
+import type { AnyStringRecord, EmptyInterface } from '../../@types'
 import type { AtomLike, Mutation, AtomLikeOfOutput, AtomLikeOfInput } from '../atoms'
 import type { ReplayDataMediator, ReplayMutationMediator } from '../mediators'
 
@@ -17,17 +17,17 @@ import type { ReplayDataMediator, ReplayMutationMediator } from '../mediators'
 /**
  *
  */
-export interface DriverOptions extends AnyStringRecord {
+export interface DriverOptions extends EmptyInterface {
 }
-export interface DriverLevelContexts extends AnyStringRecord {
+export interface DriverLevelContexts extends EmptyInterface {
   inputs?: AnyStringRecord
   outputs?: AnyStringRecord
 }
-export interface DriverSingletonLevelContexts extends AnyStringRecord {
+export interface DriverSingletonLevelContexts extends EmptyInterface {
   inputs?: AnyStringRecord
   outputs?: AnyStringRecord
 }
-export interface DriverInstance extends AnyStringRecord {
+export interface DriverInstance extends EmptyInterface {
   inputs?: AnyStringRecord
   outputs?: AnyStringRecord
 }
