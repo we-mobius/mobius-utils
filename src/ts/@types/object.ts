@@ -33,3 +33,17 @@ export type RecursiveRequiredRecord<T> = {
   [P in keyof T]-?: T[P] extends (Record<string, any> | undefined) ? RecursiveRequiredRecord<T[P]> :
     T[P];
 }
+
+/**
+ * Given a type `{ a?: string, b: number }`, return `'a'`.
+ */
+export type OptionalPropertyOf<T extends EmptyInterface> = Exclude<{
+  [K in keyof T]: T extends Record<K, T[K]> ? never : K
+}[keyof T], undefined>
+
+/**
+ * Given a type `{ a?: string, b: number }`, return `'b'`.
+ */
+export type RequiredPropertyOf<T extends EmptyInterface> = Exclude<{
+  [K in keyof T]: T extends Record<K, T[K]> ? K : never
+}[keyof T], undefined>
