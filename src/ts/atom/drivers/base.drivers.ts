@@ -4,7 +4,7 @@ import { isAtomLike, Data } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { binaryTweenPipeAtom } from '../helpers'
 
-import type { AnyStringRecord, EmptyInterface } from '../../@types'
+import type { AnyStringRecord, EmptyInterface, FlipOptional } from '../../@types'
 import type { AtomLike, Mutation, AtomLikeOfOutput, AtomLikeOfInput } from '../atoms'
 import type { ReplayDataMediator, ReplayMutationMediator } from '../mediators'
 
@@ -41,7 +41,7 @@ type PrepareDriverSingletonLevelContexts<
   DLC extends DriverLevelContexts = DriverLevelContexts,
   DSLC extends DriverSingletonLevelContexts = DriverSingletonLevelContexts
 > =
-  (options: Options, driverLevelContexts: DLC) => DSLC
+  (options: Required<Options>, driverLevelContexts: DLC) => DSLC
 
 export interface GeneralDriverCreateOptions<
   Options extends DriverOptions = DriverOptions,
@@ -49,12 +49,12 @@ export interface GeneralDriverCreateOptions<
   DSLC extends DriverSingletonLevelContexts = DriverSingletonLevelContexts,
   Instance extends DriverInstance = DriverInstance
 > {
-  defaultOptions?: Options
-  prepareOptions?: (options: Options) => Options
+  defaultOptions?: FlipOptional<Options>
+  prepareOptions?: (options: Required<Options>) => Required<Options>
   prepareDriverLevelContexts?: () => DLC
   prepareSingletonLevelContexts?: PrepareDriverSingletonLevelContexts<Options, DLC, DSLC>
   prepareInstance?: (
-    options: Options,
+    options: Required<Options>,
     driverLevelContexts: DLC,
     singletonLevelContexts: DSLC
   ) => Instance
@@ -83,16 +83,17 @@ export const createGeneralDriver = <
   Instance extends DriverInstance = DriverInstance
 >(
     createOptions: GeneralDriverCreateOptions<Options, DLC, DSLC, Instance> |
-    PrepareDriverSingletonLevelContexts<Options, DLC, DSLC> = DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS
+    PrepareDriverSingletonLevelContexts<Options, DLC, DSLC>
+    = DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS as any
   ): DriverMaker<Options, Instance> => {
   if (!isPlainObject(createOptions) && !isFunction(createOptions)) {
     throw (new TypeError('"createOptions" is expected to be type of "PlainObject" | "Function".'))
   }
   let preparedCreateOptions: Required<GeneralDriverCreateOptions<Options, DLC, DSLC, Instance>>
   if (isFunction(createOptions)) {
-    preparedCreateOptions = { ...DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS, prepareSingletonLevelContexts: createOptions }
+    preparedCreateOptions = { ...DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS as any, prepareSingletonLevelContexts: createOptions }
   } else {
-    preparedCreateOptions = { ...DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS, ...createOptions }
+    preparedCreateOptions = { ...DEFAULT_GENERAL_DRIVER_CREATE_OPTIONS as any, ...createOptions }
   }
 
   const {
@@ -112,12 +113,12 @@ export const createGeneralDriver = <
    *                the configuration is best to be in object format.
    * @return { DriverMaker } DriverFactory
    */
-  const driverFactory = (options: Options = defaultOptions): Instance => {
+  const driverFactory = (options: Options = defaultOptions as any): Instance => {
     if (!isPlainObject(options)) {
       throw (new TypeError('"options" is expected to be type of "PlainObject".'))
     }
 
-    const preparedOptions = prepareOptions({ ...defaultOptions, ...options })
+    const preparedOptions = prepareOptions({ ...defaultOptions as any, ...options })
     if (!isPlainObject(preparedOptions)) {
       throw (new TypeError('The returned value of "prepareOptions" is expected to be type of "PlainObject".'))
     }
