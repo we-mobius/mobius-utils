@@ -119,7 +119,8 @@ export class Biutor<
 
   get options (): BiuOptions<SuccessData, FailData, ErrorData, SendData> { return this._options }
 
-  get response (): Promise<ResponseUnion<SuccessData>> { return this._response }
+  get response (): Promise<ResponseUnion<SuccessData, FailData, ErrorData>> { return this._response }
+
   get modifiedResponse (): Promise<any> {
     const { responseModifier } = this._options
     if (isUndefined(responseModifier)) {
