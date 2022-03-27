@@ -1,4 +1,4 @@
-import { isString } from '../../internal/base'
+import { isString, isError } from '../../internal/base'
 import { errorToResponse } from '../response'
 import { RequestEngine } from './engine.request'
 import { WEB_ENV_CONTEXTS } from '../environment'
@@ -92,7 +92,7 @@ export const createFetchRequestEngine = <
               return await fetchResponse.text()
           }
         } catch (error: any) {
-          throw (new TypeError(`Response extract failed, please specify the correct "responseType". (${error.message as string})`))
+          throw (new TypeError('Response extract failed, please specify the correct "responseType".'))
         }
       }).then((exactResponse) => {
         try {
@@ -106,11 +106,13 @@ export const createFetchRequestEngine = <
         } catch (error: any) {
           throw (new TypeError(`Data(${dataType}) parse failed, please check "dataType" or "dataParser". (${error.message as string})`))
         }
-      }).then(this.formatParsedDataToResponse).catch((reason) => {
-        return errorToResponse(reason) as ErrorResponse<ErrorData>
-      }).then((processedResponse) => {
-        this._resolve(processedResponse)
       })
+        .then(this.formatParsedDataToResponse)
+        .catch((reason) => {
+          return errorToResponse(isError(reason) ? reason : Error(reason)) as ErrorResponse<ErrorData>
+        }).then((processedResponse) => {
+          this._resolve(processedResponse)
+        })
 
       return this
     }
