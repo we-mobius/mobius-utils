@@ -2,10 +2,8 @@ import {
   isString, isArray, isObject,
   isTruthy,
   split,
-  spreadToArray, filter, reject, join, unshift
+  spreadToArray, arrayJoin, arrayUnshift
 } from '../internal'
-
-import { compose } from '../functional'
 
 // @see https://developer.mozilla.org/zh-CN/docs/Web/API/Location
 // @see https://npm.taobao.org/mirrors/node/latest/docs/api/url.html
@@ -19,28 +17,30 @@ type Filter<T> = (tar: T[]) => T[]
 /**
  * @signature removeRepetition :: [a] -> [a]
  */
-export const removeRepetition: Filter<string> = reject((item: string, index: number, arr: string[]) => {
-  return arr[index - 1] !== undefined ? item === arr[index - 1] : false
-})
+export const removeRepetition = (strings: string[]): string[] => {
+  return strings.filter((item: string, index: number, array: string[]) => {
+    return array[index - 1] !== undefined ? item !== array[index - 1] : true
+  })
+}
 /**
  * @signature removeRepetitionOf :: [a] -> ([a] -> [a])
  */
-export const removeRepetitionOf = (ofList: string[]): Filter<string> =>
-  reject((item: string, index: number, arr: string[]) => {
-    return (arr[index - 1] !== undefined && ofList.includes(item)) ? item === arr[index - 1] : false
+export const removeRepetitionOf = (ofList: string[], targetStrings: string[]): string[] =>
+  targetStrings.filter((item: string, index: number, array: string[]) => {
+    return (array[index - 1] !== undefined && ofList.includes(item)) ? item !== array[index - 1] : true
   })
 /**
  * @signature removeRepetitionExcept :: [a] -> ([a] -> [a])
  */
-export const removeRepetitionExcept = (exceptList: string[]): Filter<string> =>
-  reject((item: string, index: number, arr: string[]) => {
-    return (arr[index - 1] !== undefined && !exceptList.includes(item)) ? item === arr[index - 1] : false
+export const removeRepetitionExcept = (exceptList: string[], targetStrings: string[]): string[] =>
+  targetStrings.filter((item: string, index: number, array: string[]) => {
+    return (array[index - 1] !== undefined && !exceptList.includes(item)) ? item !== array[index - 1] : true
   })
 /**
  * @signature removeRepetitionOfEmpty :: [a] -> [a]
  */
-export const removeRepetitionOfEmpty = removeRepetitionOf([''])
-export const removeRepetitionOfSlash = removeRepetitionOf(['/'])
+export const removeRepetitionOfEmpty = (strings: string[]): string[] => removeRepetitionOf([''], strings)
+export const removeRepetitionOfSlash = (strings: string[]): string[] => removeRepetitionOf(['/'], strings)
 /**
  * remove empty string item in target array, except the first and the last item.
  */
@@ -58,7 +58,7 @@ export const neatenPathname = (pathname: PathnameUnion): typeof pathname => {
   //   -> expected to be: '/path/to/page', unshift('') solve the problem
   if (isArray(pathname)) {
     // add '' to the beginning of pathname array, redandant '' will be removed by other steps
-    const _0 = unshift('')(pathname)
+    const _0 = arrayUnshift('', pathname)
     // redandant '' will be removed
     const _1 = removeRepetitionOfEmpty(_0)
     const _2 = _keepMinimumPathArr(_1)
@@ -67,14 +67,14 @@ export const neatenPathname = (pathname: PathnameUnion): typeof pathname => {
   } else if (isString(pathname)) {
     const _0 = spreadToArray(pathname)
     // add '/' to the beginning of pathname array, redandant '/' will be removed by other steps
-    const _1 = unshift('/')(_0)
+    const _1 = arrayUnshift('/', _0)
     // redandant '/' will be removed
     const _2 = removeRepetitionOfSlash(_1)
-    const _3 = join('')(_2)
+    const _3 = _2.join('')
     const _4 = split('/')(_3)
     const _5 = removeRepetitionOfEmpty(_4)
     const _6 = _keepMinimumPathArr(_5)
-    const _7 = join('/')(_6)
+    const _7 = _6.join('/')
     return _7
   } else {
     throw (new TypeError('"pathname" must be string or array.'))
@@ -138,7 +138,7 @@ export const pathnameToString = (pathname: PathnameUnion): PathnameString => {
   if (isString(neatedPathname)) {
     return neatedPathname
   } if (isArray(neatedPathname)) {
-    return join('/', neatedPathname)
+    return arrayJoin('/', neatedPathname)
   } else {
     throw (new TypeError('"pathname" must be string or array.'))
   }
@@ -167,7 +167,9 @@ export const isPathnameStrictEqual = (pathname1: PathnameUnion, pathname2: Pathn
  * ```
  */
 export const isPathnameLooseEqual = (pathname1: PathnameUnion, pathname2: PathnameUnion): boolean => {
-  const preCook = compose(join('/'), filter(isTruthy), pathnameToArray)
+  const preCook = (pathname: PathnameUnion): string => {
+    return pathnameToArray(pathname).filter(isTruthy).join('/')
+  }
   return preCook(pathname1) === preCook(pathname2)
 }
 /**
