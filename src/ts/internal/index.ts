@@ -11,5 +11,6 @@ export * from './object'
 export * from './string'
 export * from './regexp'
 export * from './error'
+export * from './promise'
 
 export * from './hybrid'
