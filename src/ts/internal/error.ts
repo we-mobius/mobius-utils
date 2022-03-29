@@ -1,21 +1,21 @@
 import { isUndefined, isFunction } from './base'
 
-export function tryCatch <Target extends any = any> (tryFn: () => Target, catchFn: ((exception: unknown) => Target)): Target
-export function tryCatch <Target extends any = any> (tryFn: () => Target, catchFn: Target): Target
-export function tryCatch <Target extends any = any> (tryFn: () => Target): Target | undefined
-export function tryCatch (tryFn: () => void): void
+export function tryCatch <Target extends any = any> (tryer: () => Target, catcher: ((exception: unknown) => Target)): Target
+export function tryCatch <Target extends any = any> (tryer: () => Target, catcher: Target): Target
+export function tryCatch <Target extends any = any> (tryer: () => Target): Target | undefined
+export function tryCatch (tryer: () => void): void
 export function tryCatch <Target extends any = any> (
-  tryFn: () => Target, catchFn?: Target | ((exception: unknown) => Target)
+  tryer: () => Target, catcher?: Target | ((exception: unknown) => Target)
 ): Target | undefined {
   try {
-    return tryFn()
+    return tryer()
   } catch (exception) {
-    if (!isUndefined(catchFn) && isFunction(catchFn)) {
-      return catchFn(exception)
-    } else if (isUndefined(catchFn)) {
+    if (!isUndefined(catcher) && isFunction(catcher)) {
+      return catcher(exception)
+    } else if (isUndefined(catcher)) {
       return (() => undefined)()
     } else {
-      return catchFn
+      return catcher
     }
   }
 }
