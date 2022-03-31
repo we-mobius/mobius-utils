@@ -323,6 +323,17 @@ export const arrayReduceRight = <T = any, R = any>(
  */
 export const arrayUnique = <T = any>(targetArray: T[]): T[] => Array.from(new Set(targetArray))
 
+export const arrayUniqueBy = <T = any>(uniqueFunction: (item: T) => any, targetArray: T[]): T[] => {
+  const uniqueMap = new Map<any, T>()
+  targetArray.forEach(item => {
+    const uniqueKey = uniqueFunction(item)
+    if (!uniqueMap.has(uniqueKey)) {
+      uniqueMap.set(uniqueKey, item)
+    }
+  })
+  return Array.from(uniqueMap.values())
+}
+
 /**
  * Combines two arrays into one array (no duplicates) composed of the elements of each array.
  * @see {@link https://ramdajs.com/docs/#union}
