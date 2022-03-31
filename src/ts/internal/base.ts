@@ -26,14 +26,14 @@ export const isString = (tar: any): tar is string =>
   Object.prototype.toString.call(tar) === '[object String]'
 export const isNumber = (tar: any): tar is number =>
   Object.prototype.toString.call(tar) === '[object Number]'
-export const isBigint = (tar: any): tar is bigint =>
+export const isBigInt = (tar: any): tar is bigint =>
   Object.prototype.toString.call(tar) === '[object BigInt]'
 export const isSymbol = (tar: any): tar is symbol =>
   Object.prototype.toString.call(tar) === '[object Symbol]'
 export const isNull = (tar: any): tar is null =>
   Object.prototype.toString.call((tar)) === '[object Null]'
 export const isPrimative = (tar: any): tar is Primative =>
-  isString(tar) || isNumber(tar) || isBoolean(tar) || isBigint(tar) || isSymbol(tar) || isNull(tar) || isUndefined(tar)
+  isString(tar) || isNumber(tar) || isBoolean(tar) || isBigInt(tar) || isSymbol(tar) || isNull(tar) || isUndefined(tar)
 export const isNonPrimative = (tar: any): tar is NonPrimative => !isPrimative(tar)
 
 /**
