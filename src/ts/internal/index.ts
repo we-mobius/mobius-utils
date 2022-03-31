@@ -14,3 +14,4 @@ export * from './error'
 export * from './promise'
 
 export * from './hybrid'
+export * from './enhancement'
