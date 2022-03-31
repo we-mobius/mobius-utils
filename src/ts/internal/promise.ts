@@ -23,24 +23,73 @@ export const DEFAULT_QUEUE_PROMISES_OPTIONS: Required<QueuePromiseOptions> = {
   breakTime: 0
 }
 export const queuePromises = async <T = any>(
-  promises: Array<Promise<T>>, options: QueuePromiseOptions = DEFAULT_QUEUE_PROMISES_OPTIONS
+  promiseMakers: Array<() => Promise<T>>, options: QueuePromiseOptions = DEFAULT_QUEUE_PROMISES_OPTIONS
 ): Promise<T[]> => {
-  if (promises.length === 0) { return [] }
+  if (promiseMakers.length === 0) { return [] }
 
   const { breakTime } = { ...DEFAULT_QUEUE_PROMISES_OPTIONS, ...options }
 
   const results: T[] = []
-  const lastPromise = promises.slice(1).reduce(async (accumulatedPromise, currentPromise) => {
+  const lastPromise = promiseMakers.slice(1).reduce(async (accumulatedPromise, currentPromise) => {
     return await accumulatedPromise.then(async (result) => {
       results.push(result)
       return await new Promise((resolve) => {
-        setTimeout(() => { resolve(currentPromise) }, breakTime)
+        setTimeout(() => { resolve(currentPromise()) }, breakTime)
       })
     })
-  }, promises[0])
+  }, promiseMakers[0]())
 
   return await lastPromise.then(result => {
     results.push(result)
     return results
   })
+}
+
+export interface RetryPromiseOptions {
+  breakTime?: number
+}
+export const DEFAULT_RETRY_PROMISES_OPTIONS: Required<RetryPromiseOptions> = {
+  breakTime: 0
+}
+
+/**
+ * @see {@link retryPromiseUntil}
+ */
+export const retryPromiseWhile = async <T = any>(
+  predicate: (value: T) => boolean, promiseMaker: (time: number, previousResult?: any) => Promise<T>,
+  options: RetryPromiseOptions = DEFAULT_RETRY_PROMISES_OPTIONS
+): Promise<T> => {
+  const { breakTime } = { ...DEFAULT_RETRY_PROMISES_OPTIONS, ...options }
+  let time = 1
+  let result = await promiseMaker(time)
+  while (predicate(result)) {
+    time = time + 1
+    result = await new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(promiseMaker(time, result))
+      }, breakTime)
+    })
+  }
+  return result
+}
+
+/**
+ * @see {@link retryPromiseWhile}
+ */
+export const retryPromiseUntil = async <T = any>(
+  predicate: (value: T) => boolean, promiseMaker: (time: number, previousResult?: any) => Promise<T>,
+  options: RetryPromiseOptions = DEFAULT_RETRY_PROMISES_OPTIONS
+): Promise<T> => {
+  const { breakTime } = { ...DEFAULT_RETRY_PROMISES_OPTIONS, ...options }
+  let time = 1
+  let result = await promiseMaker(time)
+  while (!predicate(result)) {
+    time = time + 1
+    result = await new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(promiseMaker(time, result))
+      }, breakTime)
+    })
+  }
+  return result
 }
