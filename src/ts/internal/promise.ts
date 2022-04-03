@@ -23,21 +23,21 @@ export const DEFAULT_QUEUE_PROMISES_OPTIONS: Required<QueuePromiseOptions> = {
   breakTime: 0
 }
 export const queuePromises = async <T = any>(
-  promiseMakers: Array<() => Promise<T>>, options: QueuePromiseOptions = DEFAULT_QUEUE_PROMISES_OPTIONS
+  promiseMakers: Array<(index: number, previousResult?: T) => Promise<T>>, options: QueuePromiseOptions = DEFAULT_QUEUE_PROMISES_OPTIONS
 ): Promise<T[]> => {
   if (promiseMakers.length === 0) { return [] }
 
   const { breakTime } = { ...DEFAULT_QUEUE_PROMISES_OPTIONS, ...options }
 
   const results: T[] = []
-  const lastPromise = promiseMakers.slice(1).reduce(async (accumulatedPromise, currentPromise) => {
+  const lastPromise = promiseMakers.slice(1).reduce(async (accumulatedPromise, currentPromise, index) => {
     return await accumulatedPromise.then(async (result) => {
       results.push(result)
       return await new Promise((resolve) => {
-        setTimeout(() => { resolve(currentPromise()) }, breakTime)
+        setTimeout(() => { resolve(currentPromise(index + 1, result)) }, breakTime)
       })
     })
-  }, promiseMakers[0]())
+  }, promiseMakers[0](0, undefined))
 
   return await lastPromise.then(result => {
     results.push(result)
@@ -92,4 +92,44 @@ export const retryPromiseUntil = async <T = any>(
     })
   }
   return result
+}
+
+export const intervalPromise = <T = any>(
+  interval: number, promiseMaker: (time: number) => Promise<T>
+): (() => void) => {
+  let time = 1
+  const intervalID = setTimeout(() => {
+    void promiseMaker(time)
+    time = time + 1
+  }, interval)
+  return () => {
+    clearInterval(intervalID)
+  }
+}
+
+export interface ForeverPromiseOptions {
+  breakTime?: number
+}
+export const DEFAULT_FOREVER_PROMISES_OPTIONS: Required<ForeverPromiseOptions> = {
+  breakTime: 0
+}
+export const foreverPromise = <T = any>(
+  promiseMaker: (time: number, previousResult?: any) => Promise<T>,
+  options: ForeverPromiseOptions = DEFAULT_FOREVER_PROMISES_OPTIONS
+): void => {
+  const { breakTime } = { ...DEFAULT_FOREVER_PROMISES_OPTIONS, ...options }
+  let time = 1
+  const results: T[] = []
+
+  const handlePromise = (result: T): void => {
+    time = time + 1
+    results.push(result)
+    setTimeout(() => {
+      runPromise(time, result)
+    }, breakTime)
+  }
+  const runPromise = (time: number, previousResult: T | undefined): void => {
+    void promiseMaker(time, previousResult).then(result => handlePromise(result))
+  }
+  runPromise(time, undefined)
 }
