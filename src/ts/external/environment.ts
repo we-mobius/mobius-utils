@@ -9,13 +9,15 @@ import { isFunction, isObject } from '../internal/base'
 const safeWX =
   (typeof wx !== 'undefined') ? wx : (undefined as WechatMiniprogram.Wx | undefined)
 const safeGlobal =
-  typeof global !== 'undefined' ? global : (undefined as (typeof globalThis) | undefined)
+  (typeof global !== 'undefined') ? global : (undefined as (typeof globalThis) | undefined)
 const safeWindow =
-  typeof window !== 'undefined' ? window : (undefined as (Window & typeof globalThis) | undefined)
+  (typeof window !== 'undefined') ? window : (undefined as (Window & typeof globalThis) | undefined)
 const safeDocument =
-  typeof document !== 'undefined' ? document : (undefined as Document | undefined)
+  (typeof document !== 'undefined') ? document : (undefined as Document | undefined)
 const safeFetch =
-  typeof fetch !== 'undefined' ? fetch : (undefined as typeof fetch | undefined)
+  (typeof fetch !== 'undefined') ? fetch : (undefined as typeof fetch | undefined)
+const safeProcess =
+  (typeof process !== 'undefined') ? process : (undefined as NodeJS.Process | undefined)
 
 /**
  *
@@ -24,12 +26,11 @@ export type EnvironmentUnion = 'wxmina' | 'web' | 'node' | 'unknown'
 
 /**
  * Predicate whether the enviroment is Wexin Mini Program (MINA: MINA is not App).
- * NOTE: typeof operator can operate on non-exist variable.
+ * NOTE: `typeof` operator can operate on non-exist variable.
  *
  * @check `wx`, `wx.canIUse`
  */
-export const isInWXMINAEnvironment = (): boolean =>
-  isObject(safeWX) && isFunction(safeWX.canIUse)
+export const isInWXMINAEnvironment = (): boolean => isObject(safeWX) && isFunction(safeWX.canIUse)
 /**
  * Predicate whether the enviroment is Web.
  *
@@ -39,15 +40,17 @@ export const isInWebEnvironment = (): boolean => typeof document === 'object' &&
 /**
  * Predicate whether the enviroment is Browser.
  *
- * @check `document`
+ * @check `document`, `window`
+ *
+ * @see {@link isInWebEnvironment}
  */
 export const isInBrowserEnvironment = isInWebEnvironment
 /**
  * Predicate whether the enviroment is Node.js.
  *
- * @check `global`
+ * @check `global`, `process`
  */
-export const isInNodeEnvironment = (): boolean => typeof global !== 'undefined'
+export const isInNodeEnvironment = (): boolean => typeof global !== 'undefined' && typeof process !== 'undefined'
 
 interface CommonContexts {
   globalThis: typeof globalThis
@@ -59,6 +62,7 @@ export interface WebEnvContexts extends CommonContexts {
 }
 export interface NodeEnvContexts extends CommonContexts {
   global: typeof globalThis
+  process: typeof process
 }
 export interface WXMINAEnvContexts extends CommonContexts {
   wxmina: WechatMiniprogram.Wx
@@ -72,10 +76,13 @@ export const WEB_ENV_CONTEXTS: WebEnvContexts = {
   fetch: safeFetch as typeof fetch
 }
 export const NODE_ENV_CONTEXTS: NodeEnvContexts = {
-  globalThis, global: safeGlobal as (typeof globalThis)
+  globalThis,
+  global: safeGlobal as (typeof globalThis),
+  process: safeProcess as NodeJS.Process
 }
 export const WXMINA_ENV_CONTEXTS: WXMINAEnvContexts = {
-  globalThis, wxmina: safeWX as WechatMiniprogram.Wx
+  globalThis,
+  wxmina: safeWX as WechatMiniprogram.Wx
 }
 export const DEFAULT_ENV_CONTEXTS: DefaultEnvContexts = {
   globalThis
