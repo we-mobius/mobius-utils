@@ -22,37 +22,40 @@ export type Primative = string | number | boolean | bigint | symbol | null | und
  */
 export type NonPrimative = object
 
-export const isUndefined = (tar: any): tar is undefined =>
-  Object.prototype.toString.call(tar) === '[object Undefined]'
+export const isUndefined = (target: unknown): target is undefined =>
+  Object.prototype.toString.call(target) === '[object Undefined]'
 /**
  * @see {@link https://stackoverflow.com/a/52097700}
  */
-export const isDefined = <T>(tar: T): tar is T =>
-  typeof tar !== 'undefined'
-export const isBoolean = (tar: any): tar is boolean =>
-  Object.prototype.toString.call(tar) === '[object Boolean]'
-export const isString = (tar: any): tar is string =>
-  Object.prototype.toString.call(tar) === '[object String]'
-export const isNumber = (tar: any): tar is number =>
-  Object.prototype.toString.call(tar) === '[object Number]'
-export const isBigInt = (tar: any): tar is bigint =>
-  Object.prototype.toString.call(tar) === '[object BigInt]'
-export const isSymbol = (tar: any): tar is symbol =>
-  Object.prototype.toString.call(tar) === '[object Symbol]'
-export const isNull = (tar: any): tar is null =>
-  Object.prototype.toString.call((tar)) === '[object Null]'
-export const isPrimative = (tar: any): tar is Primative =>
-  isString(tar) || isNumber(tar) || isBoolean(tar) || isBigInt(tar) || isSymbol(tar) || isNull(tar) || isUndefined(tar)
-export const isNonPrimative = (tar: any): tar is NonPrimative => !isPrimative(tar)
+export const isDefined = <T>(target: T): target is T =>
+  typeof target !== 'undefined'
+export const isBoolean = (target: unknown): target is boolean =>
+  Object.prototype.toString.call(target) === '[object Boolean]'
+export const isString = (target: unknown): target is string =>
+  Object.prototype.toString.call(target) === '[object String]'
+export const isNumber = (target: any): target is number =>
+  Object.prototype.toString.call(target) === '[object Number]' && !isNaN(parseFloat(target))
+export const isFiniteNumber = (target: unknown): target is number => isNumber(target) && Number.isFinite(target)
+export const isInfiniteNumber = (target: unknown): target is number => isNumber(target) && !Number.isFinite(target)
+export const isNaN = (target: unknown): boolean => Number.isNaN(target)
+export const isBigInt = (target: unknown): target is bigint =>
+  Object.prototype.toString.call(target) === '[object BigInt]'
+export const isSymbol = (target: unknown): target is symbol =>
+  Object.prototype.toString.call(target) === '[object Symbol]'
+export const isNull = (target: unknown): target is null =>
+  Object.prototype.toString.call((target)) === '[object Null]'
+export const isPrimative = (target: unknown): target is Primative =>
+  isString(target) || isNumber(target) || isBoolean(target) || isBigInt(target) || isSymbol(target) || isNull(target) || isUndefined(target)
+export const isNonPrimative = (target: unknown): target is NonPrimative => !isPrimative(target)
 
 /**
- * Predicate whether the target is a Object, use `instanceof` operator to check.
+ * Predicate whether the targetget is a Object, use `instanceof` operator to check.
  *
  * @see {@link isGeneralObject}, {@link isPlainObject}
  */
-export const isObject = (tar: any): tar is Object => tar instanceof Object
+export const isObject = (target: unknown): target is Object => target instanceof Object
 /**
- * Predicate whether the target is a general object, use `typeof` operator to check.
+ * Predicate whether the targetget is a general object, use `typeof` operator to check.
  *
  * A general object is an object that is:
  *  - not `null`, not a `function`, not a `primitive`.
@@ -77,7 +80,7 @@ export const isObject = (tar: any): tar is Object => tar instanceof Object
  *
  * @see {@link isObject}, {@link isPlainObject}
  */
-export const isGeneralObject = (tar: any): tar is Object => tar !== null && typeof tar === 'object'
+export const isGeneralObject = (target: unknown): target is Object => target !== null && typeof target === 'object'
 
 export interface PlainObject {
   [key: string]: any
@@ -85,7 +88,7 @@ export interface PlainObject {
   [key: symbol]: any
 }
 /**
- * Predicate whether the target is a plain object.
+ * Predicate whether the targetget is a plain object.
  *
  * A plain object is an object that is:
  *  - not `null`, not a `function`, not a `primitive` type,
@@ -95,138 +98,197 @@ export interface PlainObject {
  *
  * @see {@link isObject}, {@link isGeneralObject}
  */
-export const isPlainObject = (tar: any): tar is PlainObject => {
+export const isPlainObject = (target: unknown): target is PlainObject => {
   // 非 null、非 Function、非原始类型
-  if (tar === null || typeof tar !== 'object') {
+  if (target === null || typeof target !== 'object') {
     return false
   }
   // 非 Array、非 Regexp、非 Date、非 Map、非 Set、非 Window、非 DOM、非 Error……
-  if (Object.prototype.toString.call(tar) !== '[object Object]') {
+  if (Object.prototype.toString.call(target) !== '[object Object]') {
     return false
   }
   // 非其它自定义类实例对象
-  let proto = tar
+  let proto = target
   while (Object.getPrototypeOf(proto) !== null) {
     proto = Object.getPrototypeOf(proto)
   }
-  return Object.getPrototypeOf(tar) === proto
+  if (Object.getPrototypeOf(target) === proto) {
+    return true
+  } else {
+    return false
+  }
 }
 /**
  * @see {@link Array.isArray}
  */
-export const isArray = <T>(tar: any): tar is T[] => Array.isArray(tar)
-export const isMap = <K, V>(tar: any): tar is Map<K, V> =>
-  Object.prototype.toString.call(tar) === '[object Map]'
-export const isWeakMap = <K extends object, V>(tar: any): tar is WeakMap<K, V> =>
-  Object.prototype.toString.call(tar) === '[object WeakMap]'
-export const isSet = <T>(tar: any): tar is Set<T> =>
-  Object.prototype.toString.call(tar) === '[object Set]'
-export const isWeakSet = <T extends object>(tar: any): tar is WeakSet<T> =>
-  Object.prototype.toString.call(tar) === '[object WeakSet]'
+export function isArray <T> (target: T[]): target is T[]
+export function isArray <T> (target: unknown): target is T[]
+export function isArray <T> (target: unknown): target is T[] { return Array.isArray(target) }
 
-export const isDate = (tar: any): tar is Date =>
-  Object.prototype.toString.call(tar) === '[object Date]'
-export const isRegExp = (tar: any): tar is RegExp =>
-  Object.prototype.toString.call(tar) === '[object RegExp]'
-export const isError = (tar: any): tar is Error =>
-  Object.prototype.toString.call(tar) === '[object Error]'
+export function isArrayLike <T> (target: ArrayLike<T>): target is ArrayLike<T>
+export function isArrayLike <T> (target: unknown): target is ArrayLike<T>
+export function isArrayLike <T> (target: any): target is ArrayLike<T> {
+  return isGeneralObject(target) && isNumber(target.length)
+}
 
-export const isFunction = (tar: any): tar is Function => typeof tar === 'function'
-export const isNormalFunction = (tar: any): tar is Function =>
-  Object.prototype.toString.call(tar) === '[object Function]'
-export const isAsyncFunction = (tar: any): tar is Function =>
-  Object.prototype.toString.call(tar) === '[object AsyncFunction]'
-export const isGeneratorFunction = (tar: any): tar is Function =>
-  Object.prototype.toString.call((tar)) === '[object GeneratorFunction]'
-export const isAsyncGeneratorFunction = (tar: any): tar is Function =>
-  Object.prototype.toString.call(tar) === '[object AsyncGeneratorFunction]'
+export function isMap <K, V> (target: Map<K, V>): target is Map<K, V>
+export function isMap <K, V> (target: unknown): target is Map<K, V>
+export function isMap <K, V> (target: unknown): target is Map<K, V> {
+  return Object.prototype.toString.call(target) === '[object Map]'
+}
 
-export const isPromise = <T>(tar: any): tar is Promise<T> =>
-  Object.prototype.toString.call(tar) === '[object Promise]'
+export function isWeakMap <K extends object, V> (target: WeakMap<K, V>): target is WeakMap<K, V>
+export function isWeakMap <K extends object, V> (target: unknown): target is WeakMap<K, V>
+export function isWeakMap <K extends object, V> (target: unknown): target is WeakMap<K, V> {
+  return Object.prototype.toString.call(target) === '[object WeakMap]'
+}
 
-export const isEmptyStr = (tar: any): tar is '' => isString(tar) && tar.length === 0
-export const isEmptyArr = (tar: any): tar is [] => isArray(tar) && tar.length === 0
+export function isSet <T> (target: Set<T>): target is Set<T>
+export function isSet <T> (target: unknown): target is Set<T>
+export function isSet <T> (target: unknown): target is Set<T> {
+  return Object.prototype.toString.call(target) === '[object Set]'
+}
+
+export function isWeakSet <T extends object> (target: WeakSet<T>): target is WeakSet<T>
+export function isWeakSet <T extends object> (target: unknown): target is WeakSet<T>
+export function isWeakSet <T extends object> (target: unknown): target is WeakSet<T> {
+  return Object.prototype.toString.call(target) === '[object WeakSet]'
+}
+
+export const isDate = (target: unknown): target is Date =>
+  Object.prototype.toString.call(target) === '[object Date]'
+export const isRegExp = (target: unknown): target is RegExp =>
+  Object.prototype.toString.call(target) === '[object RegExp]'
+export const isError = (target: unknown): target is Error =>
+  Object.prototype.toString.call(target) === '[object Error]'
+
+export const isFunction = (target: unknown): target is Function => typeof target === 'function'
+export const isNormalFunction = (target: unknown): target is Function =>
+  Object.prototype.toString.call(target) === '[object Function]'
+export const isAsyncFunction = (target: unknown): target is Function =>
+  Object.prototype.toString.call(target) === '[object AsyncFunction]'
+export const isGeneratorFunction = (target: unknown): target is Function =>
+  Object.prototype.toString.call((target)) === '[object GeneratorFunction]'
+export const isAsyncGeneratorFunction = (target: unknown): target is Function =>
+  Object.prototype.toString.call(target) === '[object AsyncGeneratorFunction]'
+
+export function isPromise <T> (target: Promise<T>): target is Promise<T>
+export function isPromise <T> (target: unknown): target is Promise<T>
+export function isPromise <T> (target: unknown): target is Promise<T> {
+  return Object.prototype.toString.call(target) === '[object Promise]'
+}
+export const isEmptyString = (target: unknown): target is '' => isString(target) && target.length === 0
+export const isEmptyArray = (target: unknown): target is [] => isArray(target) && target.length === 0
 /**
- * @see {@link https://mannes.tech/typescript-object-type-errors/}
+ * @see {@link isEmptyObject}
  */
-export const isEmptyObj = (tar: any): tar is {} => isPlainObject(tar) && Object.keys(tar).length === 0
+export const isEmptyPlainObject = (target: unknown): target is PlainObject => isPlainObject(target) && Object.keys(target).length === 0
+/**
+ * @see {@link isEmptyPlainObject}, {@link https://mannes.tech/typescript-object-type-errors/}
+ */
+export const isEmptyObject = (target: unknown): target is {} => isEmptyPlainObject(target)
 /**
  * - `null` and `undefined` are considered empty values
  * - `''` is the empty value for String
  * - `[]` is the empty value for Array
  * - `{}` is the empty value for PlainObject
- * - for other object types, it will be considered empty
- *   when the value its `isEmpty` property is true
+ * - for other object types, they will be considered empty
+ *   when the value of their `isEmpty` property is true
  *
- * @see {@link isNull}, {@link isUndefined}, {@link isEmptyStr}, {@link isEmptyArr}, {@link isEmptyObj}
+ * @see {@link isNull}, {@link isUndefined}, {@link isEmptyString}, {@link isEmptyArray}, {@link isEmptyObject}
  */
-export const isEmpty = (tar: any): boolean => {
-  return isNull(tar) || isUndefined(tar) || isEmptyStr(tar) || isEmptyArr(tar) || isEmptyObj(tar) ||
-  (isObject(tar) && tar.isEmpty)
+export const isEmpty = (target: any): boolean => {
+  return isNull(target) || isUndefined(target) || isEmptyString(target) || isEmptyArray(target) || isEmptyObject(target) ||
+  (isObject(target) && target.isEmpty === true)
 }
 
-export const isNil = (tar: any): tar is (null | undefined) => tar === null || tar === undefined
-export const isNotNil = (tar: any): boolean => !isNil(tar)
+export const isNil = (target: unknown): target is (null | undefined) => target === null || target === undefined
 
 /**
- * Check `tar` and `Window` is both defined
- * before use the `instanceof` operator to check `tar` is instanceof `Window`.
+ * Check `target` and `Window` is both defined
+ * before use the `instanceof` operator to check `target` is instanceof `Window`.
  */
-export const isWindow = (tar: any): tar is Window =>
-  isGeneralObject(tar) && isDefined(Window) && tar instanceof Window
+export const isWindow = (target: unknown): target is Window =>
+  isGeneralObject(target) && isDefined(Window) && target instanceof Window
 /**
- * Check `tar` and `Element` is both defined
- * before use the `instanceof` operator to check `tar` is instanceof `Element`.
+ * Check `target` and `Element` is both defined
+ * before use the `instanceof` operator to check `target` is instanceof `Element`.
  */
-export const isElement = (tar: any): tar is Element =>
-  isGeneralObject(tar) && isDefined(Element) && tar instanceof Element
+export const isElement = (target: unknown): target is Element =>
+  isGeneralObject(target) && isDefined(Element) && target instanceof Element
 /**
- * Check `tar` and `Node` is both defined
- * before use the `instanceof` operator to check `tar` is instanceof `Node`.
+ * Check `target` and `Node` is both defined
+ * before use the `instanceof` operator to check `target` is instanceof `Node`.
  */
-export const isNode = (tar: any): tar is Node =>
-  isGeneralObject(tar) && isDefined(Node) && tar instanceof Node
+export const isNode = (target: unknown): target is Node =>
+  isGeneralObject(target) && isDefined(Node) && target instanceof Node
 /**
- * Check `tar` and `HTMLElement` is both defined
- * before use the `instanceof` operator to check `tar` is instanceof `HTMLElement`.
+ * Check `target` and `HTMLElement` is both defined
+ * before use the `instanceof` operator to check `target` is instanceof `HTMLElement`.
  */
-export const isHTMLElement = (tar: any): tar is HTMLElement =>
-  isGeneralObject(tar) && isDefined(HTMLElement) && tar instanceof HTMLElement
+export const isHTMLElement = (target: unknown): target is HTMLElement =>
+  isGeneralObject(target) && isDefined(HTMLElement) && target instanceof HTMLElement
 /**
- * Check `tar` and `HTMLCollection` is both defined
- * before use the `instanceof` operator to check `tar` is instanceof `HTMLCollection`.
+ * Check `target` and `HTMLCollection` is both defined
+ * before use the `instanceof` operator to check `target` is instanceof `HTMLCollection`.
  */
-export const isHTMLCollection = (tar: any): tar is HTMLCollection =>
-  isGeneralObject(tar) && isDefined(HTMLCollection) && tar instanceof HTMLCollection
+export const isHTMLCollection = (target: unknown): target is HTMLCollection =>
+  isGeneralObject(target) && isDefined(HTMLCollection) && target instanceof HTMLCollection
 /**
- * Check `tar` and `Document` is both defined
- * before use the `instanceof` operator to check `tar` is instanceof `Document`.
+ * Check `target` and `Document` is both defined
+ * before use the `instanceof` operator to check `target` is instanceof `Document`.
  */
-export const isDocument = (tar: any): tar is Document =>
-  isGeneralObject(tar) && isDefined(Document) && tar instanceof Document
+export const isDocument = (target: unknown): target is Document =>
+  isGeneralObject(target) && isDefined(Document) && target instanceof Document
 /**
- * Check `tar` and `EventTarget` is both defined
- * before use the `instanceof` operator to check `tar` is instanceof `EventTarget`.
+ * Check `target` and `EventTarget` is both defined
+ * before use the `instanceof` operator to check `target` is instanceof `EventTarget`.
  *
  * @see {@link https://developer.mozilla.org/zh-CN/docs/Web/API/Event}
  */
-export const isEventTarget = (tar: any): tar is EventTarget =>
-  isGeneralObject(tar) && isDefined(EventTarget) && tar instanceof EventTarget
+export const isEventTarget = (target: unknown): target is EventTarget =>
+  isGeneralObject(target) && isDefined(EventTarget) && target instanceof EventTarget
 /**
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_iterable_protocol}
  */
-export const isIterable = <T>(tar: any): tar is Iterable<T> =>
-  Object.prototype.toString.call(tar[Symbol.iterator]) === '[object Function]'
+export function isIterable <T> (target: Iterable<T>): target is Iterable<T>
+export function isIterable <T> (target: unknown): target is Iterable<T>
+export function isIterable <T> (target: any): target is Iterable<T> {
+  return Object.prototype.toString.call(target[Symbol.iterator]) === '[object Function]'
+}
+/**
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/asyncIterator}
+ */
+export function isAsyncIterable <T> (target: AsyncIterable<T>): target is AsyncIterable<T>
+export function isAsyncIterable <T> (target: unknown): target is AsyncIterable<T>
+export function isAsyncIterable <T> (target: any): target is AsyncIterable<T> {
+  return Object.prototype.toString.call(target[Symbol.asyncIterator]) === '[object AsyncGeneratorFunction]'
+}
 /**
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_iterator_protocol}
  */
-export const isIterator = <T, TReturn = any, TNext = undefined>(tar: any): tar is Iterator<T, TReturn, TNext> =>
-  isObject(tar) && isFunction(tar.next)
+export function isIterator <T, TReturn = unknown, TNext = undefined> (
+  target: Iterator<T, TReturn, TNext>
+): target is Iterator<T, TReturn, TNext>
+export function isIterator <T, TReturn = unknown, TNext = undefined> (target: unknown): target is Iterator<T, TReturn, TNext>
+export function isIterator <T, TReturn = unknown, TNext = undefined> (target: any): target is Iterator<T, TReturn, TNext> {
+  return isObject(target) && isFunction(target.next)
+}
+export function isAsyncIterator <T, TReturn = unknown, TNext = undefined> (
+  target: AsyncIterator<T, TReturn, TNext>
+): target is AsyncIterator<T, TReturn, TNext>
+export function isAsyncIterator <T, TReturn = unknown, TNext = undefined> (target: unknown): target is AsyncIterator<T, TReturn, TNext>
+export function isAsyncIterator <T, TReturn = unknown, TNext = undefined> (target: any): target is AsyncIterator<T, TReturn, TNext> {
+  return isObject(target) && isFunction(target.next)
+}
 
-export const isObservable = <T>(tar: any): tar is Observable<T> =>
-  isObject(tar) && (Boolean(tar.isObservable) || isFunction(tar.subscribe))
+export function isObservable <T> (target: Observable<T>): target is Observable<T>
+export function isObservable <T> (target: unknown): target is Observable<T>
+export function isObservable <T> (target: any): target is Observable<T> {
+  return isObject(target) && (Boolean(target.isObservable) || isFunction(target.subscribe))
+}
 
-export const asIs = <T = any>(tar: T, ...args: any[]): T => tar
-export const asUndefined = (...tar: any[]): undefined => undefined
-export const asNull = (...tar: any[]): null => null
-export const asVoid = (...tar: any[]): void => { /* do nothing */ }
+export const asIs = <T = unknown>(target: T, ...args: unknown[]): T => target
+export const asUndefined = (...target: unknown[]): undefined => undefined
+export const asNull = (...target: unknown[]): null => null
+export const asVoid = (...target: unknown[]): void => { /* do nothing */ }
