@@ -191,8 +191,8 @@ export interface SubscribeOptions {
   hostAtom?: AtomLike | null
   isExtracted?: boolean
 }
-export const DEFAULT_SUBSCRIBE_OPTIONS: UndefinedableByKeys<Required<SubscribeOptions>, 'hostAtom'> = {
-  hostAtom: undefined,
+export const DEFAULT_SUBSCRIBE_OPTIONS: Required<SubscribeOptions> = {
+  hostAtom: null,
   isExtracted: false
 }
 export interface Subscription {

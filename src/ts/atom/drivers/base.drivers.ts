@@ -1,10 +1,10 @@
-import { isPlainObject, isArray, isFunction, isEmptyObj, isNil } from '../../internal/base'
+import { isPlainObject, isArray, isFunction, isEmptyObject, isNil } from '../../internal/base'
 import { looseCurryN } from '../../functional'
 import { isAtomLike, Data } from '../atoms'
 import { replayWithLatest } from '../mediators'
 import { binaryTweenPipeAtom } from '../helpers'
 
-import type { AnyStringRecord, EmptyInterface, FlipOptional } from '../../@types'
+import type { AnyStringRecord, EmptyInterface, ReverseOptional } from '../../@types'
 import type { AtomLike, Mutation, AtomLikeOfOutput, AtomLikeOfInput } from '../atoms'
 import type { ReplayDataMediator, ReplayMutationMediator } from '../mediators'
 
@@ -49,7 +49,7 @@ export interface GeneralDriverCreateOptions<
   DSLC extends DriverSingletonLevelContexts = DriverSingletonLevelContexts,
   Instance extends DriverInstance = DriverInstance
 > {
-  defaultOptions?: FlipOptional<Options>
+  defaultOptions?: ReverseOptional<Options>
   prepareOptions?: (options: Required<Options>) => Required<Options>
   prepareDriverLevelContexts?: () => DLC
   prepareSingletonLevelContexts?: PrepareDriverSingletonLevelContexts<Options, DLC, DSLC>
@@ -118,7 +118,7 @@ export const createGeneralDriver = <
       throw (new TypeError('"options" is expected to be type of "PlainObject".'))
     }
 
-    const preparedOptions = prepareOptions({ ...defaultOptions as any, ...options })
+    const preparedOptions = prepareOptions({ ...defaultOptions, ...options } as unknown as Required<Options>)
     if (!isPlainObject(preparedOptions)) {
       throw (new TypeError('The returned value of "prepareOptions" is expected to be type of "PlainObject".'))
     }
@@ -255,7 +255,7 @@ export const useGeneralDriver = <Options extends DriverOptions = DriverOptions, 
   const { inputs: { ...innerInputs } = {}, outputs: { ...innerOutputs } = {}, ...others } = { ...driverInterfaces }
 
   // 只有当 interfaces 是对象且不为空的时候，才执行 connect 逻辑
-  if (isPlainObject(interfaces) && !isEmptyObj(interfaces)) {
+  if (isPlainObject(interfaces) && !isEmptyObject(interfaces)) {
     const { inputs: { ...outerInputs } = {}, outputs: { ...outerOutputs } = {} } = { ...formatDriverInterfaces(interfaces) }
 
     // outer inputs as upstream, send data to inner inputs

@@ -560,7 +560,7 @@ export const createMutationFromFunction = pipe(createFunctionTrigger, createMuta
 interface FunctionTriggerAgent<P extends any[] = any[], R = any> {
   agent: (emitFunction: emitFunction<[...P]>) => void
   handler: (...args: [...P]) => R
-  emit?: emitFunction<[...P]>
+  emit?: emitFunction<[...P]> | undefined
   isBound: boolean
 }
 /**

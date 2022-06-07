@@ -1,7 +1,7 @@
 import { isNormalFunction } from './base'
 import { curry, looseCurryN } from '../functional/helpers'
 
-import type { AnyFunctionOfReturn, InvertBoolean, CastBoolean } from '../@types'
+import type { AnyFunctionOfReturn, BooleanNot, CastBoolean } from '../@types'
 
 /**
  * Convert any value to `true` or `false`.
@@ -29,8 +29,8 @@ export function not (b: true): false
 export function not (b: false): true
 // catch all overload, used in `pipe` or `compose` or likewise situations.
 export function not (b: boolean): boolean
-export function not (b: any): boolean
-export function not (b: any): boolean { return !bool(b) }
+export function not (b: unknown): boolean
+export function not (b: unknown): boolean { return !bool(b) }
 
 /**
  * Logic `AND`.
@@ -51,7 +51,7 @@ export function not (b: any): boolean { return !bool(b) }
  *
  * @refer https://en.wikipedia.org/wiki/Logic_gate
  */
-export const and = (x: any, y: any): boolean => bool(x) && bool(y)
+export const and = (x: unknown, y: unknown): boolean => bool(x) && bool(y)
 /**
  * @see {@link and}
  */
@@ -76,7 +76,7 @@ export const and_ = curry(and)
  *
  * @refer https://en.wikipedia.org/wiki/Logic_gate
  */
-export const or = (x: any, y: any): boolean => bool(x) || bool(y)
+export const or = (x: unknown, y: unknown): boolean => bool(x) || bool(y)
 /**
  * @see {@link or}
  */
@@ -101,7 +101,7 @@ export const or_ = curry(or)
  *
  * @refer https://en.wikipedia.org/wiki/Logic_gate
  */
-export const nand = (x: any, y: any): boolean => !and(x, y)
+export const nand = (x: unknown, y: unknown): boolean => !and(x, y)
 /**
  * @see {@link nand}
  */
@@ -126,7 +126,7 @@ export const nand_ = curry(nand)
  *
  * @refer https://en.wikipedia.org/wiki/Logic_gate
  */
-export const nor = (x: any, y: any): boolean => !or(x, y)
+export const nor = (x: unknown, y: unknown): boolean => !or(x, y)
 /**
  * @see {@link nor}
  */
@@ -151,7 +151,7 @@ export const nor_ = curry(nor)
  *
  * @refer https://en.wikipedia.org/wiki/Logic_gate
  */
-export const xor = (x: any, y: any): boolean => bool(x) !== bool(y)
+export const xor = (x: unknown, y: unknown): boolean => bool(x) !== bool(y)
 /**
  * @see {@link xor}
  */
@@ -176,14 +176,14 @@ export const xor_ = curry(xor)
  *
  * @refer https://en.wikipedia.org/wiki/Logic_gate
  */
-export const xnor = (x: any, y: any): boolean => !xor(x, y)
+export const xnor = (x: unknown, y: unknown): boolean => !xor(x, y)
 /**
  * @see {@link xnor}
  */
 export const xnor_ = curry(xnor)
 
 export type InvertFunctionReturn<FN extends AnyFunctionOfReturn<boolean>> =
-  FN extends (...args: any[]) => infer R ? (...args: Parameters<FN>) => InvertBoolean<CastBoolean<R>> : never
+  FN extends (...args: unknown[]) => infer R ? (...args: Parameters<FN>) => BooleanNot<CastBoolean<R>> : never
 /**
  * Take a function that returns a boolean value, return a complement function that return the opposite boolean value.
  * i.e. whenever target function return `true`, the complement function will return `false`, and vice versa.
@@ -193,16 +193,16 @@ export type InvertFunctionReturn<FN extends AnyFunctionOfReturn<boolean>> =
  * @typeParam FN - The target function's type.
  */
 export const complement = <FN extends AnyFunctionOfReturn<boolean>>(fn: FN): InvertFunctionReturn<FN> =>
-  ((...args: any) => not(fn(...args))) as any
+  ((...args: unknown[]) => not(fn(...args))) as any
 
 /**
  * Predicate whether the target value is exactly `true`.
  */
-export const isTrue = (v: any): boolean => v === true
+export const isTrue = (v: unknown): boolean => v === true
 /**
  * Predicate whether the target value is exactly `false`.
  */
-export const isFalse = (v: any): boolean => v === false
+export const isFalse = (v: unknown): boolean => v === false
 
 /**
  * Predicate whether the target value is a truthy value.
@@ -210,21 +210,21 @@ export const isFalse = (v: any): boolean => v === false
  * @refer https://developer.mozilla.org/en-US/docs/Glossary/Truthy
  * @see {@link isFalsy}
  */
-export const isTruthy = (v: any): boolean => Boolean(v)
+export const isTruthy = (v: unknown): boolean => Boolean(v)
 /**
  * Predicate whether the target value is a falsy value.
  *
  * @refer https://developer.mozilla.org/en-US/docs/Glossary/Falsy
  * @see {@link isTruthy}
  */
-export const isFalsy = (v: any): boolean => !isTruthy(v)
+export const isFalsy = (v: unknown): boolean => !isTruthy(v)
 
 /**
  * Use `===` to check whether two value are equal.
  *
  * @refer https://developer.mozilla.org/en-US/docs/Web/JavaScript/Equality_comparisons_and_sameness
  */
-export const isStrictEqual = (v1: any, v2: any): boolean => v1 === v2
+export const isStrictEqual = (v1: unknown, v2: unknown): boolean => v1 === v2
 /**
  * @see {@link isStrictEqual}
  */
@@ -236,7 +236,7 @@ export const isStrictEqual_ = curry(isStrictEqual)
  * @refer https://developer.mozilla.org/en-US/docs/Web/JavaScript/Equality_comparisons_and_sameness
  */
 // eslint-disable-next-line eqeqeq
-export const isLooseEqual = (v1: any, v2: any): boolean => v1 == v2
+export const isLooseEqual = (v1: unknown, v2: unknown): boolean => v1 == v2
 /**
  * @see {@link isLooseEqual}
  */
@@ -248,7 +248,7 @@ export const isLooseEqual_ = curry(isLooseEqual)
  * @refer https://developer.mozilla.org/en-US/docs/Web/JavaScript/Equality_comparisons_and_sameness
  * @refer https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is
  */
-export const isObjetEqual = (v1: any, v2: any): boolean => Object.is(v1, v2)
+export const isObjetEqual = (v1: unknown, v2: unknown): boolean => Object.is(v1, v2)
 /**
  * @see {@link isObjetEqual}
  */
@@ -268,8 +268,8 @@ export const isObjectEqual_ = curry(isObjetEqual)
  * @typeParam TR - The return type of `thenFn`.
  * @typeParam ER - The return type of `elseFn`.
  */
-export const ifElse = <X = any, TR = any, ER = any>(
-  pred: any, thenFn: (x?: X) => TR, elseFn: (x?: X) => ER, x?: X
+export const ifElse = <X = unknown, TR = unknown, ER = unknown>(
+  pred: unknown, thenFn: (x?: X) => TR, elseFn: (x?: X) => ER, x?: X
 ): TR | ER =>
     bool(isNormalFunction(pred) ? pred(x) : pred) ? thenFn(x) : elseFn(x)
 /**
@@ -290,9 +290,9 @@ export const ifElse_ = looseCurryN(3, ifElse)
  * @typeParam X - The type of the target value.
  * @typeParam WR - The return type of `whenFn`.
  */
-export function when <X = any, WR = any> (pred: any, whenFn: (x?: X) => WR): WR
-export function when <X = any, WR = any> (pred: any, whenFn: (x?: X) => WR, x: X): WR | X
-export function when <X = any, WR = any> (pred: any, whenFn: (x?: X) => WR, x?: X): WR | X | undefined {
+export function when <X = unknown, WR = unknown> (pred: unknown, whenFn: (x?: X) => WR): WR
+export function when <X = unknown, WR = unknown> (pred: unknown, whenFn: (x?: X) => WR, x: X): WR | X
+export function when <X = unknown, WR = unknown> (pred: unknown, whenFn: (x?: X) => WR, x?: X): WR | X | undefined {
   return bool(isNormalFunction(pred) ? pred(x) : pred) ? whenFn(x) : x
 }
 /**
@@ -313,10 +313,10 @@ export const when_ = looseCurryN(2, when)
  * @typeParam X - The type of the target value.
  * @typeParam UR - The return type of `unlessFn`.
  */
-export function unless <X = any, UR = any> (pred: any, unlessFn: (x?: X) => UR): UR
-export function unless <X = any, UR = any> (pred: any, unlessFn: (x?: X) => UR, x: X): UR
-export function unless <X = any, UR = any> (
-  pred: any, unlessFn: (x?: X) => UR, x?: X
+export function unless <X = unknown, UR = unknown> (pred: unknown, unlessFn: (x?: X) => UR): UR
+export function unless <X = unknown, UR = unknown> (pred: unknown, unlessFn: (x?: X) => UR, x: X): UR
+export function unless <X = unknown, UR = unknown> (
+  pred: unknown, unlessFn: (x?: X) => UR, x?: X
 ): UR | X | undefined {
   return !bool(isNormalFunction(pred) ? pred(x) : pred) ? unlessFn(x) : x
 }
@@ -337,7 +337,7 @@ export const unless_ = looseCurryN(2, unless)
  *
  * @see {@link bool}
  */
-export const iif = <X = any, Y = any>(cond: any, trueValue: X, falseValue: Y): X | Y =>
+export const iif = <X = unknown, Y = unknown>(cond: unknown, trueValue: X, falseValue: Y): X | Y =>
   bool(isNormalFunction(cond) ? cond(trueValue) : cond) ? trueValue : falseValue
 /**
  * @see {@link iif}
@@ -349,7 +349,7 @@ export type GuardCondition<V> = [judgement: boolean, value: V]
  * @refer https://hackage.haskell.org/package/Boolean-0.2.4/candidate/docs/Data-Boolean.html
  * @refer https://hackage.haskell.org/package/Boolean-0.2.4/candidate/docs/src/Data-Boolean.html#guardedB
  */
-export const guards = <V = any>(conditions: Array<GuardCondition<V>>, defaultValue: V): V => {
+export const guards = <V = unknown>(conditions: Array<GuardCondition<V>>, defaultValue: V): V => {
   for (const [judgement, value] of conditions) {
     if (judgement) return value
   }
@@ -360,7 +360,7 @@ export type CaseCondition<P, V> = [predicate: (predicated?: P) => boolean, value
 /**
  * @refer https://hackage.haskell.org/package/Boolean-0.2.4/candidate/docs/src/Data-Boolean.html#caseB
  */
-export const cases = <P = any, V = any>(
+export const cases = <P = unknown, V = unknown>(
   predicated: P, conditions: Array<CaseCondition<P, V>>, defaultValue: V
 ): V => {
   for (const [predicate, value] of conditions) {
