@@ -49,6 +49,10 @@ export interface BiuOptions<
   body?: BiuRequestBody
   mode?: BiuRequestMode
   credentials?: BiuRequestCredentials
+  /**
+   * In millisecond.
+   */
+  timeout?: number
   data?: SendData
   responseType?: BiuResponseType
   dataType?: BiuReceivedDataType
@@ -62,6 +66,7 @@ const DEFAULT_BIU_OPTIONS: Omit<Required<BiuOptions<any, any, any, any>>, 'resou
   body: '',
   mode: 'same-origin',
   credentials: 'include',
+  timeout: 10 * 1000,
   data: {},
   responseType: 'json',
   dataType: 'json',

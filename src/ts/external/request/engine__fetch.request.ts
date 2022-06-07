@@ -12,6 +12,11 @@ import type { ConstructorOfRequestEngine } from './engine.request'
 type FetchLike = AnyFunction | typeof fetch
 type FetchOptions = RequestInit & { resource: string }
 
+const timeoutAbortController = (time: number): AbortController => {
+  const controller = new AbortController()
+  setTimeout(() => controller.abort(), time * 1000)
+  return controller
+}
 const prepareFetchOptions = <
   SuccessData extends AnyStringRecord = AnyStringRecord,
   FailData extends AnyStringRecord = AnyStringRecord,
@@ -19,14 +24,15 @@ const prepareFetchOptions = <
   SendData = any
 >(options: Required<BiuOptions<SuccessData, FailData, ErrorData, SendData>>): FetchOptions => {
   const preparedOptions: FetchOptions = { resource: '' }
-  const { resource, method, headers, body, mode, credentials, data } = options
+  const { resource, method, headers, body, mode, credentials, timeout, data } = options
 
   preparedOptions.resource = resource
   preparedOptions.method = method
   preparedOptions.headers = headers
-  preparedOptions.body = ['get', 'head'].includes(method.toLowerCase()) ? undefined : body
+  preparedOptions.body = ['get', 'head'].includes(method.toLowerCase()) ? null : body
   preparedOptions.mode = mode
   preparedOptions.credentials = credentials
+  preparedOptions.signal = timeoutAbortController(timeout).signal
 
   return preparedOptions
 }
