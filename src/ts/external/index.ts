@@ -10,6 +10,7 @@ export * from './struct'
 
 export * from './debug'
 export * from './environment'
+export * from './exception'
 export * from './event'
 export * from './dom'
 
