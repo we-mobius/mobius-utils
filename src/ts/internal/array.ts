@@ -141,6 +141,24 @@ export const arrayDropLast = <T = any>(
 }
 
 /**
+ * @see {@link https://ramdajs.com/docs/#remove}
+ */
+// export const arrayRemove = <T = any>(
+//   start: number, end: number, targetArray: T[]
+// ): T[] => {
+//   if (end < start) {
+//     [start, end] = [end, start]
+//   }
+//   return [...targetArray.slice(0, start), ...targetArray.slice(end)]
+// }
+
+export const arrayRemoveIndex = <T = any>(
+  index: number, targetArray: T[]
+): T[] => {
+  return [...targetArray.slice(0, index), ...targetArray.slice(index + 1 === 0 ? Infinity : index + 1)]
+}
+
+/**
  * Combines two array. `appendedArray` will be appended to the end of `targetArray`.
  * @see {@link Array.concat}
  */
