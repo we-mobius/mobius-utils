@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import type { Observable } from 'rxjs'
+import type { Primative, NonPrimative } from '../@types/index'
 
 /**
  * 进行类型检测的常用手段包括：
@@ -12,15 +13,6 @@ import type { Observable } from 'rxjs'
  *
  * - `typeof` operator can operate on non-exist variable.
  */
-
-/**
- * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#Data_types}
- */
-export type Primative = string | number | boolean | bigint | symbol | null | undefined
-/**
- * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-2.html#object-type}
- */
-export type NonPrimative = object
 
 export const isUndefined = (target: unknown): target is undefined =>
   Object.prototype.toString.call(target) === '[object Undefined]'
