@@ -212,6 +212,8 @@ export const foreverPromise = <T = any>(
           } catch (exception) {
             // omit exceptions from execution of `onRejected`
           }
+        } else {
+          console.log('❌ [foreverPromise] unexcepted error occured: ', failedResult)
         }
         return failedResult
       })
