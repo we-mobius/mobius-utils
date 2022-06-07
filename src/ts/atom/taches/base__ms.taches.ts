@@ -9,7 +9,7 @@ import { replayWithLatest } from '../mediators'
 import type { Vacuo, Terminator } from '../metas'
 import type {
   TransformationLiftPositions,
-  MutatorOriginTransformationUnion,
+  MutatorOriginalTransformationUnion,
   MutatorTransformation, LiftBothTransformation, LiftLeftTransformation, LiftRightTransformation
 } from '../particles'
 import type { MutationOptions, AtomLikeOfOutput } from '../atoms'
@@ -245,7 +245,7 @@ export function createArrayMSTache<
           values: Array.from<C | undefined>({ length: length })
         }
         // actual transformation which will takes prevDatar(or its value) & datar(ot its value) as argument
-        const actualTransformation: MutatorOriginTransformationUnion<ToUnion<WrapArrayPs<Ps>>, C | Terminator> =
+        const actualTransformation: MutatorOriginalTransformationUnion<ToUnion<WrapArrayPs<Ps>>, C | Terminator> =
         (prev: any, cur: any, mutation: any, ...args: any[]): any => {
           if (autoUpdateContexts) {
             const { key, value } = prev
@@ -256,7 +256,7 @@ export function createArrayMSTache<
         }
         return actualTransformation
       }
-    })() as MutatorOriginTransformationUnion<ToUnion<WrapArrayPs<Ps>>, C | Terminator>, options)
+    })() as MutatorOriginalTransformationUnion<ToUnion<WrapArrayPs<Ps>>, C | Terminator>, options)
 
     const output = Data.empty<C>()
 
@@ -438,7 +438,7 @@ export const createObjectMSTache = <
           }, {})
         }
         // actual transformation which will takes prevDatar(or its value) & datar(ot its value) as argument
-        const actualTransformation: MutatorOriginTransformationUnion<ToUnion<WrapObjectPs<Ps>>, C | Terminator> =
+        const actualTransformation: MutatorOriginalTransformationUnion<ToUnion<WrapObjectPs<Ps>>, C | Terminator> =
         (prev: any, cur: any, mutation: any, ...args: any[]): any => {
           if (autoUpdateContexts) {
             const { key, value } = prev
@@ -449,7 +449,7 @@ export const createObjectMSTache = <
         }
         return actualTransformation
       }
-    })() as MutatorOriginTransformationUnion<ToUnion<WrapObjectPs<Ps>>, C | Terminator>, options)
+    })() as MutatorOriginalTransformationUnion<ToUnion<WrapObjectPs<Ps>>, C | Terminator>, options)
 
     const output = Data.empty<C>()
 

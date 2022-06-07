@@ -16,6 +16,9 @@ import type { DataLike, MutationLike } from './atoms'
  * Mutator    -> Designed to carry the transformation of Mutation.
  ******************************************************************************************************/
 
+/**
+ * Number of particles is finite. Using a `enum` to group them is reasonable.
+ */
 export enum ParticleType {
   Chaos = '[particle Chaos]',
   Datar = '[particle Datar]',
@@ -29,27 +32,33 @@ export enum ParticleType {
  ******************************************************************************************************/
 
 /**
- * @param tar anything
+ * @param target anything
  * @return { boolean } whether the target is a Particle instance
  */
-export const isParticle = (tar: any): tar is Particle => isObject(tar) && tar.isParticle
+export const isParticle = (target: any): target is Particle => isObject(target) && target.isParticle
 /**
-  * @param tar anything
+  * @param target anything
   * @return { boolean } whether the target is a Chaos instance
   */
-export const isChaos = (tar: any): tar is Chaos => isObject(tar) && tar.isChaos
+export const isChaos = (target: any): target is Chaos => isObject(target) && target.isChaos
 /**
-  * @param tar anything
+  * @param target anything
   * @return { boolean } whether target is a Datar instance
   */
-export const isDatar = <V = any>(tar: any): tar is Datar<V> =>
-  isObject(tar) && tar.isDatar
+export function isDatar <V = any> (target: Datar<V>): target is Datar<V>
+export function isDatar <V = any> (target: unknown): target is Datar<V>
+export function isDatar <V = any> (target: any): target is Datar<V> {
+  return isObject(target) && target.isDatar
+}
 /**
-  * @param tar anything
+  * @param target anything
   * @return { boolean } whether target is a Mutator instance
   */
-export const isMutator = <P = any, C = any>(tar: any): tar is Mutator<P, C> =>
-  isObject(tar) && tar.isMutator
+export function isMutator <P = any, C = any> (target: Mutator<P, C>): target is Mutator<P, C>
+export function isMutator <P = any, C = any> (target: unknown): target is Mutator<P, C>
+export function isMutator <P = any, C = any> (target: any): target is Mutator<P, C> {
+  return isObject(target) && target.isMutator
+}
 
 /******************************************************************************************************
  *
@@ -60,10 +69,13 @@ export const isMutator = <P = any, C = any>(tar: any): tar is Mutator<P, C> =>
 /**
  *
  */
-interface BaseParticleOptions {
+export interface BaseParticleOptions {
+  /**
+   * HP, aka. High Performance
+   */
   isHPMode?: boolean
 }
-export const DEFAULT_BASEPARTICLE_OPTIONS: Required<BaseParticleOptions> = {
+export const DEFAULT_BASE_PARTICLE_OPTIONS: Required<BaseParticleOptions> = {
   isHPMode: true
 }
 /**
@@ -106,6 +118,10 @@ export class Chaos extends Particle {
   get type (): ParticleType { return ParticleType.Chaos }
   get particleType (): ParticleType { return ParticleType.Chaos }
 }
+/**
+ * Global Chaos instance.
+ * @see {@link Chaos}
+ */
 export const CHAOS = new Chaos()
 
 /**
@@ -117,17 +133,24 @@ export const CHAOS = new Chaos()
  */
 export interface DatarOptions extends BaseParticleOptions {}
 export const DEFAULT_DATAR_OPTIONS: Required<DatarOptions> = {
-  ...DEFAULT_BASEPARTICLE_OPTIONS
+  ...DEFAULT_BASE_PARTICLE_OPTIONS
 }
-type MutatorOfDatar<V = any>
-  = Mutator<any, V>
+/**
+ * mutator of datar's output type should be same as datar's value type.
+ */
+type MutatorOfDatar<V = any> = Mutator<unknown, V>
+type ValidMutatorOfDatar<V = any> =
+  | Mutator<any, V>
   | Chaos
 
 /**
  * @return { boolean } whether the target is a valid mutator of datar
  */
-export const isValidMutatorOfDatar = <P = any, C = any>(tar: any): tar is Mutator<P, C> =>
-  isChaos(tar) || isMutator(tar)
+export function isValidMutatorOfDatar <V = any> (target: ValidMutatorOfDatar<V>): target is ValidMutatorOfDatar<V>
+export function isValidMutatorOfDatar <V = any> (target: unknown): target is ValidMutatorOfDatar<V>
+export function isValidMutatorOfDatar <V = any> (target: any): target is ValidMutatorOfDatar<V> {
+  return isChaos(target) || isMutator(target)
+}
 
 /**
  * Designed to carry the value of Data.
@@ -138,14 +161,14 @@ export const isValidMutatorOfDatar = <P = any, C = any>(tar: any): tar is Mutato
 export class Datar<V = any> extends Particle {
   value: V
   options: Required<DatarOptions>
-  mutator: MutatorOfDatar<V>
+  mutator: ValidMutatorOfDatar<V>
 
   constructor (
-    value: V, mutator: MutatorOfDatar<V> = CHAOS, options: DatarOptions = DEFAULT_DATAR_OPTIONS
+    value: V, mutator: ValidMutatorOfDatar<V> = CHAOS, options: DatarOptions = DEFAULT_DATAR_OPTIONS
   ) {
     super()
     if (!isValidMutatorOfDatar(mutator)) {
-      throw (new TypeError('"mutator" is expected to be type of "Mutator" | "null".'))
+      throw (new TypeError('"mutator" is expected to be type of "Mutator" | "Chaos".'))
     }
     if (!isPlainObject(options)) {
       throw (new TypeError('"options" is expected to be type of "PlainObject".'))
@@ -157,6 +180,8 @@ export class Datar<V = any> extends Particle {
 
     this.value = value
 
+    // If the datar is in HPMode, the mutator will always be Chaos.
+    // So it won't occpy much memory.
     if (!isHPMode) {
       this.mutator = mutator
     } else {
@@ -170,15 +195,19 @@ export class Datar<V = any> extends Particle {
   /**
    * Same as `new Datar()`.
    */
-  static of <V>(
-    value: V, mutator: MutatorOfDatar<V> = CHAOS, options: DatarOptions = {}
+  static of <V = any>(
+    value: V, mutator: ValidMutatorOfDatar<V> = CHAOS, options: DatarOptions = DEFAULT_DATAR_OPTIONS
   ): Datar<V> {
-    // `options` will be complemented in `new Datar()`.
     return new Datar(value, mutator, options)
   }
 
+  /**
+   * When we create a new datar instance with `Datar.empty`, its value will be `VACUO` for sure.
+   * But the reason we create a empty datar is to contain some type of value in the future.
+   * The `const someDatar = Datar.empty() as Datar<any>` seems inevitable.
+   * It is advisable to always set a initial value for any type of value.
+   */
   static empty (options: DatarOptions = DEFAULT_DATAR_OPTIONS): Datar<Vacuo> {
-    // `options` will be complemented in `new Datar()`.
     return new Datar(VACUO, CHAOS, options)
   }
 
@@ -218,8 +247,8 @@ export class Datar<V = any> extends Particle {
  */
 
 /**
-  *
-  */
+ *
+ */
 export type TransformationLiftPositions = 'unknown' | 'both' | 'left' | 'right' | 'none'
 export interface TransformationLiftOptions {
   position?: TransformationLiftPositions
@@ -232,28 +261,35 @@ export interface MutatorOptions extends BaseParticleOptions {
   lift?: TransformationLiftOptions
 }
 export const DEFAULT_MUTATOR_OPTIONS: Required<MutatorOptions> = {
-  ...DEFAULT_BASEPARTICLE_OPTIONS,
+  ...DEFAULT_BASE_PARTICLE_OPTIONS,
   lift: DEFAULT_TRANSFORMATION_LIFT_OPTIONS
+}
+const _isValidMutatorOptions = (tar: any): tar is MutatorOptions => {
+  return isPlainObject(tar) && isPlainObject(tar.lift) && tar.lift.position !== undefined
 }
 
 export type MutatorTransformation<P = any, C = any, Contexts extends any[] = any[]> =
-  (prev: Chaos | Datar<P>, cur: Datar<C>, mutation?: MutationLike<P, C>, ...contexts: Contexts) => C
-type DatarOfMutator<V = any> = Datar<V> | Chaos
+  (previous: Chaos | Datar<P>, current: Datar<C>, mutation?: MutationLike<P, C>, ...contexts: Contexts) => C
+type DatarOfMutator<P = any, C = any> = Datar<P>
+type ValidDatarOfMutator<P = any, C = any> = Datar<P> | Chaos
 
 /**
  * Predicate whether the target is a valid datar of mutator, i.e. Chaos or Datar.
  */
-export const isValidDatarOfMutator = <V = any>(tar: any): tar is DatarOfMutator<V> =>
-  isChaos(tar) || isDatar(tar)
+export function isValidDatarOfMutator <P = any, C = any> (target: ValidDatarOfMutator<P, C>): target is ValidDatarOfMutator<P, C>
+export function isValidDatarOfMutator <P = any, C = any> (target: unknown): target is ValidDatarOfMutator<P, C>
+export function isValidDatarOfMutator <P = any, C = any> (target: any): target is ValidDatarOfMutator<P, C> {
+  return isChaos(target) || isDatar(target)
+}
 
 export type LiftBothTransformation<P = any, C = any, Contexts extends any[] = any[]> =
-  (prev: Vacuo | P, cur: C, mutation?: MutationLike<P, C>, ...contexts: Contexts) => C
+  (previous: Vacuo | P, current: C, mutation?: MutationLike<P, C>, ...contexts: Contexts) => C
 export type LiftLeftTransformation<P = any, C = any, Contexts extends any[] = any[]> =
-  (prev: Vacuo | P, cur: Datar<C>, mutation?: MutationLike<P, C>, ...contexts: Contexts) => C
+  (previous: Vacuo | P, current: Datar<C>, mutation?: MutationLike<P, C>, ...contexts: Contexts) => C
 export type LiftRightTransformation<P = any, C = any, Contexts extends any[] = any[]> =
-  (prev: Chaos | Datar<P>, cur: C, mutation?: MutationLike<P, C>, ...contexts: Contexts) => C
-export type MutatorOriginTransformationUnion<P = any, C = any, Contexts extends any[] = any[]>
-  = MutatorTransformation<P, C, Contexts>
+  (previous: Chaos | Datar<P>, current: C, mutation?: MutationLike<P, C>, ...contexts: Contexts) => C
+export type MutatorOriginalTransformationUnion<P = any, C = any, Contexts extends any[] = any[]> =
+  | MutatorTransformation<P, C, Contexts>
   | LiftBothTransformation<P, C, Contexts>
   | LiftLeftTransformation<P, C, Contexts>
   | LiftRightTransformation<P, C, Contexts>
@@ -264,24 +300,24 @@ export type MutatorOriginTransformationUnion<P = any, C = any, Contexts extends 
 export class Mutator<P = any, C = any> extends Particle {
   transformation: MutatorTransformation<P, C>
   options: Required<MutatorOptions>
-  datar: DatarOfMutator<P>
+  datar: ValidDatarOfMutator<P, C>
 
   constructor (
-    transformation: MutatorTransformation<P, C>, datar: DatarOfMutator<P> = CHAOS, options: MutatorOptions = DEFAULT_MUTATOR_OPTIONS
+    transformation: MutatorTransformation<P, C>, datar: ValidDatarOfMutator<P> = CHAOS, options: MutatorOptions = DEFAULT_MUTATOR_OPTIONS
   ) {
     super()
     if (!isFunction(transformation)) {
       throw (new TypeError('"transformation" is expected to be type of "Function".'))
     }
     if (!isValidDatarOfMutator(datar)) {
-      throw (new TypeError('"datar" is expected to be type of "Datar" | "null".'))
+      throw (new TypeError('"datar" is expected to be type of "Datar".'))
     }
     if (!isPlainObject(options)) {
       throw (new TypeError('"options" is expected to be type of "PlainObject".'))
     }
 
     // When make Mutator using bare `Mutator.of` or bare `new Mutator()` without specify `lift`,
-    //   set it to `'unknown'` by default.
+    //   mark its position as `'unknown'` by default.
     if (options.lift === undefined) {
       options.lift = { position: 'unknown' as const }
     }
@@ -299,52 +335,44 @@ export class Mutator<P = any, C = any> extends Particle {
   get type (): ParticleType { return ParticleType.Mutator }
   get particleType (): ParticleType { return ParticleType.Mutator }
 
-  static of <P, C>(
-    transformation: MutatorTransformation<P, C>, datar: DatarOfMutator<P> = CHAOS, options: MutatorOptions = DEFAULT_MUTATOR_OPTIONS
+  static of <P = any, C = any>(
+    transformation: MutatorTransformation<P, C>, datar: ValidDatarOfMutator<P> = CHAOS, options: MutatorOptions = DEFAULT_MUTATOR_OPTIONS
   ): Mutator<P, C> {
-    // `options` will be completed in constructor.
     return new Mutator(transformation, datar, options)
   }
 
-  static ofLift <P, C>(
-    transformation: LiftBothTransformation<P, C>
-    | LiftLeftTransformation<P, C>
-    | LiftRightTransformation<P, C>
-    | MutatorTransformation<P, C>,
-    options: MutatorOptions | TransformationLiftOptions = DEFAULT_MUTATOR_OPTIONS
+  static ofLift <P = any, C = any>(
+    transformation: MutatorOriginalTransformationUnion<P, C>, options: MutatorOptions | TransformationLiftOptions = DEFAULT_MUTATOR_OPTIONS
   ): Mutator<P, C> {
-    const isMutatorOptions = (tar: any): tar is MutatorOptions => tar.lift !== undefined
-    if (isMutatorOptions(options)) {
-      const _options = { ...DEFAULT_MUTATOR_OPTIONS, ...options }
-      return this.of(this.lift(transformation, _options.lift), undefined, _options)
-    } else {
-      const _options = { ...DEFAULT_MUTATOR_OPTIONS, lift: options }
-      return this.of(this.lift(transformation, options), undefined, _options)
-    }
+    const preparedOptions = _isValidMutatorOptions(options)
+      ? { ...DEFAULT_MUTATOR_OPTIONS, ...options }
+      : { ...DEFAULT_MUTATOR_OPTIONS, lift: options }
+    return this.of(this.lift(transformation, preparedOptions.lift), undefined, preparedOptions)
   }
 
   static ofLiftBoth <P, C>(
     transformation: LiftBothTransformation<P, C>, options: MutatorOptions = DEFAULT_MUTATOR_OPTIONS
   ): Mutator<P, C> {
-    const _options = { ...DEFAULT_MUTATOR_OPTIONS, ...options, lift: { position: 'both' as const } }
-    return this.of(this.liftBoth(transformation), undefined, _options)
+    const preparedOptions = { ...DEFAULT_MUTATOR_OPTIONS, ...options, lift: { ...(options.lift ?? {}), position: 'both' as const } }
+    return this.of(this.liftBoth(transformation), undefined, preparedOptions)
   }
 
   static ofLiftLeft <P, C>(
     transformation: LiftLeftTransformation<P, C>, options: MutatorOptions = DEFAULT_MUTATOR_OPTIONS
   ): Mutator<P, C> {
-    const _options = { ...DEFAULT_MUTATOR_OPTIONS, ...options, lift: { position: 'left' as const } }
-    return this.of(this.liftLeft(transformation), undefined, _options)
+    const preparedOptions = { ...DEFAULT_MUTATOR_OPTIONS, ...options, lift: { ...(options.lift ?? {}), position: 'left' as const } }
+    return this.of(this.liftLeft(transformation), undefined, preparedOptions)
   }
 
   static ofLiftRight <P, C>(
     transformation: LiftRightTransformation<P, C>, options: MutatorOptions = DEFAULT_MUTATOR_OPTIONS
   ): Mutator<P, C> {
-    const _options = { ...DEFAULT_MUTATOR_OPTIONS, ...options, lift: { position: 'right' as const } }
-    return this.of(this.liftRight(transformation), undefined, _options)
+    const preparedOptions = { ...DEFAULT_MUTATOR_OPTIONS, ...options, lift: { ...(options.lift ?? {}), position: 'right' as const } }
+    return this.of(this.liftRight(transformation), undefined, preparedOptions)
   }
 
   static empty (options: MutatorOptions = {}): Mutator<any, Vacuo> {
+    // `options` will be complemented in `new Mutator()`
     return new Mutator(VACUO, CHAOS, options)
   }
 
@@ -358,12 +386,8 @@ export class Mutator<P = any, C = any> extends Particle {
    * @param transformation
    * @param [options = DEFAULT_TRANSFORMATION_LIFT_OPTIONS] default to `{ position: 'both' }`
    */
-  static lift <P, C>(
-    transformation: LiftBothTransformation<P, C>
-    | LiftLeftTransformation<P, C>
-    | LiftRightTransformation<P, C>
-    | MutatorTransformation<P, C>,
-    options: TransformationLiftOptions = DEFAULT_TRANSFORMATION_LIFT_OPTIONS
+  static lift <P = any, C = any>(
+    transformation: MutatorOriginalTransformationUnion<P, C>, options: TransformationLiftOptions = DEFAULT_TRANSFORMATION_LIFT_OPTIONS
   ): MutatorTransformation<P, C> {
     // transformation will be checked in the specific lift method later
     if (!isPlainObject(options)) {
@@ -384,17 +408,17 @@ export class Mutator<P = any, C = any> extends Particle {
     } else if (options.position === 'right') {
       return this.liftRight(transformation as LiftRightTransformation<P, C>)
     } else {
-      throw (new TypeError('"type" is expected be one of "none" | "both" | "left" | "right".'))
+      throw (new TypeError('"type" is expected be one of "none" | "both" | "left" | "right" | "unknown".'))
     }
   }
 
   /**
-   * Automatically unwrap both left & right param to value.
+   * Automatically unwrap both previous datar & current datar to value.
    *
    * @param transformation
    * @return { AnyFunction } wrapped transformation function
    */
-  static liftBoth <P, C>(transformation: LiftBothTransformation<P, C>): MutatorTransformation<P, C> {
+  static liftBoth <P = any, C = any>(transformation: LiftBothTransformation<P, C>): MutatorTransformation<P, C> {
     if (!isFunction(transformation)) {
       throw (new TypeError('"transformation" is expected to be type of "Function".'))
     }
@@ -404,12 +428,12 @@ export class Mutator<P = any, C = any> extends Particle {
   }
 
   /**
-   * Automatically unwrap left param to value, keep right param Datar.
+   * Automatically unwrap previous datar to value, keep current datar.
    *
    * @param transformation
    * @return { function } wrapped transformation function
    */
-  static liftLeft <P, C>(transformation: LiftLeftTransformation<P, C>): MutatorTransformation<P, C> {
+  static liftLeft <P = any, C = any>(transformation: LiftLeftTransformation<P, C>): MutatorTransformation<P, C> {
     if (!isFunction(transformation)) {
       throw (new TypeError('"transformation" is expected to be type of "Function".'))
     }
@@ -419,12 +443,12 @@ export class Mutator<P = any, C = any> extends Particle {
   }
 
   /**
-   * Automatically unwrap right param to value, keep left param Datar.
+   * Automatically unwrap current datar to value, keep previous datar.
    *
    * @param transformation
    * @return { function } wrapped transformation function
    */
-  static liftRight <P, C>(transformation: LiftRightTransformation<P, C>): MutatorTransformation<P, C> {
+  static liftRight <P = any, C = any>(transformation: LiftRightTransformation<P, C>): MutatorTransformation<P, C> {
     if (!isFunction(transformation)) {
       throw (new TypeError('"transformation" is expected to be type of "Function".'))
     }
@@ -437,7 +461,7 @@ export class Mutator<P = any, C = any> extends Particle {
    * @param datar
    * @return { Mutator } this
    */
-  fill (datar: Datar<P>): this {
+  fill (datar: DatarOfMutator<P, C>): this {
     if (!isDatar(datar)) {
       throw (new TypeError('"datar" is expected to be type of "Datar".'))
     }
@@ -450,7 +474,7 @@ export class Mutator<P = any, C = any> extends Particle {
    *
    *   -> Data A is observed by Mutation, Mutation is observed by Data B;
    *
-   *   -> Data A emits a datar, Mutation takes that datar as the 1st parameter of transformation;
+   *   -> Data A emits a datar, Mutation takes that datar as the 1st parameter of its inner transformation;
    *
    *   -> Mutation takes datar from Data A, then emits a mutator, Data B will take that mutator;
    *
@@ -458,7 +482,7 @@ export class Mutator<P = any, C = any> extends Particle {
    *
    *   -> The transformation evaluates while it has both two parameters, the result will be wrapped in a new datar;
    *
-   *   -> The new datar will be the new datar of Data B.
+   *   -> The new datar of transformation's evaluate result will be the new datar of Data B.
    *
    * @param datar the datar to be passed to the transformation as 2nd parameter
    * @param args the rest of the arguments (3rd and after) to be passed to the transformation

@@ -129,7 +129,7 @@ export const createDataWithFlatMediator_ = looseCurryN(0, createDataWithFlatMedi
  */
 export const createMutationWithFlatMediator = <P = any, C = any>(
   options: FlatMediatorOptions = {}
-): [Mutation<P, C>, FlatMutationMediator<P, C>] => withFlatMediator<P, C>(Mutation.empty<C>(), options)
+): [Mutation<P, C>, FlatMutationMediator<P, C>] => withFlatMediator<P, C>(Mutation.empty<P, C>(), options)
 export const createMutationWithFlatMediator_ = looseCurryN(0, createMutationWithFlatMediator)
 
 /**

@@ -25,6 +25,9 @@ import { Vain } from './vain'
  *                 For the typical usages, please check filterT or skipT or takeT.
  ******************************************************************************************************/
 
+/**
+ * Number of signal is finite. Using a `enum` to group them is reasonable.
+ */
 export enum MetaType {
   Vacuo = '[meta Vacuo]',
   Void = '[meta Void]',
@@ -39,30 +42,30 @@ export enum MetaType {
  ******************************************************************************************************/
 
 /**
- * @param tar anything
+ * @param target anything
  * @return { boolean } whether the target is Meta instance
  */
-export const isMeta = (tar: any): tar is BaseMeta => isObject(tar) && tar.isMeta
+export const isMeta = (target: any): target is Meta => isObject(target) && target.isMeta
 /**
- * @param tar anything
+ * @param target anything
  * @return { boolean } whether the targe is a Vacuo instance
  */
-export const isVacuo = (tar: any): tar is Vacuo => isFunction(tar) && tar.isVacuo
+export const isVacuo = (target: any): target is Vacuo => isFunction(target) && target.isVacuo
 /**
- * @param tar anything
+ * @param target anything
  * @return { boolean } whether the target is a Void instance
  */
-export const isVoid = (tar: any): tar is Void => isObject(tar) && tar.isVoid
+export const isVoid = (target: any): target is Void => isObject(target) && target.isVoid
 /**
-  * @param tar anything
+  * @param target anything
   * @return { boolean } whether the target is a Pausor instance
   */
-export const isPausor = (tar: any): tar is Pausor => isObject(tar) && tar.isPausor
+export const isPausor = (target: any): target is Pausor => isObject(target) && target.isPausor
 /**
-  * @param tar anything
+  * @param target anything
   * @return { boolean } whether the target is a Terminator instance
   */
-export const isTerminator = (tar: any): tar is Terminator => isObject(tar) && tar.isTerminator
+export const isTerminator = (target: any): target is Terminator => isObject(target) && target.isTerminator
 
 /******************************************************************************************************
  *
@@ -73,22 +76,22 @@ export const isTerminator = (tar: any): tar is Terminator => isObject(tar) && ta
 /**
  * Base meta class.
  */
-export abstract class BaseMeta extends Vain {
+export abstract class Meta extends Vain {
   isMeta: true
 
   constructor () {
     super()
     this.isMeta = true
 
-    if (new.target === BaseMeta) {
+    if (new.target === Meta) {
       throw new Error('BaseMeta class can not be instantiated!')
     }
   }
 
   abstract get metaType (): MetaType
 }
-export type OrBaseMeta<T> = T | BaseMeta
-export type ExcludeTerminator<T> = Exclude<T, Terminator>
+export type OrMeta<T> = T | Meta
+export type ExcludeMeta<T> = Exclude<T, Meta>
 
 /**
  *—————————————————————————————————————————————— Vacuo Meta ————————————————————————————————————————————————————
@@ -104,13 +107,15 @@ export type ExcludeTerminator<T> = Exclude<T, Terminator>
  *   The "class Vacuo extends Function" syntax can not use in strict browsers.
  *   reference: https://developer.chrome.com/docs/apps/contentSecurityPolicy/
  */
-// eslint-disable-next-line @typescript-eslint/ban-types
-export type Vacuo = ((...args: any[]) => Vacuo) & { _type: 'Vacuo' } & BaseMeta
+export type Vacuo = ((...args: any[]) => Vacuo) & { __type__: 'Vacuo' } & Meta
 export const makeVacuo = (): Vacuo => {
   const internalVacuo = function (): Vacuo {
     // do nothing
     return VACUO
   }
+  Object.defineProperty(internalVacuo, '__type__', {
+    get: () => { return 'Vacuo' }
+  })
   // Vain abstract
   Object.defineProperty(internalVacuo, 'isVain', {
     get: () => { return true }
@@ -134,6 +139,10 @@ export const makeVacuo = (): Vacuo => {
   })
   return internalVacuo as Vacuo
 }
+/**
+ * Global Vacuo instance.
+ * @see {@link makeVacuo}
+ */
 export const VACUO = makeVacuo()
 
 /**
@@ -145,7 +154,7 @@ export const VACUO = makeVacuo()
  *   So falsy values can flowing through the Atoms as normal values flowing.
  *   For the typical usages, please check nilToVoidT & defaultT.
  */
-export class Void extends BaseMeta {
+export class Void extends Meta {
   isVoid: true
   isFalsy: true
 
@@ -158,6 +167,10 @@ export class Void extends BaseMeta {
   get type (): MetaType { return MetaType.Void }
   get metaType (): MetaType { return MetaType.Void }
 }
+/**
+ * Global Void instance.
+ * @see {@link Void}
+ */
 export const VOID = new Void()
 
 /**
@@ -168,7 +181,7 @@ export const VOID = new Void()
  *   Data or Mutation receives Pausor will update there own value (or transformation),
  *   but will not pass the updated value to the next Atom.
  */
-export class Pausor extends BaseMeta {
+export class Pausor extends Meta {
   isPausor: true
 
   constructor () {
@@ -179,6 +192,10 @@ export class Pausor extends BaseMeta {
   get type (): MetaType { return MetaType.Pausor }
   get metaType (): MetaType { return MetaType.Pausor }
 }
+/**
+ * Global Pausor instance.
+ * @see {@link Pausor}
+ */
 export const PAUSOR = new Pausor()
 
 /**
@@ -192,7 +209,7 @@ export const PAUSOR = new Pausor()
  *     which result is Terminator.
  *   For the typical usages, please check filterT or skipT or takeT.
  */
-export class Terminator extends BaseMeta {
+export class Terminator extends Meta {
   isTerminator: true
 
   constructor () {
@@ -203,4 +220,8 @@ export class Terminator extends BaseMeta {
   get type (): MetaType { return MetaType.Terminator }
   get metaType (): MetaType { return MetaType.Terminator }
 }
+/**
+ * Global Terminator instance.
+ * @see {@link Terminator}
+ */
 export const TERMINATOR = new Terminator()

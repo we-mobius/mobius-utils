@@ -7,10 +7,10 @@ import { isObject } from '../internal/base'
  ******************************************************************************************************/
 
 /**
- * @param value
+ * @param target anything
  * @return { boolean } whether the value is a Vain instance
  */
-export const isVain = (tar: any): tar is Vain => isObject(tar) && tar.isVain
+export const isVain = (target: any): target is Vain => isObject(target) && target.isVain
 
 /******************************************************************************************************
  *
@@ -18,6 +18,9 @@ export const isVain = (tar: any): tar is Vain => isObject(tar) && tar.isVain
  *
  ******************************************************************************************************/
 
+/**
+ *
+ */
 export abstract class Vain {
   isVain: boolean
 

@@ -26,10 +26,14 @@ import type { MutationSubscription } from './mutation.atom'
  ******************************************************************************************************/
 
 /**
- * @param tar anything
+ * @param target anything
  * @return { boolean } whether the target is a Data instance
  */
-export const isData = <V = any>(tar: any): tar is Data<V> => isObject(tar) && tar.isData
+export function isData <V = any> (target: Data<V>): target is Data<V>
+export function isData <V = any> (target: unknown): target is Data<V>
+export function isData <V = any> (target: any): target is Data<V> {
+  return isObject(target) && target.isData
+}
 
 /******************************************************************************************************
  *
@@ -97,7 +101,7 @@ export class Data<V = any> extends BaseAtom implements AtomLike {
   /**
    * Set Data's options by key.
    */
-  setOptions<K extends keyof DataOptions>(key: K, value: Required<DataOptions>[K]): void {
+  setOptions<Key extends keyof DataOptions>(key: Key, value: Required<DataOptions>[Key]): void {
     this._options[key] = value
   }
 
@@ -111,7 +115,7 @@ export class Data<V = any> extends BaseAtom implements AtomLike {
   /**
    * @param value can be a Datar or any other value
    */
-  static of <V>(value: Datar<V> | V, options: DataOptions = DEFAULT_DATA_OPTIONS): Data<V> {
+  static of <V = any>(value: Datar<V> | V, options: DataOptions = DEFAULT_DATA_OPTIONS): Data<V> {
     // return new Data(isDatar(value) ? value : Datar.of(value, undefined, options), options)
     if (isDatar<V>(value)) {
       return new Data(value, options)
@@ -183,7 +187,6 @@ export class Data<V = any> extends BaseAtom implements AtomLike {
   subscribeValue (
     consumer: ValueConsumer<V>, options: SubscribeOptions = DEFAULT_SUBSCRIBE_OPTIONS
   ): DataSubscription<V> {
-    // `options` will be complemented in `subscribe` method.
     return this.subscribe(consumer, { ...DEFAULT_SUBSCRIBE_OPTIONS, ...options, isExtracted: true })
   }
 
@@ -319,7 +322,7 @@ export class Data<V = any> extends BaseAtom implements AtomLike {
     return subscription
   }
 
-  unobserve (mutation: MutationLike<any, V>): boolean {
+  unobserve (mutation: MutationLike<unknown, V>): boolean {
     const observation = this._observations.get(mutation)
     let unobserved = false
     if (!isUndefined(observation)) {
@@ -343,7 +346,7 @@ export class Data<V = any> extends BaseAtom implements AtomLike {
    *
    * @param mutation current data -> mutation (-> other data)
    */
-  beObservedBy (mutation: MutationLike<V, any>): DataSubscription<V> {
+  beObservedBy (mutation: MutationLike<V, unknown>): DataSubscription<V> {
     const subscription = mutation.observe(this)
     return subscription
     // return this.subscribe((datar, data) => {
@@ -456,4 +459,7 @@ export class Data<V = any> extends BaseAtom implements AtomLike {
   }
 }
 
+/**
+ * GC, aka. Garbage Clean, used by mediator to release memories.
+ */
 export const GC_DATA = Data.of(Symbol('GC_DATA'))

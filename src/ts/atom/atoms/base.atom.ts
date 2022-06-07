@@ -2,13 +2,14 @@ import { isObject } from '../../internal/base'
 import { pipe, compose } from '../../functional'
 
 import { Vain } from '../vain'
+import { Meta } from '../metas'
 import { Particle } from '../particles'
 
 import type { Data } from './data.atom'
 import type { Mutation } from './mutation.atom'
 import type { DataMediator, MutationMediator } from '../mediators'
 
-import type { AnyFunction, AnyStringRecord, CastAny, First, Last, UndefinedableByKeys } from '../../@types'
+import type { AnyFunction, AnyStringRecord, CastAny, First, Last } from '../../@types'
 
 /******************************************************************************************************
  *
@@ -17,7 +18,7 @@ import type { AnyFunction, AnyStringRecord, CastAny, First, Last, UndefinedableB
  ******************************************************************************************************/
 
 /**
- *
+ * Number of atoms is finite. Using a enum to group them is reasonable.
  */
 export enum AtomType {
   Data = '[atom Data]',
@@ -41,11 +42,11 @@ export interface AtomLike {
   particle: Particle
   meta: any
   options: AnyStringRecord
-  subscribe: (consumer: (particle: any, atom?: any) => void, options?: any) => Subscription
-  getSubscriptionByConsumer: (consumer: (particle: any, atom?: any) => void) => Subscription | undefined
+  subscribe: (consumer: (particle: Particle, atom?: AtomLike) => void, options?: AnyStringRecord) => Subscription
+  getSubscriptionByConsumer: (consumer: (particle: Particle, atom?: AtomLike) => void) => Subscription | undefined
   getSubscriptionByHostAtom: (hostAtom: AtomLike) => Subscription | undefined
-  getSubscription: (consumerOrHostAtom: ((particle: any, atom?: any) => void) | AtomLike) => Subscription | undefined
-  unsubscribe: (target: ((particle: any, atom?: any) => void) | Subscription | AtomLike) => boolean
+  getSubscription: (consumerOrHostAtom: ((particle: Particle, atom?: AtomLike) => void) | AtomLike) => Subscription | undefined
+  unsubscribe: (target: ((particle: Particle, atom?: AtomLike) => void) | Subscription | AtomLike) => boolean
   unsubscribeAll: () => boolean
   trigger: (particle?: any) => void
   observe: (atom?: any) => Subscription
@@ -73,15 +74,32 @@ export type AtomLikeOfInput<I = any> = Data<I> | DataMediator<I> | Mutation<I, a
  */
 export type AtomLikeOfOutput<O = any> = Data<O> | DataMediator<O> | Mutation<any, O> | MutationMediator<any, O>
 
-export const isAtomLike = (tar: any): tar is AtomLike => isObject(tar) && tar.isAtom
-export const isDataLike = <V = any>(tar: any): tar is DataLike<V> => isObject(tar) && tar.isData
-export const isMutationLike = <P = any, C = any>(tar: any): tar is MutationLike<P, C> => isObject(tar) && tar.isMutation
+/**
+ * Target will be considered `AtomLike` when its `isAtom` property is true, etc. Data, Mutation, DataMediator, MutationMediator.
+ */
+export const isAtomLike = (target: any): target is AtomLike => isObject(target) && target.isAtom
+/**
+ * Target will be considered `DataLike` when its `isData` property is true, etc. `Data` or `DataMediator`.
+ */
+export function isDataLike <V = any> (target: DataLike<V>): target is DataLike<V>
+export function isDataLike <V = any> (target: unknown): target is DataLike<V>
+export function isDataLike <V = any> (target: any): target is DataLike<V> {
+  return isObject(target) && target.isData
+}
+/**
+ * Target will be considered `MutationLike` when its `isMutation` property is true, etc. `Mutation` or `MutationMediator`.
+ */
+export function isMutationLike <P = any, C = any> (target: MutationLike<P, C>): target is MutationLike<P, C>
+export function isMutationLike <P = any, C = any> (target: unknown): target is MutationLike<P, C>
+export function isMutationLike <P = any, C = any> (target: any): target is MutationLike<P, C> {
+  return isObject(target) && target.isMutation
+}
 
 /**
- * @param tar anything
+ * @param target anything
  * @return { boolean } whether the target is an Atom instance
  */
-export const isAtom = (tar: any): tar is BaseAtom => isObject(tar) && tar.isAtom
+export const isAtom = (target: any): target is BaseAtom => isObject(target) && target.isAtom
 
 /******************************************************************************************************
  *
@@ -125,7 +143,7 @@ export abstract class BaseAtom extends Vain {
 
   abstract get options (): AnyStringRecord
 
-  abstract setOptions <K extends keyof BaseAtomOptions>(key: keyof BaseAtomOptions, value: BaseAtomOptions[K]): void
+  abstract setOptions <Key extends keyof BaseAtomOptions>(key: keyof BaseAtomOptions, value: BaseAtomOptions[Key]): void
 
   pipe (): this
   pipe<A = any> (fn1: Unary<this, A>): A

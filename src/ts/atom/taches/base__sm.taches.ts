@@ -4,7 +4,7 @@ import { Data, Mutation, isAtomLike, DEFAULT_MUTATION_OPTIONS } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
 import type {
-  MutatorOriginTransformationUnion
+  MutatorOriginalTransformationUnion
 } from '../particles'
 import type { MutationOptions, AtomLikeOfOutput } from '../atoms'
 
@@ -20,7 +20,7 @@ import type { MutationOptions, AtomLikeOfOutput } from '../atoms'
  *
  */
 interface ArraySMTacheConfig<P> {
-  transformation: MutatorOriginTransformationUnion<P, any>
+  transformation: MutatorOriginalTransformationUnion<P, any>
   options?: MutationOptions<P, any>
 }
 export type ArraySMTache<P = any> = (source: AtomLikeOfOutput<P>) => Array<Data<any>>
@@ -66,7 +66,7 @@ export const createArraySMTache = <P>(configArr: Array<ArraySMTacheConfig<P>>): 
 }
 
 interface ObjectSMTacheConfig<P> {
-  transformation: MutatorOriginTransformationUnion<P, any>
+  transformation: MutatorOriginalTransformationUnion<P, any>
   options?: MutationOptions<P, any>
 }
 export type ObjectSMTache<P = any> = (source: AtomLikeOfOutput<P>) => Record<string, Data<any>>

@@ -4,7 +4,7 @@ import { Data, Mutation, isAtomLike, DEFAULT_MUTATION_OPTIONS } from '../atoms'
 import { pipeAtom, binaryTweenPipeAtom } from '../helpers'
 
 import type {
-  MutatorOriginTransformationUnion
+  MutatorOriginalTransformationUnion
 } from '../particles'
 import type { MutationOptions, AtomLikeOfOutput } from '../atoms'
 
@@ -26,7 +26,7 @@ export type SSTache<P = any, C = any> = (source: AtomLikeOfOutput<P>) => Data<C>
   * @return { SSTache } SSTache :: `(source) => Data<any>`
   */
 export const createSSTache = <P, C>(
-  transformation: MutatorOriginTransformationUnion<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS
+  transformation: MutatorOriginalTransformationUnion<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS
 ): SSTache<P, C> => {
   if (!isFunction(transformation)) {
     throw (new TypeError('"transformation" is expected to be type of "Function".'))

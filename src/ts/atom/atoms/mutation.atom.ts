@@ -16,7 +16,7 @@ import type { Vacuo } from '../metas'
 import type {
   MutatorOptions, TransformationLiftOptions,
   MutatorTransformation, LiftBothTransformation, LiftLeftTransformation, LiftRightTransformation,
-  MutatorOriginTransformationUnion
+  MutatorOriginalTransformationUnion
 } from '../particles'
 import type {
   AtomLike, DataLike, MutationLike,
@@ -33,10 +33,14 @@ import type { DataSubscription } from './data.atom'
  ******************************************************************************************************/
 
 /**
- * @param tar anything
+ * @param target anything
  * @return { boolean } whether the target is a Mutation instance
  */
-export const isMutation = <P = any, C = any>(tar: any): tar is Mutation<P, C> => isObject(tar) && tar.isMutation
+export function isMutation <P = any, C = any> (target: Mutation<P, C>): target is Mutation<P, C>
+export function isMutation <P = any, C = any> (target: unknown): target is Mutation<P, C>
+export function isMutation <P = any, C = any> (target: any): target is Mutation<P, C> {
+  return isObject(target) && target.isMutation
+}
 
 /******************************************************************************************************
  *
@@ -51,7 +55,7 @@ export interface MutationOptions<P = any, C = any, Contexts extends any[] = any[
   lift?: TransformationLiftOptions
   mutator?: MutatorOptions
   isLifted?: boolean
-  originalTransformation?: null | MutatorOriginTransformationUnion<P, C, Contexts>
+  originalTransformation?: null | MutatorOriginalTransformationUnion<P, C, Contexts>
 }
 export const DEFAULT_MUTATION_OPTIONS: Required<MutationOptions<any, any, any[]>> = {
   ...DEFAULT_BASEATOM_OPTIONS,
@@ -64,7 +68,7 @@ export const DEFAULT_MUTATION_OPTIONS: Required<MutationOptions<any, any, any[]>
 export type MutatorConsumer<P = any, C = any> =
   (mutator: Mutator<P, C>, mutation: MutationLike<P, C>) => void
 export type TransformationConsumer<P = any, C = any> =
-  (transformation: (cur: Datar<C>, ...args: any[]) => C, mutation: MutationLike<P, C>) => void
+  (transformation: (current: Datar<C>, ...args: any[]) => C, mutation: MutationLike<P, C>) => void
 export type MutationConsumer<P = any, C = any> =
   MutatorConsumer<P, C> | TransformationConsumer<P, C>
 
@@ -114,7 +118,7 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   /**
    * Set Mutation's options by key.
    */
-  setOptions<K extends keyof MutationOptions>(key: K, value: Required<MutationOptions>[K]): void {
+  setOptions<Key extends keyof MutationOptions>(key: Key, value: Required<MutationOptions>[Key]): void {
     this._options[key] = value
   }
 
@@ -133,13 +137,14 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
    *                                             `Mutator.of` will be used as Mutator factory,
    *                                             and `options.mutator` will be used as Mutator options.
    */
-  static of <P, C>(
+  static of <P = any, C = any>(
     transformation: MutatorTransformation<P, C> | Mutator<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS
   ): Mutation<P, C> {
+    const preparedOptions = { ...DEFAULT_MUTATION_OPTIONS, ...options }
     if (isMutator<P, C>(transformation)) {
-      return new Mutation(transformation, options)
+      return new Mutation(transformation, preparedOptions)
     } else if (isFunction(transformation)) {
-      return new Mutation(Mutator.of(transformation, undefined, options.mutator), options)
+      return new Mutation(Mutator.of(transformation, undefined, preparedOptions.mutator), preparedOptions)
     } else {
       throw (new TypeError('"transformation" is expected to be type of "Mutator" or "Function".'))
     }
@@ -148,44 +153,48 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   /**
    * Same as `Mutation.of(Mutator.of(VACUO, CHAOS, options.mutator), options)`.
    */
-  static empty <C = Vacuo>(options: MutationOptions<any, any> = DEFAULT_MUTATION_OPTIONS): Mutation<any, C> {
-    const _options = { ...DEFAULT_MUTATION_OPTIONS, ...options }
-    return new Mutation(Mutator.empty(_options.mutator), _options)
+  static empty <P = any, C = Vacuo>(options: MutationOptions<any, any> = DEFAULT_MUTATION_OPTIONS): Mutation<P, C> {
+    const preparedOptions = { ...DEFAULT_MUTATION_OPTIONS, ...options }
+    return new Mutation(Mutator.empty(preparedOptions.mutator), preparedOptions)
   }
 
-  static ofLift <P, C>(
-    transformation: MutatorOriginTransformationUnion<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS
+  static ofLift <P = any, C = any>(
+    transformation: MutatorOriginalTransformationUnion<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS
   ): Mutation<P, C> {
+    const preparedOptions = { ...DEFAULT_MUTATION_OPTIONS, ...options }
     return new Mutation(
-      Mutator.ofLift(transformation, options.lift),
-      { ...options, isLifted: true, originalTransformation: transformation }
+      Mutator.ofLift(transformation, preparedOptions.lift),
+      { ...preparedOptions, isLifted: true, originalTransformation: transformation }
     )
   }
 
-  static ofLiftBoth <P, C>(
+  static ofLiftBoth <P = any, C = any>(
     transformation: LiftBothTransformation<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS
   ): Mutation<P, C> {
+    const preparedOptions = { ...DEFAULT_MUTATION_OPTIONS, ...options }
     return new Mutation(
       Mutator.ofLiftBoth(transformation),
-      { ...options, isLifted: true, originalTransformation: transformation }
+      { ...preparedOptions, isLifted: true, originalTransformation: transformation }
     )
   }
 
-  static ofLiftLeft <P, C>(
+  static ofLiftLeft <P = any, C = any>(
     transformation: LiftLeftTransformation<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS
   ): Mutation<P, C> {
+    const preparedOptions = { ...DEFAULT_MUTATION_OPTIONS, ...options }
     return new Mutation(
       Mutator.ofLiftLeft(transformation),
-      { ...options, isLifted: true, originalTransformation: transformation }
+      { ...preparedOptions, isLifted: true, originalTransformation: transformation }
     )
   }
 
-  static ofLiftRight <P, C>(
+  static ofLiftRight <P = any, C = any>(
     transformation: LiftRightTransformation<P, C>, options: MutationOptions<P, C> = DEFAULT_MUTATION_OPTIONS
   ): Mutation<P, C> {
+    const preparedOptions = { ...DEFAULT_MUTATION_OPTIONS, ...options }
     return new Mutation(
       Mutator.ofLiftRight(transformation),
-      { ...options, isLifted: true, originalTransformation: transformation }
+      { ...preparedOptions, isLifted: true, originalTransformation: transformation }
     )
   }
 
@@ -204,7 +213,7 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
     return this._mutator.transformation
   }
 
-  get originalTransformation (): MutatorOriginTransformationUnion<P, C> | null {
+  get originalTransformation (): MutatorOriginalTransformationUnion<P, C> | null {
     return this._options.originalTransformation
   }
 
@@ -226,14 +235,15 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
     let proxyConsumer: MutatorConsumer<P, C>
     if (isExtracted) {
       /**
-       * Mutation's transformation may not be a curried function, eg. created by Mutation.of(operation, options).
+       * Mutation's transformation may not be a curried function, eg. created by Mutation.of(transformation, options).
        * So the body of `fakeTransformation` can not't be `consumer(mutator.transformation(mutator.datar))`.
        */
       proxyConsumer = (mutator, mutation) => {
-        // TODO: consider what is `transformation`,
-        // the `transformation` fn or the `transformation` fn bind `Mutation.datar` as 1st argument.
-        const fakeTransformation = (cur: Datar<C>, ...args: any[]): C => {
-          return mutator.transformation(mutator.datar, cur, ...args)
+        // Q: consider what is `transformation`, the `transformation` function or
+        //    the `transformation` function bind `Mutation.datar` as 1st argument?
+        // A: latter is more correct.
+        const fakeTransformation = (current: Datar<C>, ...args: any[]): C => {
+          return mutator.transformation(mutator.datar, current, ...args)
         }
         return (consumer as TransformationConsumer<P, C>)(fakeTransformation, mutation)
       }
@@ -535,4 +545,7 @@ export class Mutation<P = any, C = any> extends BaseAtom implements AtomLike {
   }
 }
 
+/**
+ * GC, aka. Garbage Clean, used by mediator to release memories.
+ */
 export const GC_MUTATION = Mutation.of(() => Symbol('GC_MUTATION'))
