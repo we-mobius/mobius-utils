@@ -762,7 +762,7 @@ export type ObjectDeepOptional<Target extends AnyStringRecord> = {
 export type ObjectNonEmpty<Target extends AnyStringRecord> = keyof Target extends never ? never : Target
 
 /**
- * ObjectKnownKeys(aka. RemoveIndex)
+ * ObjectNamedKeys
  * @example
  * ```
  *   interface Temp {
@@ -770,13 +770,19 @@ export type ObjectNonEmpty<Target extends AnyStringRecord> = keyof Target extend
  *     age?: number
  *     [key: string]: string | number
  *   }
- *   // Expect: { name: string, age?: number }
- *   type test1 = ObjectKnownKeys<Temp>
+ *   // Expect: 'name' | 'age'
+ *   type test1 = ObjectNamedKeys<Temp>
  * ```
  * @see Copyright - The code is copy from {@link https://github.com/millsp/ts-toolbelt/blob/319e55123b9571d49f34eca3e5926e41ca73e0f3/sources/Any/KnownKeys.ts#L11}
  * @see Issue - https://github.com/millsp/ts-toolbelt/issues/164
  * @see Reference - https://stackoverflow.com/questions/51465182/how-to-remove-index-signature-using-mapped-types/51956054#51956054
  */
-export type ObjectKnownKeys<Target> = {
-  [Key in keyof Target as string extends Key ? never : number extends Key ? never : Key]: Target[Key]
+export type ObjectNamedKeys<Target> = keyof {
+  [Key in keyof Target as (
+    string extends Key ? never : number extends Key ? never : symbol extends Key ? never : Key
+  )]: Target[Key]
 }
+export type ObjectNamedParts<Target> = ObjectPrettify<Pick<Target, ObjectNamedKeys<Target>>>
+export type ObjectIndexedParts<Target> = ObjectPrettify<Omit<Target, ObjectNamedKeys<Target>>>
+export type ObjectHasNamedKeys<Target> = ObjectNamedKeys<Target> extends never ? false : true
+export type ObjectHasIndexedKeys<Target> = keyof ObjectIndexedParts<Target> extends never ? false : true
