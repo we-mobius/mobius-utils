@@ -1,334 +1,318 @@
 import { isFunction, isPlainObject } from '../../internal'
 import { looseCurryN } from '../../functional'
-import { Mutation, isMutation, Data, isData, isAtomLike } from '../atoms'
+import {
+  Mutation, isMutation, Data, isData, isAtomLike,
+  DEFAULT_DATA_OPTIONS, DEFAULT_MUTATION_OPTIONS
+} from '../atoms'
 import { isReplayMediator, replayWithLatest } from '../mediators'
 
-import type { MutatorTransformation, LiftBothTransformation, LiftLeftTransformation, LiftRightTransformation } from '../particles'
+import type {
+  MutatorOriginalTransformationUnion
+} from '../particles'
 import type { DataOptions, MutationOptions } from '../atoms'
 import type { ReplayDataMediator, ReplayMutationMediator } from '../mediators'
 
-interface IMutationToDataS {
-  <P, C>(mutation: Mutation<P, C>, options?: DataOptions): Data<C>
-  <P, C>(mutation: ReplayMutationMediator<P, C>, options?: DataOptions): ReplayDataMediator<C>
-}
-/**
- * @param mutation Mutation
- * @return atom Data
- */
-export const mutationToDataS: IMutationToDataS = (mutation: any, options: any = {}): any => {
-  if (!isMutation(mutation)) {
-    throw (new TypeError('"mutation" is expected to be type of "Mutation".'))
+export type MutationToData<Target = any> = Target extends Mutation<any, infer C>
+  ? Data<C>
+  : Target extends ReplayMutationMediator<any, infer C>
+    ? ReplayDataMediator<C>
+    : never
+export function mutationToDataS <P = any, C = any> (
+  mutationLike: Mutation<P, C>, options?: DataOptions
+): Data<C>
+export function mutationToDataS <P = any, C = any> (
+  mutationLike: ReplayMutationMediator<P, C>, options?: DataOptions
+): ReplayDataMediator<C>
+export function mutationToDataS <P = any, C = any> (
+  mutationLike: Mutation<P, C> | ReplayMutationMediator<P, C>, options: DataOptions = DEFAULT_DATA_OPTIONS
+): Data<C> | ReplayDataMediator<C> {
+  if (!isMutation(mutationLike)) {
+    throw (new TypeError('"mutation" is expected to be type of "MutationLike".'))
   }
   if (!isPlainObject(options)) {
     throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
 
-  const _data = Data.empty(options)
-  // mutation -> _data
-  _data.observe(mutation)
+  const preparedOptions = { ...DEFAULT_DATA_OPTIONS, ...options }
 
-  if (isReplayMediator(mutation)) {
-    return replayWithLatest(1, _data)
+  const finalData = Data.empty<C>(preparedOptions)
+  // mutation -> finalData
+  finalData.observe(mutationLike)
+
+  if (isReplayMediator(mutationLike)) {
+    return replayWithLatest(1, finalData)
   } else {
-    return _data
+    return finalData
   }
 }
+/**
+ * Curried version of {@link mutationToDataS}.
+ */
 export const mutationToDataS_ = looseCurryN(1, mutationToDataS)
 
-interface IMutationToData {
-  <P, C, C2>(
-    transformation: MutatorTransformation<C, C2>, mutation: Mutation<P, C>, options?: MutationOptions<P, C>
-  ): Data<C2>
-  <P, C, C2>(
-    transformation: LiftBothTransformation<C, C2>, mutation: Mutation<P, C>, options?: MutationOptions<P, C>
-  ): Data<C2>
-  <P, C, C2>(
-    transformation: LiftLeftTransformation<C, C2>, mutation: Mutation<P, C>, options?: MutationOptions<P, C>
-  ): Data<C2>
-  <P, C, C2>(
-    transformation: LiftRightTransformation<C, C2>, mutation: Mutation<P, C>, options?: MutationOptions<P, C>
-  ): Data<C2>
-  <P, C, C2>(
-    transformation: MutatorTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<P, C>
-  ): ReplayDataMediator<C2>
-  <P, C, C2>(
-    transformation: LiftBothTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<P, C>
-  ): ReplayDataMediator<C2>
-  <P, C, C2>(
-    transformation: LiftLeftTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<P, C>
-  ): ReplayDataMediator<C2>
-  <P, C, C2>(
-    transformation: LiftRightTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<P, C>
-  ): ReplayDataMediator<C2>
-}
-/**
- * @param transform Function
- * @param mutation Mutation
- * @param options Object, optional
- * @return atom Data | ReplayMediator, same type of param "mutation"
- */
-export const mutationToData: IMutationToData = (transformation: any, mutation: any, options: any = { }): any => {
+export function mutationToData <P = any, C = any, C2 = any> (
+  transformation: MutatorOriginalTransformationUnion<C, C2>, mutationLike: Mutation<P, C>, options?: MutationOptions<C, C2>
+): Data<C2>
+export function mutationToData <P = any, C = any, C2 = any> (
+  transformation: MutatorOriginalTransformationUnion<C, C2>, mutationLike: ReplayMutationMediator<P, C>, options?: MutationOptions<C, C2>
+): ReplayDataMediator<C2>
+export function mutationToData <P = any, C = any, C2 = any> (
+  transformation: MutatorOriginalTransformationUnion<C, C2>,
+  mutationLike: Mutation<P, C> | ReplayMutationMediator<P, C>,
+  options: MutationOptions<C, C2> = DEFAULT_MUTATION_OPTIONS
+): Data<C2> | ReplayDataMediator<C2> {
   if (!isFunction(transformation)) {
     throw (new TypeError('"transform" is expected to be type of "Function".'))
   }
-  if (!isMutation(mutation)) {
+  if (!isMutation(mutationLike)) {
     throw (new TypeError('"mutation" is expected to be type of "Mutation".'))
   }
   if (!isPlainObject(options)) {
     throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
 
-  const _data = Data.empty<any>()
-  const _mutation = Mutation.ofLift<any, any>(transformation, options)
-  const _data2 = Data.empty<any>()
+  const preparedOptions = { ...DEFAULT_MUTATION_OPTIONS, ...options }
+
+  const _data = Data.empty<C>()
+  const _mutation = Mutation.ofLift<C, C2>(transformation, preparedOptions)
+  const _data2 = Data.empty<C2>()
 
   // mutation -> _data -> _mutation -> _data2
   _data2.observe(_mutation)
   _mutation.observe(_data)
-  _data.observe(mutation)
+  _data.observe(mutationLike)
 
-  if (isReplayMediator(mutation)) {
+  if (isReplayMediator(mutationLike)) {
     return replayWithLatest(1, _data2)
   } else {
     return _data2
   }
 }
+/**
+ * Curried version of {@link mutationToData}.
+ */
 export const mutationToData_ = looseCurryN(2, mutationToData)
 
-interface IDataToData {
-  <V1, V2>(
-    transformation: MutatorTransformation<V1, V2>, data: Data<V1>, options?: MutationOptions<V1, V2>
-  ): Data<V2>
-  <V1, V2>(
-    transformation: LiftBothTransformation<V1, V2>, data: Data<V1>, options?: MutationOptions<V1, V2>
-  ): Data<V2>
-  <V1, V2>(
-    transformation: LiftLeftTransformation<V1, V2>, data: Data<V1>, options?: MutationOptions<V1, V2>
-  ): Data<V2>
-  <V1, V2>(
-    transformation: LiftRightTransformation<V1, V2>, data: Data<V1>, options?: MutationOptions<V1, V2>
-  ): Data<V2>
-  <V1, V2>(
-    transformation: MutatorTransformation<V1, V2>, data: ReplayDataMediator<V1>, options?: MutationOptions<V1, V2>
-  ): ReplayDataMediator<V2>
-  <V1, V2>(
-    transformation: LiftBothTransformation<V1, V2>, data: ReplayDataMediator<V1>, options?: MutationOptions<V1, V2>
-  ): ReplayDataMediator<V2>
-  <V1, V2>(
-    transformation: LiftLeftTransformation<V1, V2>, data: ReplayDataMediator<V1>, options?: MutationOptions<V1, V2>
-  ): ReplayDataMediator<V2>
-  <V1, V2>(
-    transformation: LiftRightTransformation<V1, V2>, data: ReplayDataMediator<V1>, options?: MutationOptions<V1, V2>
-  ): ReplayDataMediator<V2>
-}
-/**
- * @param transform Function
- * @param data Data | ReplayMediator
- * @param options Object, optional
- * @return atom Data | ReplayMediator, same type of param "data"
- */
-export const dataToData: IDataToData = (transformation: any, data: any, options: any = {}): any => {
+export function dataToData <V1 = any, V2 = any> (
+  transformation: MutatorOriginalTransformationUnion<V1, V2>, dataLike: Data<V1>, options?: MutationOptions<V1, V2>
+): Data<V2>
+export function dataToData <V1 = any, V2 = any> (
+  transformation: MutatorOriginalTransformationUnion<V1, V2>, dataLike: ReplayDataMediator<V1>, options?: MutationOptions<V1, V2>
+): ReplayDataMediator<V2>
+export function dataToData <V1 = any, V2 = any> (
+  transformation: MutatorOriginalTransformationUnion<V1, V2>,
+  dataLike: Data<V1> | ReplayDataMediator<V1>,
+  options: MutationOptions<V1, V2> = DEFAULT_MUTATION_OPTIONS
+): Data<V2> | ReplayDataMediator<V2> {
   if (!isFunction(transformation)) {
     throw (new TypeError('"transform" is expected to be type of "Function".'))
   }
-  if (!isData(data)) {
-    throw (new TypeError('"data" is expected to be type of "Data".'))
+  if (!isData(dataLike)) {
+    throw (new TypeError('"data" is expected to be type of "DataLike".'))
   }
   if (!isPlainObject(options)) {
     throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
 
-  const _mutation = Mutation.ofLift<any, any>(transformation, options)
-  const _data = Data.empty<any>()
+  const preparedOptions = { ...DEFAULT_MUTATION_OPTIONS, ...options }
+
+  const _mutation = Mutation.ofLift<V1, V2>(transformation, preparedOptions)
+  const _data = Data.empty<V2>()
 
   // data -> _mutation -> _data
   _data.observe(_mutation)
-  _mutation.observe(data)
+  _mutation.observe(dataLike)
 
-  if (isReplayMediator(data)) {
+  if (isReplayMediator(dataLike)) {
     return replayWithLatest(1, _data)
   } else {
     return _data
   }
 }
+/**
+ * Curried version of {@link dataToData}.
+ */
 export const dataToData_ = looseCurryN(2, dataToData)
 
-interface IAtomToData extends IMutationToData, IDataToData {}
-/**
- * @param transform Function
- * @param atom Atom
- * @param options Object, optional
- * @return atom Data
- */
-export const atomToData: IAtomToData = (transformation: any, atom: any, options: any = {}): any => {
+export function atomToData <P = any, C = any, C2 = any> (
+  transformation: MutatorOriginalTransformationUnion<C, C2>, mutationLike: Mutation<P, C>, options?: MutationOptions<C, C2>
+): Data<C2>
+export function atomToData <P = any, C = any, C2 = any> (
+  transformation: MutatorOriginalTransformationUnion<C, C2>, mutationLike: ReplayMutationMediator<P, C>, options?: MutationOptions<C, C2>
+): ReplayDataMediator<C2>
+export function atomToData <V1 = any, V2 = any> (
+  transformation: MutatorOriginalTransformationUnion<V1, V2>, dataLike: Data<V1>, options?: MutationOptions<V1, V2>
+): Data<V2>
+export function atomToData <V1 = any, V2 = any> (
+  transformation: MutatorOriginalTransformationUnion<V1, V2>, dataLike: ReplayDataMediator<V1>, options?: MutationOptions<V1, V2>
+): ReplayDataMediator<V2>
+export function atomToData (transformation: any, atomLike: any, options: any = {}): any {
   if (!isFunction(transformation)) {
     throw (new TypeError('"transform" is expected to be type of "Function".'))
   }
-  if (!isAtomLike(atom)) {
+  if (!isAtomLike(atomLike)) {
     throw (new TypeError('"atom" is expected to be type of "AtomLike".'))
   }
 
-  if (isMutation(atom)) {
-    return mutationToData(transformation, atom, options)
-  } else if (isData(atom)) {
-    return dataToData(transformation, atom, options)
+  if (isMutation(atomLike)) {
+    return mutationToData(transformation, atomLike, options)
+  } else if (isData(atomLike)) {
+    return dataToData(transformation, atomLike, options)
   } else {
-    throw (new TypeError('Unrecognized type of "Atom" received in atomToData, expected "Mutation" | "Data".'))
+    throw (new TypeError('Unrecognized type of "Atom" received in atomToData, expected "AtomLike".'))
   }
 }
+/**
+ * Curried version of {@link atomToData}.
+ */
 export const atomToData_ = looseCurryN(2, atomToData)
 
-interface IDataToMutationS {
-  <V>(data: Data<V>, options?: MutationOptions<V, V>): Mutation<V, V>
-  <V>(data: ReplayDataMediator<V>, options?: MutationOptions<V, V>): ReplayMutationMediator<V, V>
-}
-/**
- * @param data Data
- * @return atom Mutation
- */
-export const dataToMutationS: IDataToMutationS = (data: any, options: any = {}): any => {
-  if (!isData(data)) {
-    throw (new TypeError('"data" is expected to be type of "Data".'))
+export type DataToMutation<Target = any> = Target extends Data<infer V>
+  ? Mutation<V, V>
+  : Target extends ReplayDataMediator<infer V>
+    ? ReplayMutationMediator<V, V>
+    : never
+export function dataToMutationS <V = any> (
+  dataLike: Data<V>, options?: MutationOptions<V, V>
+): Mutation<V, V>
+export function dataToMutationS <V = any> (
+  dataLike: ReplayDataMediator<V>, options?: MutationOptions<V, V>
+): ReplayMutationMediator<V, V>
+export function dataToMutationS <V = any> (
+  dataLike: Data<V> | ReplayDataMediator<V>, options: MutationOptions<V, V> = DEFAULT_MUTATION_OPTIONS
+): Mutation<V, V> | ReplayMutationMediator<V, V> {
+  if (!isData(dataLike)) {
+    throw (new TypeError('"data" is expected to be type of "DataLike".'))
   }
   if (!isPlainObject(options)) {
     throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
 
-  // TODO: nosense now
-  const _mutation = Mutation.ofLiftBoth(prev => prev, options)
+  // Passby anything received
+  const _mutation = Mutation.ofLiftBoth<V, V>(prev => prev as any, options)
 
   // data -> _mutation
-  _mutation.observe(data)
+  _mutation.observe(dataLike)
 
-  if (isReplayMediator(data)) {
+  if (isReplayMediator(dataLike)) {
     return replayWithLatest(1, _mutation)
   } else {
     return _mutation
   }
 }
+/**
+ * Curried version of {@link dataToMutationS}.
+ */
 export const dataToMutationS_ = looseCurryN(1, dataToMutationS)
 
-interface IDataToMutation {
-  <V, V2>(transformation: MutatorTransformation<V, V2>, data: Data<V>, options?: MutationOptions<V, V2>): Mutation<V, V2>
-  <V, V2>(transformation: LiftBothTransformation<V, V2>, data: Data<V>, options?: MutationOptions<V, V2>): Mutation<V, V2>
-  <V, V2>(transformation: LiftLeftTransformation<V, V2>, data: Data<V>, options?: MutationOptions<V, V2>): Mutation<V, V2>
-  <V, V2>(transformation: LiftRightTransformation<V, V2>, data: Data<V>, options?: MutationOptions<V, V2>): Mutation<V, V2>
-  <V, V2>(
-    transformation: MutatorTransformation<V, V2>, data: ReplayDataMediator<V>, options?: MutationOptions<V, V2>
-  ): ReplayMutationMediator<V, V2>
-  <V, V2>(
-    transformation: LiftBothTransformation<V, V2>, data: ReplayDataMediator<V>, options?: MutationOptions<V, V2>
-  ): ReplayMutationMediator<V, V2>
-  <V, V2>(
-    transformation: LiftLeftTransformation<V, V2>, data: ReplayDataMediator<V>, options?: MutationOptions<V, V2>
-  ): ReplayMutationMediator<V, V2>
-  <V, V2>(
-    transformation: LiftRightTransformation<V, V2>, data: ReplayDataMediator<V>, options?: MutationOptions<V, V2>
-  ): ReplayMutationMediator<V, V2>
-}
-/**
- * @param transformation Function
- * @param data Atom
- * @param options Object, optional
- * @retrun atom Mutation
- */
-export const dataToMutation: IDataToMutation = (transformation: any, data: any, options: any = {}): any => {
+export function dataToMutation <V = any, V2 = any> (
+  transformation: MutatorOriginalTransformationUnion<V, V2>, dataLike: Data<V>, options?: MutationOptions<V, V2>
+): Mutation<V, V2>
+export function dataToMutation <V = any, V2 = any> (
+  transformation: MutatorOriginalTransformationUnion<V, V2>, dataLike: ReplayDataMediator<V>, options?: MutationOptions<V, V2>
+): ReplayMutationMediator<V, V2>
+export function dataToMutation <V = any, V2 = any> (
+  transformation: MutatorOriginalTransformationUnion<V, V2>,
+  dataLike: Data<V> | ReplayDataMediator<V>, options: MutationOptions<V, V2> = DEFAULT_MUTATION_OPTIONS
+): Mutation<V, V2> | ReplayMutationMediator<V, V2> {
   if (!isFunction(transformation)) {
     throw (new TypeError('"transform" is expected to be type of "Function".'))
   }
-  if (!isData(data)) {
-    throw (new TypeError('"data" is expected to be type of "Data".'))
+  if (!isData(dataLike)) {
+    throw (new TypeError('"data" is expected to be type of "DataLike".'))
   }
   if (!isPlainObject(options)) {
     throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
 
-  const _mutation = Mutation.ofLift(transformation, options)
+  const preparedOptions = { ...DEFAULT_MUTATION_OPTIONS, ...options }
+
+  const _mutation = Mutation.ofLift<V, V2>(transformation, preparedOptions)
 
   // data -> _mutation
-  _mutation.observe(data)
+  _mutation.observe(dataLike)
 
-  if (isReplayMediator(data)) {
+  if (isReplayMediator(dataLike)) {
     return replayWithLatest(1, _mutation)
   } else {
     return _mutation
   }
 }
+/**
+ * Curried version of {@link dataToMutation}.
+ */
 export const dataToMutation_ = looseCurryN(2, dataToMutation)
 
-interface IMutationToMutation {
-  <P, C, C2>(transformation: MutatorTransformation<C, C2>, mutation: Mutation<P, C>, options?: MutationOptions<C, C2>): Mutation<C, C2>
-  <P, C, C2>(transformation: LiftBothTransformation<C, C2>, mutation: Mutation<P, C>, options?: MutationOptions<C, C2>): Mutation<C, C2>
-  <P, C, C2>(transformation: LiftLeftTransformation<C, C2>, mutation: Mutation<P, C>, options?: MutationOptions<C, C2>): Mutation<C, C2>
-  <P, C, C2>(transformation: LiftRightTransformation<C, C2>, mutation: Mutation<P, C>, options?: MutationOptions<C, C2>): Mutation<C, C2>
-
-  <P, C, C2>(
-    transformation: MutatorTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<C, C2>
-  ): ReplayMutationMediator<C, C2>
-  <P, C, C2>(
-    transformation: LiftBothTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<C, C2>
-  ): ReplayMutationMediator<C, C2>
-  <P, C, C2>(
-    transformation: LiftLeftTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<C, C2>
-  ): ReplayMutationMediator<C, C2>
-  <P, C, C2>(
-    transformation: LiftRightTransformation<C, C2>, mutation: ReplayMutationMediator<P, C>, options?: MutationOptions<C, C2>
-  ): ReplayMutationMediator<C, C2>
-}
-/**
- * @param transformation Function
- * @param mutation Mutation
- * @param options Object, optional
- * @return atom Mutation
- */
-export const mutationToMutation: IMutationToMutation = (transformation: any, mutation: any, options: any = {}): any => {
+export function mutationToMutation<P = any, C = any, C2 = any> (
+  transformation: MutatorOriginalTransformationUnion<C, C2>, mutationLike: Mutation<P, C>, options?: MutationOptions<C, C2>
+): Mutation<C, C2>
+export function mutationToMutation<P = any, C = any, C2 = any> (
+  transformation: MutatorOriginalTransformationUnion<C, C2>, mutationLike: ReplayMutationMediator<P, C>, options?: MutationOptions<C, C2>
+): ReplayMutationMediator<C, C2>
+export function mutationToMutation <P = any, C = any, C2 = any> (
+  transformation: MutatorOriginalTransformationUnion<C, C2>,
+  mutationLike: Mutation<P, C> | ReplayMutationMediator<P, C>, options: MutationOptions<C, C2> = DEFAULT_MUTATION_OPTIONS
+): Mutation<C, C2> | ReplayMutationMediator<C, C2> {
   if (!isFunction(transformation)) {
     throw (new TypeError('"transform" is expected to be type of "Function".'))
   }
-  if (!isMutation(mutation)) {
-    throw (new TypeError('"mutation" is expected to be type of "Mutation".'))
+  if (!isMutation(mutationLike)) {
+    throw (new TypeError('"mutation" is expected to be type of "MutationLike".'))
   }
   if (!isPlainObject(options)) {
     throw (new TypeError('"options" is expected to be type of "PlainObject".'))
   }
 
-  const _data = Data.empty<any>()
-  const _mutation = Mutation.ofLift<any, any>(transformation, options)
+  const preparedOptions = { ...DEFAULT_MUTATION_OPTIONS, ...options }
+
+  const _data = Data.empty<C>()
+  const _mutation = Mutation.ofLift<C, C2>(transformation, preparedOptions)
 
   // mutation -> _data -> _mutation
   _mutation.observe(_data)
-  _data.observe(mutation)
+  _data.observe(mutationLike)
 
-  if (isReplayMediator(mutation)) {
+  if (isReplayMediator(mutationLike)) {
     return replayWithLatest(1, _mutation)
   } else {
     return _mutation
   }
 }
+/**
+ * Curried version of {@link mutationToMutation}.
+ */
 export const mutationToMutation_ = looseCurryN(2, mutationToMutation)
 
-interface IAtomToMutation extends IDataToMutation, IMutationToMutation {}
-/**
- * @param transform Function
- * @param atom Atom
- * @param options Object, optional
- * @param atom Mutation
- */
-export const atomToMutation: IAtomToMutation = (transform: any, atom: any, options: any = {}): any => {
+export function atomToMutation <V = any, V2 = any> (
+  transformation: MutatorOriginalTransformationUnion<V, V2>, dataLike: Data<V>, options?: MutationOptions<V, V2>
+): Mutation<V, V2>
+export function atomToMutation <V = any, V2 = any> (
+  transformation: MutatorOriginalTransformationUnion<V, V2>, dataLike: ReplayDataMediator<V>, options?: MutationOptions<V, V2>
+): ReplayMutationMediator<V, V2>
+export function atomToMutation <P = any, C = any, C2 = any> (
+  transformation: MutatorOriginalTransformationUnion<C, C2>, mutationLike: Mutation<P, C>, options?: MutationOptions<C, C2>
+): Mutation<C, C2>
+export function atomToMutation <P = any, C = any, C2 = any> (
+  transformation: MutatorOriginalTransformationUnion<C, C2>, mutationLike: ReplayMutationMediator<P, C>, options?: MutationOptions<C, C2>
+): ReplayMutationMediator<C, C2>
+export function atomToMutation (transform: any, atomLike: any, options: any = {}): any {
   if (!isFunction(transform)) {
     throw (new TypeError('"transform" is expected to be type of "Function".'))
   }
-  if (!isAtomLike(atom)) {
+  if (!isAtomLike(atomLike)) {
     throw (new TypeError('"atom" is expected to be type of "AtomLike".'))
   }
 
-  if (isMutation(atom)) {
-    return mutationToMutation(transform, atom, options)
+  if (isMutation(atomLike)) {
+    return mutationToMutation(transform, atomLike, options)
   }
-  if (isData(atom)) {
-    return dataToMutation(transform, atom, options)
+  if (isData(atomLike)) {
+    return dataToMutation(transform, atomLike, options)
   }
 
-  throw (new TypeError('Unrecognized type of "Atom" received in atomToMutation, expected "Mutation" | "Data".'))
+  throw (new TypeError('Unrecognized type of "Atom" received in atomToMutation, expected "AtomLike".'))
 }
+/**
+ * Curried version of {@link atomToMutation}.
+ */
 export const atomToMutation_ = looseCurryN(2, atomToMutation)
