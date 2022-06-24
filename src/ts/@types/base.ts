@@ -135,12 +135,48 @@ export type IsUnion<T> = ClosedDistribution<T> extends ExpandedDistribution<T> ?
 export type IfUnion<T, TRUE = true, FALSE = never> = IsUnion<T> extends true ? TRUE : FALSE
 
 /**
- * Predicate whether the target is `tuple`.
+ * Predicate whether the target is `Array`.
+ */
+export type IsArray<T> = T extends readonly any[] ? (number extends T['length'] ? true : false) : false
+export type IfArray<T, TRUE = true, FALSE = never> = IsArray<T> extends true ? TRUE : FALSE
+// ReadonlyArray is subset of Array.
+export type IsReadonlyArray<T> = T extends readonly any[] ? (T extends any[] ? false : true) : false
+export type IfReadonlyArray<T, TRUE = true, FALSE = never> = IsReadonlyArray<T> extends true ? TRUE : FALSE
+export type IsWritableArray<T> = T extends any[] ? (number extends T['length'] ? true : false) : false
+export type IfWritableArray<T, TRUE = true, FALSE = never> = IsWritableArray<T> extends true ? TRUE : FALSE
+
+/**
+ * Predicate whether the target is `Tuple`.
  *
  * @see https://github.com/type-challenges/type-challenges/issues/4491#issuecomment-975808109
  */
 export type IsTuple<T> = T extends readonly any[] ? (number extends T['length'] ? false : true) : false
 export type IfTuple<T, TRUE = true, FALSE = never> = IsTuple<T> extends true ? TRUE : FALSE
+export type IsReadonlyTuple<T> = T extends readonly any[] ? (T extends any[] ? false : true) : false
+export type IfReadonlyTuple<T, TRUE = true, FALSE = never> = IsReadonlyTuple<T> extends true ? TRUE : FALSE
+export type IsWritableTuple<T> = T extends any[] ? (number extends T['length'] ? false : true) : false
+export type IfWritableTuple<T, TRUE = true, FALSE = never> = IsWritableTuple<T> extends true ? TRUE : FALSE
+
+/**
+ * Predicate whether the target is `Array` or `Tuple`.
+ */
+export type IsArrayOrTuple<T> = T extends readonly any[] ? true : false
+export type IfArrayOrTuple<T, TRUE = true, FALSE = never> = IsArrayOrTuple<T> extends true ? TRUE : FALSE
+
+export type IsRecord<T> = T extends Record<string | number | symbol, any> ? true : false
+export type IfRecord<T, TRUE = true, FALSE = never> = IsRecord<T> extends true ? TRUE : FALSE
+export type IsStringRecord<T> = T extends Record<string, any> ? true : false
+export type IfStringRecord<T, TRUE = true, FALSE = never> = IsStringRecord<T> extends true ? TRUE : FALSE
+export type IsNumberRecord<T> = T extends Record<number, any> ? true : false
+export type IfNumberRecord<T, TRUE = true, FALSE = never> = IsNumberRecord<T> extends true ? TRUE : FALSE
+export type IsSymbolRecord<T> = T extends Record<symbol, any> ? true : false
+export type IfSymbolRecord<T, TRUE = true, FALSE = never> = IsSymbolRecord<T> extends true ? TRUE : FALSE
+
+/**
+ * Predicate whether the target is `Record`.
+ */
+export type IsEmptyObject<Target extends Record<any, any>> = keyof Target extends never ? true : false
+export type IfEmptyObject<Target extends Record<any, any>, TRUE = true, FALSE = never> = IsEmptyObject<Target> extends true ? TRUE : FALSE
 
 export type IsPrimative<T> =
   T extends string ? true : T extends number ? true : T extends boolean ? true : T extends symbol ? true
